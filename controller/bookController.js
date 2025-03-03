@@ -78,6 +78,41 @@ const getBooks = asyncHandler(async (req, res) => {
   });
 });
 
+
+ //fetching the books in the mobile phone using the catgory 
+const catgoryfetch = asyncHandler(async (req, res) => {
+  const { category } = req.query; // Get category from request query
+
+  let query = {}; // Default query object
+
+  if (category) {
+    query.category = category; // Filter books by category if provided
+  }
+
+  // Fetch books based on the query and populate relationships
+  const books = await bookModel.find(query).populate("borrowedBy managedBy");
+
+  res.status(200).json({
+    status: "success",
+    results: books.length,
+    data: books,
+  });
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // @desc    Update a book (Only library-staff)
 // @route   PATCH /api/books/:id
 // @access  Private (library-staff)
@@ -157,4 +192,5 @@ module.exports = {
   getBooks,
   updateBook,
   deleteBook,
+  catgoryfetch,
 };

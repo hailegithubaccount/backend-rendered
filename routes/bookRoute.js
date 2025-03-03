@@ -12,6 +12,9 @@ router.post("/insert",protect,checkRole("library-staff"), checkUserExists, bookC
 // Get all books
 router.get("/read",bookController.getBooks);
 
+
+router.get("/read/catgoryfetch",bookController.catgoryfetch);
+
 // Update a book
 router.patch("/update:id",protect,checkRole("library-staff"), checkUserExists, bookController.updateBook);
 
