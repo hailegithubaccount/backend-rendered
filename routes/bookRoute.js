@@ -7,13 +7,13 @@ const { protect,checkRole, checkUserExists} = require('../middleware/auth'); // 
 // router.use(protect, checkRole("library-staff"), checkUserExists);
 
 // Create a new book
-router.post("/insert",bookController.createBook);
+router.post("/insert",protect,checkRole("library-staff"), checkUserExists, bookController.createBook);
 
 // Get all books
 router.get("/read",bookController.getBooks);
 
 
-router.get("/read/catgoryfetch",protect,checkRole("student"), checkUserExists,bookController.catgoryfetch);
+router.get("/read/catgoryfetch",bookController.catgoryfetch);
 
 // Update a book
 router.patch("/update:id",protect,checkRole("library-staff"), checkUserExists, bookController.updateBook);
