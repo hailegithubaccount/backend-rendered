@@ -28,9 +28,9 @@ const notificationRoutes = require("./routes/notificationRoutes");
 // Use Routes
 app.use('/api/users', studentRoute);
 app.use('/api/users', userRoutes);
-app.use('/api/admins', adminRoutes);
-app.use('/api/books', bookRoutes); 
-app.use('/api/seats', seatRoutes); 
+app.use('/api/users/admins', adminRoutes);
+app.use('/api/users/books', bookRoutes); 
+app.use('/api/users/seats', seatRoutes); 
 app.use('/api/now', nowRoutes);  
 app.use('/api/requests', requestBook);
 app.use('/api/notifications', notificationRoutes);
