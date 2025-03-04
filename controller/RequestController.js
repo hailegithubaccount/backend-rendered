@@ -56,13 +56,13 @@ const getAllBookRequests = asyncHandler(async (req, res) => {
   try {
     const staffId = res.locals.id; // Authenticated library staff ID
 
-    // ✅ Ensure the user is a library staff
+    // ✅ Ensure the user exists and is a library staff
     const staff = await User.findById(staffId);
-    if (res.locals.role !== "library-staff") {
+    if (!staff || staff.role !== "library-staff") {
       return res.status(403).json({ status: "failed", message: "Access denied" });
     }
 
-    // ✅ Fetch all book requests
+    // ✅ Fetch all book requests, including book & student details
     const requests = await BookRequest.find().populate("book student");
     
     res.status(200).json({ status: "success", data: requests });
@@ -70,6 +70,7 @@ const getAllBookRequests = asyncHandler(async (req, res) => {
     res.status(500).json({ status: "failed", message: error.message });
   }
 });
+
 
 
 
