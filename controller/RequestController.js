@@ -49,6 +49,37 @@ const requestBook = asyncHandler(async (req, res) => {
 // @desc    Approve or Reject a book request (Library Staff Only)
 // @route   PATCH /api/book-requests/:requestId
 // @access  Private (Library Staff)
+// @desc    Get all book requests (Library Staff Only)
+// @route   GET /api/book-requests
+// @access  Private (Library Staff)
+const getAllBookRequests = asyncHandler(async (req, res) => {
+  try {
+    const staffId = res.locals.id; // Authenticated library staff ID
+
+    // ✅ Ensure the user is a library staff
+    const staff = await User.findById(staffId);
+    if (!staff || staff.role !== "library-staff") {
+      return res.status(403).json({ status: "failed", message: "Access denied" });
+    }
+
+    // ✅ Fetch all book requests
+    const requests = await BookRequest.find().populate("book student");
+    
+    res.status(200).json({ status: "success", data: requests });
+  } catch (error) {
+    res.status(500).json({ status: "failed", message: error.message });
+  }
+});
+
+
+
+
+
+
+
+
+
+
 const approveBookRequest = asyncHandler(async (req, res) => {
   try {
     const { action } = req.body; // action = "approve" or "reject"
@@ -99,4 +130,5 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 module.exports = {
   requestBook,
   approveBookRequest,
+  getAllBookRequests,
 };
