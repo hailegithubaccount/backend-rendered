@@ -58,7 +58,7 @@ const getAllBookRequests = asyncHandler(async (req, res) => {
 
     // ✅ Ensure the user is a library staff
     const staff = await User.findById(staffId);
-    if (!staff || staff.role !== "library-staff") {
+    if (res.locals.role !== "library-staff") {
       return res.status(403).json({ status: "failed", message: "Access denied" });
     }
 
