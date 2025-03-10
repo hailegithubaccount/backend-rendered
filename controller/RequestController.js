@@ -89,7 +89,7 @@ const returnBook = asyncHandler(async (req, res) => {
   }
 
   // ✅ Mark book as returned & increase available copies
-  await Book.findByIdAndUpdate(request.book._id, { $inc: { availableCopies: 1 } });
+  await Book.findByIdAndUpdate(request.book.id, { $inc: { availableCopies: 1 } });
 
   request.status = "returned";
   request.returnedAt = new Date();
