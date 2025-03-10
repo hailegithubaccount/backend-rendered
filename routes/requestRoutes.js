@@ -7,6 +7,13 @@ const router = express.Router();
 router.post("/request",protect,checkRole("student"), checkUserExists,RequestController.requestBook);
 router.get("/request",protect,checkRole("library-staff"), checkUserExists,RequestController. getAllBookRequests); // // Auth required
 router.patch("/taken/:requestId", protect, checkRole("library-staff"), checkUserExists, RequestController.approveBookRequest);
-router.patch("/bookrequest/:requestId/return",protect,checkRole("library-staff",checkUserExists, RequestController.returnBook))
+router.patch(
+    "/bookrequest/:requestId/return",
+    protect,
+    checkUserExists,  // Ensure user exists
+    checkRole("library-staff"),  // Only library staff can confirm returns
+    RequestController.returnBook
+  );
+  
 
 module.exports = router;

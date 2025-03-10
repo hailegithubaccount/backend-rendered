@@ -70,33 +70,40 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   res.status(200).json({ status: "success", message: "Book marked as taken successfully", request });
 });
 
-// ✅ Return Book (Student)
 const returnBook = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
-  const studentId = res.locals.id;
 
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
     return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
   }
 
   const request = await BookRequest.findById(requestId).populate("book");
-  if (!request || request.status !== "taken" || !request.takenAt) {
+
+  if (!request) {
+    return res.status(404).json({ status: "failed", message: "Request not found" });
+  }
+
+  if (request.status !== "taken" || !request.takenAt) {
     return res.status(400).json({ status: "failed", message: "Invalid return request" });
   }
 
-  if (request.student.toString() !== studentId) {
-    return res.status(403).json({ status: "failed", message: "You can't return this book" });
-  }
+  console.log("Library staff confirming return for:", request.book.title);
 
-  // ✅ Mark book as returned & increase available copies
+  // ✅ Increase available copies
   await Book.findByIdAndUpdate(request.book.id, { $inc: { availableCopies: 1 } });
 
+  // ✅ Mark as returned
   request.status = "returned";
   request.returnedAt = new Date();
   await request.save();
 
-  res.status(200).json({ status: "success", message: "Book returned successfully", request });
+  res.status(200).json({
+    status: "success",
+    message: `Book '${request.book.title}' returned successfully and is now available`,
+    request
+  });
 });
+
 
 // ✅ Get All Book Requests (Library Staff)
 const getAllBookRequests = asyncHandler(async (req, res) => {
