@@ -103,41 +103,65 @@ const catgoryfetch = asyncHandler(async (req, res) => {
 // @route   PATCH /api/books/:id
 // @access  Private (library-staff)
 const updateBook = asyncHandler(async (req, res) => {
-    const { name, category, author, photo, borrowedBy, borrowedDate, returnedDate } = req.body;
-    const bookId = req.params.id;
+  const { name, category, author, photo, borrowedBy, borrowedDate, returnedDate, totalCopies } = req.body;
+  const bookId = req.params.id;
 
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(bookId)) {
-        return res.status(400).json({
-            status: "failed",
-            message: "Invalid book ID format",
-        });
-    }
+  // Validate ObjectId
+  if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      return res.status(400).json({
+          status: "failed",
+          message: "Invalid book ID format",
+      });
+  }
 
-    // Find the book
-    const book = await bookModel.findById(bookId);
-    if (!book) {
-        return res.status(404).json({ status: "failed", message: "Book not found" });
-    }
+  // Find the book
+  const book = await bookModel.findById(bookId);
+  if (!book) {
+      return res.status(404).json({ status: "failed", message: "Book not found" });
+  }
 
-    // Ensure the logged-in user is the library-staff managing the book
-    if (book.managedBy.toString() !== res.locals.id.toString()) {
-        return res.status(403).json({ status: "failed", message: "You are not authorized to update this book." });
-    }
+  // Ensure the logged-in user is the library-staff managing the book
+  if (book.managedBy.toString() !== res.locals.id.toString()) {
+      return res.status(403).json({ status: "failed", message: "You are not authorized to update this book." });
+  }
 
-    // Update the book
-    const updatedBook = await bookModel.findByIdAndUpdate(
-        bookId,
-        { name, category, author, photo, borrowedBy, borrowedDate, returnedDate },
-        { new: true, runValidators: true }
-    );
+  // If totalCopies is provided, validate and update
+  if (totalCopies !== undefined) {
+      if (totalCopies < book.borrowedBy.length) {
+          return res.status(400).json({
+              status: "failed",
+              message: "Total copies cannot be less than the number of borrowed copies",
+          });
+      }
 
-    res.status(200).json({
-        status: "success",
-        message: "Book updated successfully",
-        data: updatedBook,
-    });
+      // Update the availableCopies based on the new totalCopies
+      const availableCopies = totalCopies - book.borrowedBy.length;
+      if (availableCopies < 0) {
+          return res.status(400).json({
+              status: "failed",
+              message: "Not enough copies available for the given totalCopies",
+          });
+      }
+
+      // Update the totalCopies and availableCopies
+      book.totalCopies = totalCopies;
+      book.availableCopies = availableCopies;
+  }
+
+  // Update other fields
+  const updatedBook = await bookModel.findByIdAndUpdate(
+      bookId,
+      { name, category, author, photo, borrowedBy, borrowedDate, returnedDate, totalCopies: book.totalCopies, availableCopies: book.availableCopies },
+      { new: true, runValidators: true }
+  );
+
+  res.status(200).json({
+      status: "success",
+      message: "Book updated successfully",
+      data: updatedBook,
+  });
 });
+
 // @desc    Delete a book (Only library-staff)
 // @route   DELETE /api/books/:id
 // @access  Private (library-staff)
