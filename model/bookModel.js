@@ -27,19 +27,26 @@ const bookSchema = new mongoose.Schema(
       type: String, // Assuming the photo is stored as a URL or file path
       required: [true, "Photo is required"],
     },
-    borrowedBy: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: "users", // Reference to the User model (student)
-      default: null, // Initially, the book is not borrowed
+    totalCopies: {
+      type: Number,
+      required: [true, "Total copies are required"],
+      min: [1, "There must be at least 1 copy"],
     },
-    borrowedDate: {
-      type: Date,
-      default: null, // Initially, the book is not borrowed
+    availableCopies: {
+      type: Number,
+      required: [true, "Available copies are required"],
+      min: [0, "Available copies cannot be negative"],
     },
-    returnedDate: {
-      type: Date,
-      default: null, // Initially, the book is not returned
-    },
+    borrowedBy: [
+      {
+        userId: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "users", // Reference to the User model (student)
+        },
+        borrowedDate: { type: Date, default: null },
+        returnedDate: { type: Date, default: null },
+      },
+    ],
     managedBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "users", // Reference to the User model (library-staff)

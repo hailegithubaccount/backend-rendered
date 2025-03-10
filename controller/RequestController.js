@@ -83,7 +83,6 @@ const getAllBookRequests = asyncHandler(async (req, res) => {
 
 const approveBookRequest = asyncHandler(async (req, res) => {
   try {
-    const { action } = req.body; // action = "approve" or "reject"
     const { requestId } = req.params; // Get requestId from URL params
     const staffId = res.locals.id; // Authenticated library staff ID
 
@@ -98,7 +97,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
       return res.status(404).json({ status: "failed", message: "Library staff not found" });
     }
     if (staff.role !== "library-staff") {
-      return res.status(403).json({ status: "failed", message: "Only library staff can approve/reject requests" });
+      return res.status(403).json({ status: "failed", message: "Only library staff can mark books as taken" });
     }
 
     // ✅ Find the book request
@@ -107,26 +106,28 @@ const approveBookRequest = asyncHandler(async (req, res) => {
       return res.status(404).json({ status: "failed", message: "Request not found" });
     }
 
-    if (action === "approve") {
-      // ✅ Mark the book as borrowed
-      await Book.findByIdAndUpdate(request.book._id, {
-        borrowedBy: request.student,
-        borrowedDate: new Date(),
-      });
-
-      // ✅ Update the request status
-      request.status = "approved";
-      request.approvedBy = staffId;
-    } else if (action === "reject") {
-      request.status = "rejected";
+    // ✅ Check if the book is available
+    if (request.book.borrowedBy) {
+      return res.status(400).json({ status: "failed", message: "Book is already taken" });
     }
 
+    // ✅ Mark the book as taken
+    await Book.findByIdAndUpdate(request.book._id, {
+      borrowedBy: request.student,
+      borrowedDate: new Date(),
+    });
+
+    // ✅ Update the request status
+    request.status = "taken";
+    request.takenBy = staffId;
     await request.save();
-    res.status(200).json({ status: "success", message: `Request ${action}d successfully`, request });
+
+    res.status(200).json({ status: "success", message: "Book marked as taken successfully", request });
   } catch (error) {
     res.status(500).json({ status: "failed", message: error.message });
   }
 });
+
 
 module.exports = {
   requestBook,

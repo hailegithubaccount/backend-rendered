@@ -12,39 +12,28 @@ const mongoose = require("mongoose");
 
 const createBook = asyncHandler(async (req, res) => {
   try {
-    const { name, category, author, photo } = req.body;
+    const { name, category, author, photo, totalCopies } = req.body;
 
-    // Ensure the logged-in user is library-staff
-    if (res.locals.role !== "library-staff") { // ✅ Now using req.user.role
-      return res.status(403).json({
-        status: "failed",
-        message: "Only library-staff can create a book",
-      });
+    if (res.locals.role !== "library-staff") {
+      return res.status(403).json({ status: "failed", message: "Only library-staff can create a book" });
     }
 
-    // Validate input fields
-    if (!name || !category || !author || !photo) {
-      return res.status(400).json({
-        status: "failed",
-        message: "All fields (name, category, author, photo) are required",
-      });
+    if (!name || !category || !author || !photo || !totalCopies) {
+      return res.status(400).json({ status: "failed", message: "All fields are required" });
     }
 
-    // Ensure req.user exists and has an ID
-    if (!res.locals.id) {
-      return res.status(401).json({
-        status: "failed",
-        message: "User not authenticated",
-      });
+    if (totalCopies < 1) {
+      return res.status(400).json({ status: "failed", message: "Total copies must be at least 1" });
     }
 
-    // Create the book
     const book = await bookModel.create({
       name,
       category,
       author,
       photo,
-      managedBy:res.locals.id, // ✅ Now using req.user.id
+      totalCopies,
+      availableCopies: totalCopies,
+      managedBy: res.locals.id,
     });
 
     res.status(201).json({
@@ -53,13 +42,10 @@ const createBook = asyncHandler(async (req, res) => {
       data: book,
     });
   } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Something went wrong",
-      error: error.message,
-    });
+    res.status(500).json({ status: "error", message: "Something went wrong", error: error.message });
   }
 });
+
 
 module.exports = createBook;
 

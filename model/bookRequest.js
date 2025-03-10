@@ -14,16 +14,20 @@ const bookRequestSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["pending", "approved", "rejected"],
+      enum: ["pending", "taken"], // Removed "approved" and "rejected"
       default: "pending",
     },
     requestedAt: {
       type: Date,
       default: Date.now,
     },
-    approvedBy: {
+    takenBy: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "users", // Reference to the library-staff
+      ref: "users", // Reference to the library-staff who marked the book as taken
+      default: null,
+    },
+    takenAt: {
+      type: Date, // Timestamp for when the book was marked as taken
       default: null,
     },
   },
