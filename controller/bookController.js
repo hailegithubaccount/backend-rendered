@@ -166,33 +166,42 @@ const updateBook = asyncHandler(async (req, res) => {
 // @route   DELETE /api/books/:id
 // @access  Private (library-staff)
 const deleteBook = asyncHandler(async (req, res) => {
-    const bookId = req.params.id;
+  const bookId = req.params.id;
 
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(bookId)) {
-        return res.status(400).json({
-            status: "failed",
-            message: "Invalid book ID format",
-        });
-    }
+  // Validate ObjectId
+  if (!mongoose.Types.ObjectId.isValid(bookId)) {
+      return res.status(400).json({
+          status: "failed",
+          message: "Invalid book ID format",
+      });
+  }
 
-    // Find the book
-    const book = await bookModel.findById(bookId);
-    if (!book) {
-        return res.status(404).json({ status: "failed", message: "Book not found" });
-    }
+  // Find the book
+  const book = await bookModel.findById(bookId);
+  if (!book) {
+      return res.status(404).json({ status: "failed", message: "Book not found" });
+  }
 
-    // Ensure the logged-in user is the library-staff managing the book
-    if (book.managedBy.toString() !== res.locals.id.toString()) {
-        return res.status(403).json({ status: "failed", message: "You are not authorized to delete this book." });
-    }
+  // Ensure the logged-in user is the library-staff managing the book
+  if (book.managedBy.toString() !== res.locals.id.toString()) {
+      return res.status(403).json({ status: "failed", message: "You are not authorized to delete this book." });
+  }
 
-    await bookModel.findByIdAndDelete(bookId);
+  // Prevent deletion if there are borrowed copies
+  if (book.borrowedBy.length > 0) {
+      return res.status(400).json({
+          status: "failed",
+          message: "Cannot delete the book because there are borrowed copies.",
+      });
+  }
 
-    res.status(200).json({
-        status: "success",
-        message: "Book deleted successfully",
-    });
+  // Delete the book
+  await bookModel.findByIdAndDelete(bookId);
+
+  res.status(200).json({
+      status: "success",
+      message: "Book deleted successfully",
+  });
 });
 
 
