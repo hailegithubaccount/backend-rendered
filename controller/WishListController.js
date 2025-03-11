@@ -37,7 +37,7 @@ const getWishlist = asyncHandler(async (req, res) => {
     console.log("Student ID:", studentId); // Debugging
 
     try {
-        // ✅ Fetch wishlist with book details
+        // Fetch wishlist with book details
         const wishlist = await Wishlist.find({ student: studentId })
             .populate("book") // Fetches book details
             .populate("student", "name email"); // Fetches student details if needed
