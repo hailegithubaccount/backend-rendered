@@ -33,16 +33,12 @@ const addToWishlist = asyncHandler(async (req, res) => {
 
 // ✅ Get Wishlist for a Student
 const getWishlist = asyncHandler(async (req, res) => {
-    const studentId = res.locals.id;
-    console.log("📌 Student ID:", studentId); // Debugging log
-
-    const wishlist = await Wishlist.find({ student: studentId })
-        .populate("book", "title author");
-
-    console.log("📌 Wishlist Results:", wishlist); // Debugging log
-
+    const wishlist = await Wishlist.find()
+      .populate("student", "name email") // Get student details
+      .populate("book", "title author"); // Get book details
+  
     res.status(200).json({ status: "success", wishlist });
-});
+  });
 
 module.exports = {
     addToWishlist,
