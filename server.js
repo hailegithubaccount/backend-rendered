@@ -24,7 +24,7 @@ const nowRoutes = require("./routes/nowRoute");
 const studentRoute = require("./routes/StudentRoute");
 const requestBook = require("./routes/requestRoutes");
 const notificationRoutes = require("./routes/notificationRoutes");
-const wishlistRoutes=require("./routes/WishlistRoute")
+const wishlistRoutes=require("./routes/WishlistRoute");
 
 // Use Routes
 app.use('/api/users', studentRoute);
