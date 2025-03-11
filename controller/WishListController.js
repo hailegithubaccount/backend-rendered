@@ -34,23 +34,27 @@ const addToWishlist = asyncHandler(async (req, res) => {
 // ✅ Get Wishlist for a Student
 const getWishlist = asyncHandler(async (req, res) => {
     try {
-        const studentId = res.locals.id; // This should now be set by the middleware
+        const studentId = res.locals.id; // Ensure this is set by your authentication middleware
+        console.log(`Fetching wishlist for student ID: ${studentId}`);
 
-        // Fetch the student's wishlist, populated with student and book details
+        // Fetch the student's wishlist with populated details
         const wishlist = await Wishlist.find({ student: studentId })
             .populate("student", "name email")
             .populate("book", "title author");
 
         if (!wishlist || wishlist.length === 0) {
+            console.log(`No wishlist found for student ID: ${studentId}`);
             return res.status(404).json({ status: "error", message: "No wishlist found" });
         }
 
+        console.log(`Wishlist retrieved successfully for student ID: ${studentId}`);
         res.status(200).json({ status: "success", wishlist });
     } catch (err) {
         console.error('Error fetching wishlist:', err);
         res.status(500).json({ status: "error", message: "Internal Server Error", error: err.message });
     }
 });
+
 
 
 
