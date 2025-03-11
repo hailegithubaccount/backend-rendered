@@ -14,7 +14,7 @@ router.patch(
     checkRole("library-staff"),  // Only library staff can confirm returns
     RequestController.returnBook
   );
-router.get("/wishlist", protect, checkRole("library-staff"), RequestController.getWishlist);
+
  
 
 
