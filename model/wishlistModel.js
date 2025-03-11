@@ -1,9 +1,11 @@
-const mongoose = require("mongoose");
+const mongoose = require('mongoose');
 
-const WishlistSchema = new mongoose.Schema({
-  student: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
-  book: { type: mongoose.Schema.Types.ObjectId, ref: "Book", required: true },
-  createdAt: { type: Date, default: Date.now }
+const wishlistSchema = new mongoose.Schema({
+    student: { type: mongoose.Schema.Types.ObjectId, ref: 'Student' },
+    book: { type: mongoose.Schema.Types.ObjectId, ref: 'Book' },
+    createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.model("Wishlist", WishlistSchema);
+const Wishlist = mongoose.model('Wishlist', wishlistSchema);
+
+module.exports = Wishlist;
