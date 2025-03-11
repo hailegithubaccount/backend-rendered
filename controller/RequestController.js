@@ -156,13 +156,7 @@ const getAllBookRequests = asyncHandler(async (req, res) => {
 });
 
 
-const getWishlist = asyncHandler(async (req, res) => {
-  const wishlist = await Wishlist.find()
-    .populate("student", "name email") // Get student details
-    .populate("book", "title author"); // Get book details
 
-  res.status(200).json({ status: "success", wishlist });
-});
 
 
 
@@ -172,6 +166,6 @@ module.exports = {
   approveBookRequest,
   returnBook,
   getAllBookRequests,
-  getWishlist,
+ 
 };
  
