@@ -33,12 +33,22 @@ const addToWishlist = asyncHandler(async (req, res) => {
 
 // ✅ Get Wishlist for a Student
 const getWishlist = asyncHandler(async (req, res) => {
-    const wishlist = await Wishlist.find()
-      .populate("student", "name email") // Get student details
-      .populate("book", "title author"); // Get book details
-  
-    res.status(200).json({ status: "success", wishlist });
-  });
+    try {
+        const wishlist = await Wishlist.find()
+          .populate("student", "name email")
+          .populate("book", "title author");
+
+        if (!wishlist || wishlist.length === 0) {
+            return res.status(404).json({ status: "error", message: "No wishlist found" });
+        }
+
+        res.status(200).json({ status: "success", wishlist });
+    } catch (err) {
+        console.error(err);
+        res.status(500).json({ status: "error", message: "Server error" });
+    }
+});
+
 
 module.exports = {
     addToWishlist,
