@@ -34,7 +34,7 @@ const addToWishlist = asyncHandler(async (req, res) => {
 // ✅ Get Wishlist for a Student
 const getWishlist = asyncHandler(async (req, res) => {
     try {
-        const studentId = res.locals.id; // Ensure this is set by your authentication middleware
+        const studentId= res.locals.id; // Ensure this is set by your authentication middleware
         console.log(`Fetching wishlist for student ID: ${studentId}`);
 
         // Fetch the student's wishlist with populated details
