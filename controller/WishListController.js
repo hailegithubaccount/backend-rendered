@@ -33,18 +33,27 @@ const addToWishlist = asyncHandler(async (req, res) => {
 
 // ✅ Get Wishlist for a Student
 const getWishlist = asyncHandler(async (req, res) => {
-    const studentId = res.locals.id;
+    const studentId = res.locals.id; // Assuming studentId is stored in res.locals after authentication
+    console.log("Student ID:", studentId); // Debugging
 
-    // ✅ Fetch wishlist with book details
-    const wishlist = await Wishlist.find({ student: studentId }).populate("book");
+    try {
+        // ✅ Fetch wishlist with book details
+        const wishlist = await Wishlist.find({ student: studentId })
+            .populate("book") // Fetches book details
+            .populate("student", "name email"); // Fetches student details if needed
 
-    if (!wishlist.length) {
-        return res.status(404).json({ status: "failed", message: "Wishlist is empty" });
+        console.log("Fetched Wishlist:", wishlist); // Debugging output
+
+        if (!wishlist || wishlist.length === 0) {
+            return res.status(404).json({ status: "failed", message: "Wishlist is empty" });
+        }
+
+        res.status(200).json({ status: "success", wishlist });
+    } catch (error) {
+        console.error("Error fetching wishlist:", error);
+        res.status(500).json({ status: "failed", message: "Server error" });
     }
-
-    res.status(200).json({ status: "success", wishlist });
 });
-
 
 
 
