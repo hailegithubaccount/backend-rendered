@@ -1,16 +1,9 @@
 const mongoose = require("mongoose");
 const asyncHandler = require("express-async-handler");
-const BookRequest = require("../model/bookRequest");
-const Book = require("../model/bookModel");
-const User = require("../model/userModel");
-
-// ✅ Request a Book (Students Only)
-
-
 const Wishlist = require("../model/wishlistModel");
+const Book = require("../model/bookModel");
 
-
-
+// ✅ Add a Book to Wishlist (Students Only)
 const addToWishlist = asyncHandler(async (req, res) => {
     const { bookId } = req.params;
     const studentId = res.locals.id;
@@ -20,13 +13,13 @@ const addToWishlist = asyncHandler(async (req, res) => {
         return res.status(400).json({ status: "failed", message: "Invalid book ID format" });
     }
 
-    // ✅ Check if book exists
+    // ✅ Check if the book exists
     const book = await Book.findById(bookId);
     if (!book) {
         return res.status(404).json({ status: "failed", message: "Book not found" });
     }
 
-    // ✅ Check if already in wishlist
+    // ✅ Check if already in the wishlist
     const existingWishlist = await Wishlist.findOne({ student: studentId, book: bookId });
     if (existingWishlist) {
         return res.status(400).json({ status: "failed", message: "Book already in wishlist" });
@@ -38,24 +31,16 @@ const addToWishlist = asyncHandler(async (req, res) => {
     res.status(201).json({ status: "success", message: "Book added to wishlist." });
 });
 
-// ✅ Fix Route Parameter Case
-
-
-
-  
+// ✅ Get Wishlist for a Student
 const getWishlist = asyncHandler(async (req, res) => {
     const studentId = res.locals.id;
     const wishlist = await Wishlist.find({ student: studentId })
-      .populate("book", "title author");
-  
-    res.status(200).json({ status: "success", wishlist });
-  });
-  
+        .populate("book", "title author");
 
- 
-  module.exports = {
+    res.status(200).json({ status: "success", wishlist });
+});
+
+module.exports = {
     addToWishlist,
     getWishlist,
-   
-   
-  };  
+};
