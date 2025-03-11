@@ -34,7 +34,10 @@ const addToWishlist = asyncHandler(async (req, res) => {
 // ✅ Get Wishlist for a Student
 const getWishlist = asyncHandler(async (req, res) => {
     try {
-        const wishlist = await Wishlist.find()
+        const studentId = res.locals.id; // This should now be set by the middleware
+
+        // Fetch the student's wishlist, populated with student and book details
+        const wishlist = await Wishlist.find({ student: studentId })
             .populate("student", "name email")
             .populate("book", "title author");
 
@@ -45,7 +48,7 @@ const getWishlist = asyncHandler(async (req, res) => {
         res.status(200).json({ status: "success", wishlist });
     } catch (err) {
         console.error('Error fetching wishlist:', err);
-        res.status(500).json({ status: "error", message: "Internal Server Error" });
+        res.status(500).json({ status: "error", message: "Internal Server Error", error: err.message });
     }
 });
 
