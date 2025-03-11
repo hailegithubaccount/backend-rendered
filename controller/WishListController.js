@@ -14,24 +14,33 @@ const Wishlist = require("../model/wishlistModel");
 const addToWishlist = asyncHandler(async (req, res) => {
     const { bookId } = req.params;
     const studentId = res.locals.id;
-  
+
+    // ✅ Validate bookId format
+    if (!mongoose.Types.ObjectId.isValid(bookId)) {
+        return res.status(400).json({ status: "failed", message: "Invalid book ID format" });
+    }
+
     // ✅ Check if book exists
     const book = await Book.findById(bookId);
     if (!book) {
-      return res.status(404).json({ status: "failed", message: "Book not found" });
+        return res.status(404).json({ status: "failed", message: "Book not found" });
     }
-  
+
     // ✅ Check if already in wishlist
     const existingWishlist = await Wishlist.findOne({ student: studentId, book: bookId });
     if (existingWishlist) {
-      return res.status(400).json({ status: "failed", message: "Book already in wishlist" });
+        return res.status(400).json({ status: "failed", message: "Book already in wishlist" });
     }
-  
+
     // ✅ Add to wishlist
     await Wishlist.create({ student: studentId, book: bookId });
-  
-    res.status(200).json({ status: "success", message: "Book added to wishlist." });
-  });
+
+    res.status(201).json({ status: "success", message: "Book added to wishlist." });
+});
+
+// ✅ Fix Route Parameter Case
+
+
 
   
 const getWishlist = asyncHandler(async (req, res) => {
