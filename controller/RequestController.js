@@ -18,16 +18,15 @@ const requestBook = asyncHandler(async (req, res) => {
     return res.status(400).json({ status: "failed", message: "Invalid book ID format" });
   }
 
-  const book = await Book.findById(bookId);
-  if (!book) {
-    return res.status(404).json({ status: "failed", message: "Book not found" });
-  }
+  // ✅ Check if the book exists and update atomically
+  const book = await Book.findOneAndUpdate(
+    { _id: bookId, availableCopies: { $gt: 0 } }, // Ensure book is available
+    { $inc: { availableCopies: -1 } }, // Decrease available copies
+    { new: true } // Return the updated document
+  );
 
-  if (book.availableCopies > 0) {
+  if (book) {
     // ✅ Book is available → Assign it to the student
-    book.availableCopies -= 1;
-    await book.save();
-
     const request = await BookRequest.create({
       student: studentId,
       book: bookId,
@@ -35,7 +34,11 @@ const requestBook = asyncHandler(async (req, res) => {
       takenAt: new Date(),
     });
 
-    return res.status(200).json({ status: "success", message: "Book assigned successfully", request });
+    return res.status(200).json({
+      status: "success",
+      message: "Book assigned successfully.",
+      request,
+    });
   } else {
     // ❌ Book NOT available → Add to Wishlist
     const existingWishlist = await Wishlist.findOne({ student: studentId, book: bookId });
@@ -43,9 +46,13 @@ const requestBook = asyncHandler(async (req, res) => {
       await Wishlist.create({ student: studentId, book: bookId });
     }
 
-    return res.status(200).json({ status: "waiting", message: "Book is unavailable. Added to wishlist." });
+    return res.status(200).json({
+      status: "waiting",
+      message: "Book is currently unavailable. You have been added to the wishlist.",
+    });
   }
 });
+
 
 
 
