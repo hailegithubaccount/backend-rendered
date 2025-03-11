@@ -35,8 +35,8 @@ const addToWishlist = asyncHandler(async (req, res) => {
 const getWishlist = asyncHandler(async (req, res) => {
     try {
         const wishlist = await Wishlist.find()
-          .populate("student", "name email")
-          .populate("book", "title author");
+            .populate("student", "name email")
+            .populate("book", "title author");
 
         if (!wishlist || wishlist.length === 0) {
             return res.status(404).json({ status: "error", message: "No wishlist found" });
@@ -44,10 +44,11 @@ const getWishlist = asyncHandler(async (req, res) => {
 
         res.status(200).json({ status: "success", wishlist });
     } catch (err) {
-        console.error(err);
-        res.status(500).json({ status: "error", message: "Server error" });
+        console.error('Error fetching wishlist:', err);
+        res.status(500).json({ status: "error", message: "Internal Server Error" });
     }
 });
+
 
 
 module.exports = {
