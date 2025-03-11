@@ -5,10 +5,10 @@ const Book = require("../model/bookModel");
 const User = require("../model/userModel");
 
 // ✅ Request a Book (Students Only)
-const BookRequest = require("../models/BookRequest");
-const Book = require("../models/Book");
-const Wishlist = require("../models/Wishlist");
-const asyncHandler = require("express-async-handler");
+
+
+const Wishlist = require("../model/wishlistModel");
+
 
 const requestBook = asyncHandler(async (req, res) => {
   const { bookId } = req.body;
