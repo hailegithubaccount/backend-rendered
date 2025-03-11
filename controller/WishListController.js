@@ -40,12 +40,12 @@ const getWishlist = asyncHandler(async (req, res) => {
         // Fetch wishlist with book details
         const wishlist = await Wishlist.find({ student: studentId })
             .populate("book") // Fetches book details
-            .populate("student", "name email"); // Fetches student details if needed
+            .populate("student"); // Fetches student details if needed
 
         console.log("Fetched Wishlist:", wishlist); // Debugging output
 
         if (!wishlist || wishlist.length === 0) {
-            return res.status(404).json({ status: "failed", message: "Wishlist is empty" });
+            return res.status(404).json({ status: "failed", message: "Wishlist empty" });
         }
 
         res.status(200).json({ status: "success", wishlist });
