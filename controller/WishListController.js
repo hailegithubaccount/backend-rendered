@@ -45,31 +45,29 @@ const addToWishlist = asyncHandler(async (req, res) => {
 const getWishlist = asyncHandler(async (req, res) => {
     const studentId = res.locals.id;
 
-    // Validate that the studentId is a valid ObjectId
-    if (!mongoose.Types.ObjectId.isValid(studentId)) {
-        return res.status(400).json({ status: "failed", message: "Invalid student ID format" });
-    }
+   // Validate that the studentId is a valid ObjectId
+if (!mongoose.Types.ObjectId.isValid(studentId)) {
+    return res.status(400).json({ status: "failed", message: "Invalid student ID format" });
+}
 
-    // Convert studentId to ObjectId
-    const objectIdStudentId = new mongoose.Types.ObjectId(studentId);
+// Convert studentId to ObjectId
+const objectIdStudentId = new mongoose.Types.ObjectId(studentId);
+console.log("Converted Student ID (ObjectId):", objectIdStudentId);
 
     try {
         // Fetch wishlist with book details using populate
-        const wishlist = await Wishlist.find({ student: objectIdStudentId })
-            .populate("book") // Fetch book details
-            .populate("student") // Fetch student details if needed
-            .lean(); // Use .lean() to return plain JavaScript objects
-
-        console.log("Fetched Wishlist:", wishlist); // Debugging output
-
-        // If no wishlist items are found, return an empty array with a friendly message
-        if (!wishlist || wishlist.length === 0) {
+        const rawWishlist = await Wishlist.find({ student: objectIdStudentId }).lean();
+        console.log("Raw Wishlist Data (without populate):", rawWishlist);
+        
+        if (!rawWishlist || rawWishlist.length === 0) {
             return res.status(200).json({
                 status: "success",
                 message: "Wishlist is currently empty.",
                 wishlist: [],
             });
         }
+        
+        res.status(200).json({ status: "success", wishlist: rawWishlist });
 
         // Return the wishlist data
         res.status(200).json({ status: "success", wishlist });
