@@ -131,7 +131,7 @@ const returnBook = asyncHandler(async (req, res) => {
     const newRequest = await BookRequest.create({
       student: nextStudent.student,
       book: request.book.id,
-      status: "taken",
+      status: "pending",
       takenAt: new Date(),
     });
 
