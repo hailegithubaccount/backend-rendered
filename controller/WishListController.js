@@ -56,7 +56,7 @@ const getWishlist = asyncHandler(async (req, res) => {
         console.log("Raw Wishlist Data:", wishlist);
 
         if (!wishlist || wishlist.length === 0) {
-            return res.status(404).json({ status: "failed", message: "Wishlist empty" });
+            return res.status(404).json({ status: "failed", message: "Wishlist is empty" });
         }
 
         res.status(200).json({ status: "success", wishlist });
