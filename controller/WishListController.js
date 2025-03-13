@@ -30,19 +30,30 @@ const addToWishlist = asyncHandler(async (req, res) => {
 
     res.status(201).json({ status: "success", message: "Book added to wishlist." });
 });
+const mongoose = require("mongoose");
 
 // ✅ Get Wishlist for a Student
 const getWishlist = asyncHandler(async (req, res) => {
-    const studentId = res.locals.id; // Assuming studentId is stored in res.locals after authentication
-    console.log("Student ID:", studentId); // Debugging
+    const studentId = res.locals.id;
+
+    // Validate and convert studentId to ObjectId
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({ status: "failed", message: "Invalid student ID format" });
+    }
+
+    const objectIdStudentId = new mongoose.Types.ObjectId(studentId);
 
     try {
-        // Fetch wishlist with book details
-        const wishlist = await Wishlist.find({ student: studentId })
-            .populate("book") // Fetches book details
-            .populate("student"); // Fetches student details if needed
+        // Debugging: Log the query
+        console.log("Querying Wishlist with studentId:", objectIdStudentId);
 
-        console.log("Fetched Wishlist:", wishlist); // Debugging output
+        // Fetch wishlist with book details
+        const wishlist = await Wishlist.find({ student: objectIdStudentId })
+            .populate("book")
+            .populate("student");
+
+        // Debugging: Log raw data
+        console.log("Raw Wishlist Data:", wishlist);
 
         if (!wishlist || wishlist.length === 0) {
             return res.status(404).json({ status: "failed", message: "Wishlist empty" });
