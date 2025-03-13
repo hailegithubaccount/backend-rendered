@@ -94,7 +94,6 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 
 const returnBook = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
-  
 
   // 🛑 Validate request ID
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
@@ -112,9 +111,6 @@ const returnBook = asyncHandler(async (req, res) => {
     return res.status(400).json({ status: "failed", message: "This book was not borrowed" });
   }
 
-  // 🛑 Check if the correct student is returning the book
-  
-
   // ✅ Increase the available book copies
   await Book.findByIdAndUpdate(request.book.id, { $inc: { availableCopies: 1 } });
 
@@ -123,34 +119,15 @@ const returnBook = asyncHandler(async (req, res) => {
   request.returnedAt = new Date();
   await request.save();
 
-  // 🔍 Find the next student in the wishlist
-  const nextStudent = await Wishlist.findOne({ book: request.book.id }).sort("createdAt");
+  // 🔍 Check if there are students in the wishlist for this book
+  const nextStudents = await Wishlist.find({ book: request.book.id }).sort("createdAt");
 
-  if (nextStudent) {
-    // 🔄 Assign book to next student
-    const newRequest = await BookRequest.create({
-      student: nextStudent.student,
-      book: request.book.id,
-      status: "pending",
-      takenAt: new Date(),
-    });
-
-    // ❌ Remove student from Wishlist
-    await Wishlist.deleteOne({ _id: nextStudent._id });
-
-    return res.status(200).json({
-      status: "success",
-      message: "Book returned and assigned to the next student in the wishlist.",
-      request,
-      newRequest, // 📌 Added so the frontend knows about the new request
-    });
-  }
-
-  // ✅ If no one is waiting, simply return success
+  // ✅ Respond with the returned request and potential next students
   res.status(200).json({
     status: "success",
-    message: "Book returned successfully",
+    message: "Book returned successfully.",
     request,
+    wishlist: nextStudents, // 📌 Send the wishlist students to the frontend
   });
 });
 
