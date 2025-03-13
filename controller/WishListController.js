@@ -42,40 +42,31 @@ const addToWishlist = asyncHandler(async (req, res) => {
 });
 
 // ✅ Get Wishlist for a Student
-const getWishlist = asyncHandler(async (req, res) => {
-    const studentId = res.locals.id;
-
-   // Validate that the studentId is a valid ObjectId
-if (!mongoose.Types.ObjectId.isValid(studentId)) {
-    return res.status(400).json({ status: "failed", message: "Invalid student ID format" });
-}
-
-// Convert studentId to ObjectId
-const objectIdStudentId = new mongoose.Types.ObjectId(studentId);
-console.log("Converted Student ID (ObjectId):", objectIdStudentId);
-
+const getWishlist = async (req, res) => {
     try {
-        // Fetch wishlist with book details using populate
-        const rawWishlist = await Wishlist.find({ student: objectIdStudentId }).lean();
-        console.log("Raw Wishlist Data (without populate):", rawWishlist);
-        
-        if (!rawWishlist || rawWishlist.length === 0) {
-            return res.status(200).json({
-                status: "success",
-                message: "Wishlist is currently empty.",
-                wishlist: [],
+        const wishlistItems = await Wishlist.find().populate("student").populate("book");
+
+        if (!wishlistItems.length) {
+            return res.status(404).json({
+                status: "failed",
+                message: "No wishlist items found",
             });
         }
-        
-        res.status(200).json({ status: "success", wishlist: rawWishlist });
 
-        // Return the wishlist data
-        res.status(200).json({ status: "success", wishlist });
+        res.status(200).json({
+            status: "success",
+            message: "Wishlist fetched successfully",
+            data: wishlistItems,
+        });
     } catch (error) {
         console.error("Error fetching wishlist:", error);
-        res.status(500).json({ status: "failed", message: "Server error" });
+        res.status(500).json({
+            status: "failed",
+            message: "Server error, unable to fetch wishlist",
+        });
     }
-});
+};
+
 
 module.exports = {
     addToWishlist,
