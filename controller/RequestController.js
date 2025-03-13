@@ -96,49 +96,66 @@ const returnBook = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
   const studentId = res.locals.id;
 
+  // 🛑 Validate request ID
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
     return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
   }
 
+  // 🔍 Fetch the book request with book details
   const request = await BookRequest.findById(requestId).populate("book");
-  if (!request || request.status !== "taken" || !request.takenAt) {
-    return res.status(400).json({ status: "failed", message: "Invalid return request" });
+  if (!request) {
+    return res.status(404).json({ status: "failed", message: "Request not found" });
   }
 
+  // 🚫 Ensure the book is currently borrowed
+  if (request.status !== "taken" || !request.takenAt) {
+    return res.status(400).json({ status: "failed", message: "This book was not borrowed" });
+  }
+
+  // 🛑 Check if the correct student is returning the book
   if (request.student.toString() !== studentId) {
     return res.status(403).json({ status: "failed", message: "You can't return this book" });
   }
 
-  // ✅ Increase available copies
+  // ✅ Increase the available book copies
   await Book.findByIdAndUpdate(request.book.id, { $inc: { availableCopies: 1 } });
 
+  // 📌 Update request status to 'returned'
   request.status = "returned";
   request.returnedAt = new Date();
   await request.save();
 
-  // 🔍 Check Wishlist for Waiting Students
+  // 🔍 Find the next student in the wishlist
   const nextStudent = await Wishlist.findOne({ book: request.book.id }).sort("createdAt");
+
   if (nextStudent) {
-    // Assign the book to the next student
-    await BookRequest.create({
+    // 🔄 Assign book to next student
+    const newRequest = await BookRequest.create({
       student: nextStudent.student,
       book: request.book.id,
       status: "taken",
       takenAt: new Date(),
     });
 
-    // Remove student from Wishlist
+    // ❌ Remove student from Wishlist
     await Wishlist.deleteOne({ _id: nextStudent._id });
 
     return res.status(200).json({
       status: "success",
       message: "Book returned and assigned to the next student in the wishlist.",
       request,
+      newRequest, // 📌 Added so the frontend knows about the new request
     });
   }
 
-  res.status(200).json({ status: "success", message: "Book returned successfully", request });
+  // ✅ If no one is waiting, simply return success
+  res.status(200).json({
+    status: "success",
+    message: "Book returned successfully",
+    request,
+  });
 });
+
 
 
 
