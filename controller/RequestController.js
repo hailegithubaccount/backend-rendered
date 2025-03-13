@@ -30,7 +30,7 @@ const requestBook = asyncHandler(async (req, res) => {
     const request = await BookRequest.create({
       student: studentId,
       book: bookId,
-      status: "taken",
+      status: "pending",
       takenAt: new Date(),
     });
 
