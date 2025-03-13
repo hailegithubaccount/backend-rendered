@@ -94,7 +94,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 
 const returnBook = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
-  const studentId = res.locals.id;
+  
 
   // 🛑 Validate request ID
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
@@ -113,9 +113,7 @@ const returnBook = asyncHandler(async (req, res) => {
   }
 
   // 🛑 Check if the correct student is returning the book
-  if (request.student.toString() !== studentId) {
-    return res.status(403).json({ status: "failed", message: "You can't return this book" });
-  }
+  
 
   // ✅ Increase the available book copies
   await Book.findByIdAndUpdate(request.book.id, { $inc: { availableCopies: 1 } });
