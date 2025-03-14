@@ -3,13 +3,9 @@ const asyncHandler = require("express-async-handler");
 const BookRequest = require("../model/bookRequest");
 const Book = require("../model/bookModel");
 const User = require("../model/userModel");
-
-// ✅ Request a Book (Students Only)
-
-
 const Wishlist = require("../model/wishlistModel");
 
-
+// ✅ Request a Book (Students Only)
 const requestBook = asyncHandler(async (req, res) => {
   const { bookId } = req.body;
   const studentId = res.locals.id;
@@ -18,15 +14,13 @@ const requestBook = asyncHandler(async (req, res) => {
     return res.status(400).json({ status: "failed", message: "Invalid book ID format" });
   }
 
-  // ✅ Check if the book exists and update atomically
   const book = await Book.findOneAndUpdate(
-    { _id: bookId, availableCopies: { $gt: 0 } }, // Ensure book is available
-    { $inc: { availableCopies: -1 } }, // Decrease available copies
-    { new: true } // Return the updated document
+    { _id: bookId, availableCopies: { $gt: 0 } },
+    { $inc: { availableCopies: -1 } },
+    { new: true }
   );
 
   if (book) {
-    // ✅ Book is available → Assign it to the student
     const request = await BookRequest.create({
       student: studentId,
       book: bookId,
@@ -40,7 +34,6 @@ const requestBook = asyncHandler(async (req, res) => {
       request,
     });
   } else {
-    // ❌ Book NOT available → Add to Wishlist
     const existingWishlist = await Wishlist.findOne({ student: studentId, book: bookId });
     if (!existingWishlist) {
       await Wishlist.create({ student: studentId, book: bookId });
@@ -52,10 +45,6 @@ const requestBook = asyncHandler(async (req, res) => {
     });
   }
 });
-
-
-
-
 
 // ✅ Approve Book Request (Library Staff)
 const approveBookRequest = asyncHandler(async (req, res) => {
@@ -81,7 +70,6 @@ const approveBookRequest = asyncHandler(async (req, res) => {
     return res.status(400).json({ status: "failed", message: "No copies available" });
   }
 
-  // ✅ Mark book as taken & decrease available copies
   await Book.findByIdAndUpdate(book._id, { $inc: { availableCopies: -1 } });
 
   request.status = "taken";
@@ -92,15 +80,14 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   res.status(200).json({ status: "success", message: "Book marked as taken successfully", request });
 });
 
+// ✅ Return a Book
 const returnBook = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
 
-  // 🛑 Validate request ID
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
     return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
   }
 
-  // 🔍 Fetch the book request with book details
   const request = await BookRequest.findById(requestId).populate("book");
   if (!request) {
     return res.status(404).json({ status: "failed", message: "Book request not found" });
@@ -110,35 +97,30 @@ const returnBook = asyncHandler(async (req, res) => {
     return res.status(400).json({ status: "failed", message: "This book was not borrowed" });
   }
 
-  // ✅ Update request status to 'returned'
   request.status = "returned";
   request.returnedAt = new Date();
   await request.save();
 
-  // 🔍 Find the next student in the wishlist
   const nextStudent = await Wishlist.findOne({ book: request.book.id }).sort("createdAt");
 
   if (nextStudent) {
-    // 🔄 Assign book to the next student as "pending" (not yet taken)
     const newRequest = await BookRequest.create({
       student: nextStudent.student,
       book: request.book.id,
-      status: "pending", // Book is reserved for the next student
+      status: "pending",
       requestedAt: new Date(),
     });
 
-    // ❌ Remove student from Wishlist
     await Wishlist.deleteOne({ _id: nextStudent._id });
 
     return res.status(200).json({
       status: "success",
-      message: "Book returned and reserved for the next student in the wishlist. It needs to be picked up.",
+      message: "Book returned and reserved for the next student in the wishlist.",
       request,
-      newRequest, // 📌 To inform frontend about the new pending request
+      newRequest,
     });
   }
 
-  // ✅ If no one is waiting, return book to available stock
   await Book.findByIdAndUpdate(request.book.id, { $inc: { availableCopies: 1 } });
 
   return res.status(200).json({
@@ -148,6 +130,33 @@ const returnBook = asyncHandler(async (req, res) => {
   });
 });
 
+// ✅ Delete a Book Request (Library Staff)
+const deleteBookRequest = asyncHandler(async (req, res) => {
+  const { requestId } = req.params;
+  const staffId = res.locals.id;
+
+  if (!mongoose.Types.ObjectId.isValid(requestId)) {
+    return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
+  }
+
+  const staff = await User.findById(staffId);
+  if (!staff || staff.role !== "library-staff") {
+    return res.status(403).json({ status: "failed", message: "Only library staff can delete requests" });
+  }
+
+  const request = await BookRequest.findById(requestId);
+  if (!request) {
+    return res.status(404).json({ status: "failed", message: "Book request not found" });
+  }
+
+  if (request.status === "taken") {
+    return res.status(400).json({ status: "failed", message: "Cannot delete a request that has already been taken" });
+  }
+
+  await BookRequest.findByIdAndDelete(requestId);
+
+  res.status(200).json({ status: "success", message: "Book request deleted successfully" });
+});
 
 // ✅ Get All Book Requests (Library Staff)
 const getAllBookRequests = asyncHandler(async (req, res) => {
@@ -162,17 +171,10 @@ const getAllBookRequests = asyncHandler(async (req, res) => {
   res.status(200).json({ status: "success", data: requests });
 });
 
-
-
-
-
-
-
 module.exports = {
   requestBook,
   approveBookRequest,
   returnBook,
+  deleteBookRequest, // ✅ New delete function added
   getAllBookRequests,
-
 };
- 
