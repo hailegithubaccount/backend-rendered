@@ -14,7 +14,7 @@ router.patch(
     checkRole("library-staff"),  // Only library staff can confirm returns
     RequestController.returnBook
   );
-router.delete("/delete:requestId",protect, checkRole("library-staff"), checkUserExists, RequestController.deleteBookRequest);  
+router.delete("/delete/:requestId",protect, checkRole("library-staff"), checkUserExists, RequestController.deleteBookRequest);  
 
  
 
