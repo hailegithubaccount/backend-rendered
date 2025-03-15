@@ -51,27 +51,37 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
   const staffId = res.locals.id;
 
+  // Validate request ID
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
     return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
   }
 
+  // Check staff authorization
   const staff = await User.findById(staffId);
   if (!staff || staff.role !== "library-staff") {
     return res.status(403).json({ status: "failed", message: "Only library staff can approve requests" });
   }
 
+  // Fetch the request and populate the book
   const request = await BookRequest.findById(requestId).populate("book");
   if (!request || request.status !== "pending") {
     return res.status(404).json({ status: "failed", message: "Invalid or already processed request" });
   }
 
   const book = request.book;
-  if (book.availableCopies < 0) {
+
+  // Atomically decrement availableCopies if > 0
+  const updatedBook = await Book.findOneAndUpdate(
+    { _id: book._id, availableCopies: { $gt: 0 } },
+    { $inc: { availableCopies: -1 } },
+    { new: true }
+  );
+
+  if (!updatedBook) {
     return res.status(400).json({ status: "failed", message: "No copies available" });
   }
 
-  await Book.findByIdAndUpdate(book._id, { $inc: { availableCopies: -1 } });
-
+  // Update the request status
   request.status = "taken";
   request.takenBy = staffId;
   request.takenAt = new Date();
