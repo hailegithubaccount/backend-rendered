@@ -56,13 +56,13 @@ const approveBookRequest = asyncHandler(async (req, res) => {
     return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
   }
 
-  // Check staff authorization
+  // Check if the user is authorized (library staff)
   const staff = await User.findById(staffId);
   if (!staff || staff.role !== "library-staff") {
     return res.status(403).json({ status: "failed", message: "Only library staff can approve requests" });
   }
 
-  // Fetch the request and populate the book
+  // Fetch the request and populate the associated book
   const request = await BookRequest.findById(requestId).populate("book");
   if (!request || request.status !== "pending") {
     return res.status(404).json({ status: "failed", message: "Invalid or already processed request" });
@@ -70,7 +70,12 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 
   const book = request.book;
 
-  // Atomically decrement availableCopies if > 0
+  // Ensure there are available copies
+  if (book.availableCopies <= 0) {
+    return res.status(400).json({ status: "failed", message: "No copies available" });
+  }
+
+  // Decrement available copies atomically
   const updatedBook = await Book.findOneAndUpdate(
     { _id: book._id, availableCopies: { $gt: 0 } },
     { $inc: { availableCopies: -1 } },
@@ -87,33 +92,49 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   request.takenAt = new Date();
   await request.save();
 
-  res.status(200).json({ status: "success", message: "Book marked as taken successfully", request });
+  res.status(200).json({
+    status: "success",
+    message: "Book marked as taken successfully",
+    request,
+  });
 });
-
 // ✅ Return a Book
 const returnBook = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
 
+  // Validate request ID
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
     return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
   }
 
+  // Fetch the request and populate the associated book
   const request = await BookRequest.findById(requestId).populate("book");
   if (!request) {
     return res.status(404).json({ status: "failed", message: "Book request not found" });
   }
 
+  // Ensure the book was borrowed
   if (request.status !== "taken" || !request.takenAt) {
     return res.status(400).json({ status: "failed", message: "This book was not borrowed" });
   }
 
+  // Increment available copies back to the original quantity
+  await Book.findByIdAndUpdate(
+    request.book.id,
+    { $inc: { availableCopies: 1 } },
+    { new: true }
+  );
+
+  // Mark the request as returned
   request.status = "returned";
   request.returnedAt = new Date();
   await request.save();
 
+  // Check the wishlist for the next student
   const nextStudent = await Wishlist.findOne({ book: request.book.id }).sort("createdAt");
 
   if (nextStudent) {
+    // Create a new pending request for the next student
     const newRequest = await BookRequest.create({
       student: nextStudent.student,
       book: request.book.id,
@@ -121,6 +142,7 @@ const returnBook = asyncHandler(async (req, res) => {
       requestedAt: new Date(),
     });
 
+    // Remove the student from the wishlist
     await Wishlist.deleteOne({ _id: nextStudent._id });
 
     return res.status(200).json({
@@ -131,15 +153,12 @@ const returnBook = asyncHandler(async (req, res) => {
     });
   }
 
-  await Book.findByIdAndUpdate(request.book.id, { $inc: { availableCopies: 1 } });
-
-  return res.status(200).json({
+  res.status(200).json({
     status: "success",
-    message: "Book successfully returned.",
+    message: "Book successfully returned and available copies updated.",
     request,
   });
 });
-
 // ✅ Delete a Book Request (Library Staff)
 const deleteBookRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
