@@ -116,7 +116,7 @@ const returnBook = asyncHandler(async (req, res) => {
   // Increment available copies
   await Book.findByIdAndUpdate(
     request.book.id,
-    { $inc: { availableCopies: 1 } },
+    { $inc: { availableCopies: -1 } },
     { new: true }
   );
 
