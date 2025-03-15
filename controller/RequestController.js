@@ -70,12 +70,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 
   const book = request.book;
 
-  // Ensure there are available copies
-  if (book.availableCopies <= 0) {
-    return res.status(400).json({ status: "failed", message: "No copies available" });
-  }
-
-  // Decrement available copies atomically
+  // Atomically decrement availableCopies if > 0
   const updatedBook = await Book.findOneAndUpdate(
     { _id: book._id, availableCopies: { $gt: 0 } },
     { $inc: { availableCopies: -1 } },
@@ -128,7 +123,7 @@ const returnBook = asyncHandler(async (req, res) => {
   // Mark the request as returned
   request.status = "returned";
   request.returnedAt = new Date();
-  request.availableCopies+=1;
+ 
   await request.save();
 
   // Check the wishlist for the next student
