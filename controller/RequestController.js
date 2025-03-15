@@ -128,6 +128,7 @@ const returnBook = asyncHandler(async (req, res) => {
   // Mark the request as returned
   request.status = "returned";
   request.returnedAt = new Date();
+  request.availableCopies+=1;
   await request.save();
 
   // Check the wishlist for the next student
