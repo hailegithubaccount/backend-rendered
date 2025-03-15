@@ -66,7 +66,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   }
 
   const book = request.book;
-  if (book.availableCopies <= 0) {
+  if (book.availableCopies < 0) {
     return res.status(400).json({ status: "failed", message: "No copies available" });
   }
 
