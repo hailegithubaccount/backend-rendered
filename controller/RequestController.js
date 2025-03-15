@@ -113,7 +113,7 @@ const returnBook = asyncHandler(async (req, res) => {
     return res.status(400).json({ status: "failed", message: "This book was not borrowed" });
   }
 
-  // Increment available copies back to the original quantity
+  // Increment available copies
   await Book.findByIdAndUpdate(
     request.book.id,
     { $inc: { availableCopies: 1 } },
@@ -123,29 +123,22 @@ const returnBook = asyncHandler(async (req, res) => {
   // Mark the request as returned
   request.status = "returned";
   request.returnedAt = new Date();
- 
   await request.save();
 
   // Check the wishlist for the next student
   const nextStudent = await Wishlist.findOne({ book: request.book.id }).sort("createdAt");
 
   if (nextStudent) {
-    // Create a new pending request for the next student
-    const newRequest = await BookRequest.create({
-      student: nextStudent.student,
-      book: request.book.id,
-      status: "pending",
-      requestedAt: new Date(),
-    });
-
-    // Remove the student from the wishlist
-    await Wishlist.deleteOne({ _id: nextStudent._id });
-
+    // Don't create a request automatically—wait for the student's confirmation
     return res.status(200).json({
       status: "success",
-      message: "Book returned and reserved for the next student in the wishlist.",
+      message: "Book returned. A student is next in line on the wishlist. Waiting for confirmation.",
       request,
-      newRequest,
+      nextStudent: {
+        studentId: nextStudent.student,
+        bookId: request.book.id,
+        status: "pending"
+      }
     });
   }
 
@@ -155,6 +148,7 @@ const returnBook = asyncHandler(async (req, res) => {
     request,
   });
 });
+
 // ✅ Delete a Book Request (Library Staff)
 const deleteBookRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
