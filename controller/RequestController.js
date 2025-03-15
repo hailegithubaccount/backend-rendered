@@ -116,7 +116,7 @@ const returnBook = asyncHandler(async (req, res) => {
   // Increment available copies
   await Book.findByIdAndUpdate(
     request.book.id,
-    { $inc: { availableCopies: -1 } },
+    { $inc: { availableCopies: 1 } }, // ✅ Increment available copies
     { new: true }
   );
 
@@ -148,7 +148,6 @@ const returnBook = asyncHandler(async (req, res) => {
     request,
   });
 });
-
 // ✅ Delete a Book Request (Library Staff)
 const deleteBookRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
