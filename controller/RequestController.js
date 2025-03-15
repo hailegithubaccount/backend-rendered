@@ -10,30 +10,33 @@ const requestBook = asyncHandler(async (req, res) => {
   const { bookId } = req.body;
   const studentId = res.locals.id;
 
+  // Validate the book ID format
   if (!mongoose.Types.ObjectId.isValid(bookId)) {
     return res.status(400).json({ status: "failed", message: "Invalid book ID format" });
   }
 
-  const book = await Book.findOneAndUpdate(
-    { _id: bookId, availableCopies: { $gt: 0 } },
-    { $inc: { availableCopies: -1 } },
-    { new: true }
-  );
+  // Check if the book exists and has available copies
+  const book = await Book.findById(bookId);
+  if (!book) {
+    return res.status(404).json({ status: "failed", message: "Book not found" });
+  }
 
-  if (book) {
+  if (book.availableCopies > 0) {
+    // Create a pending request for the book (do not decrement availableCopies yet)
     const request = await BookRequest.create({
       student: studentId,
       book: bookId,
       status: "pending",
-      takenAt: new Date(),
+      takenAt: null, // Not taken yet
     });
 
     return res.status(200).json({
       status: "success",
-      message: "Book assigned successfully.",
+      message: "Book request submitted successfully. Awaiting approval.",
       request,
     });
   } else {
+    // Add the student to the wishlist if no copies are available
     const existingWishlist = await Wishlist.findOne({ student: studentId, book: bookId });
     if (!existingWishlist) {
       await Wishlist.create({ student: studentId, book: bookId });
