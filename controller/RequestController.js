@@ -73,18 +73,23 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 
   const book = request.book;
 
-  // Atomically decrement availableCopies if > 0
-  const updatedBook = await Book.findOneAndUpdate(
-    { _id: book._id, availableCopies: { $gt: 0 } },
-    { $inc: { availableCopies: -1 } },
+  // Ensure the book has available copies before approving
+  if (book.availableCopies <= 0) {
+    return res.status(400).json({ status: "failed", message: "No copies available" });
+  }
+
+  // Decrement available copies
+  const updatedBook = await Book.findByIdAndUpdate(
+    book._id,
+    { $inc: { availableCopies: -1 } }, // ✅ Decrement available copies
     { new: true }
   );
 
   if (!updatedBook) {
-    return res.status(400).json({ status: "failed", message: "No copies available" });
+    return res.status(500).json({ status: "failed", message: "Failed to update book availability" });
   }
 
-  // Update the request status
+  // Update the request status to 'taken'
   request.status = "taken";
   request.takenBy = staffId;
   request.takenAt = new Date();
