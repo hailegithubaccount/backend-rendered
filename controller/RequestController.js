@@ -134,19 +134,44 @@ const returnBook = asyncHandler(async (req, res) => {
   await request.save();
 
   // Check the wishlist for the next student
-  const nextStudent = await Wishlist.findOne({ book: request.book.id }).sort("createdAt");
+  const nextWishlistEntry = await Wishlist.findOne({ book: request.book.id }).sort("createdAt").populate("student book");
 
-  if (nextStudent) {
-    // Don't create a request automatically—wait for the student's confirmation
+  if (nextWishlistEntry) {
+    // Create a new pending request for the next student
+    const newRequest = await BookRequest.create({
+      student: nextWishlistEntry.student._id,
+      book: nextWishlistEntry.book._id,
+      status: "pending",
+      takenAt: null, // Not taken yet
+    });
+
+    // Remove the student from the wishlist
+    await Wishlist.findByIdAndDelete(nextWishlistEntry._id);
+
     return res.status(200).json({
       status: "success",
-      message: "Book returned. A student is next in line on the wishlist. Waiting for confirmation.",
+      message: "Book returned. A new request has been created for the next student on the wishlist.",
       request,
-      nextStudent: {
-        studentId: nextStudent.student,
-        bookId: request.book.id,
-        status: "pending"
-      }
+      nextStudentRequest: {
+        _id: newRequest._id,
+        student: {
+          _id: nextWishlistEntry.student._id,
+          name: nextWishlistEntry.student.name, // Assuming the User model has a 'name' field
+          email: nextWishlistEntry.student.email, // Assuming the User model has an 'email' field
+        },
+        book: {
+          _id: nextWishlistEntry.book._id,
+          name: nextWishlistEntry.book.name,
+          category: nextWishlistEntry.book.category,
+          author: nextWishlistEntry.book.author,
+          photo: nextWishlistEntry.book.photo,
+          totalCopies: nextWishlistEntry.book.totalCopies,
+          availableCopies: nextWishlistEntry.book.availableCopies,
+        },
+        status: "pending",
+        createdAt: newRequest.createdAt,
+        updatedAt: newRequest.updatedAt,
+      },
     });
   }
 
