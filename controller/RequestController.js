@@ -195,7 +195,7 @@ const returnBook = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     status: "success",
-    message: "Book successfully returned and available copies updated.",
+
     request,
   });
 });
