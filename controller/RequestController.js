@@ -144,12 +144,20 @@ const returnBook = asyncHandler(async (req, res) => {
   await request.save();
 
   // Check the wishlist for the next student
-  const nextWishlistEntry = await Wishlist.findOne({ book: request.book.id }).sort("createdAt").populate("student book");
+  let nextWishlistEntry = await Wishlist.findOne({ book: request.book.id })
+    .sort("createdAt")
+    .populate("student book");
 
   if (nextWishlistEntry) {
+    // Ensure full student details are fetched
+    nextWishlistEntry = await Wishlist.findById(nextWishlistEntry._id).populate({
+      path: "student",
+      select: "name email", // Only get required fields
+    });
+
     // Create a new pending request for the next student
     const newRequest = await BookRequest.create({
-      student: nextWishlistEntry.student.id,
+      student: nextWishlistEntry.student._id,
       book: nextWishlistEntry.book._id,
       status: "pending",
       takenAt: null, // Not taken yet
@@ -166,8 +174,8 @@ const returnBook = asyncHandler(async (req, res) => {
         _id: newRequest._id,
         student: {
           _id: nextWishlistEntry.student._id,
-          name: nextWishlistEntry.student.name, // Assuming the User model has a 'name' field
-          email: nextWishlistEntry.student.email, // Assuming the User model has an 'email' field
+          name: nextWishlistEntry.student.name || "Unknown", // ✅ Fix missing name
+          email: nextWishlistEntry.student.email || "No Email", // ✅ Fix missing email
         },
         book: {
           _id: nextWishlistEntry.book._id,
@@ -191,6 +199,7 @@ const returnBook = asyncHandler(async (req, res) => {
     request,
   });
 });
+
 // ✅ Delete a Book Request (Library Staff)
 const deleteBookRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
