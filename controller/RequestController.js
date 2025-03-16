@@ -149,7 +149,7 @@ const returnBook = asyncHandler(async (req, res) => {
   if (nextWishlistEntry) {
     // Create a new pending request for the next student
     const newRequest = await BookRequest.create({
-      student: nextWishlistEntry.student._id,
+      student: nextWishlistEntry.student.id,
       book: nextWishlistEntry.book._id,
       status: "pending",
       takenAt: null, // Not taken yet
