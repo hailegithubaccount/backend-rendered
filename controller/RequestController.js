@@ -7,7 +7,7 @@ const Wishlist = require("../model/wishlistModel");
 
 // ✅ Request a Book (Students Only)
 const requestBook = asyncHandler(async (req, res) => {
-  const { bookId } = req.body;
+  const { bookId, addToWishlist } = req.body; // Accept `addToWishlist` from the request
   const studentId = res.locals.id;
 
   // Validate the book ID format
@@ -22,12 +22,12 @@ const requestBook = asyncHandler(async (req, res) => {
   }
 
   if (book.availableCopies > 0) {
-    // Create a pending request for the book (do not decrement availableCopies yet)
+    // Create a pending request for the book
     const request = await BookRequest.create({
       student: studentId,
       book: bookId,
       status: "pending",
-      takenAt: null, // Not taken yet
+      takenAt: null,
     });
 
     return res.status(200).json({
@@ -36,18 +36,28 @@ const requestBook = asyncHandler(async (req, res) => {
       request,
     });
   } else {
-    // Add the student to the wishlist if no copies are available
-    const existingWishlist = await Wishlist.findOne({ student: studentId, book: bookId });
-    if (!existingWishlist) {
-      await Wishlist.create({ student: studentId, book: bookId });
+    // Book is unavailable
+    if (addToWishlist) {
+      // Only add to wishlist if the student explicitly requests
+      const existingWishlist = await Wishlist.findOne({ student: studentId, book: bookId });
+      if (!existingWishlist) {
+        await Wishlist.create({ student: studentId, book: bookId });
+      }
+
+      return res.status(200).json({
+        status: "waiting",
+        message: "Book is currently unavailable. You have been added to the wishlist.",
+      });
     }
 
+    // Ask the student whether they want to join the wishlist
     return res.status(200).json({
-      status: "waiting",
-      message: "Book is currently unavailable. You have been added to the wishlist.",
+      status: "unavailable",
+      message: "Book is currently unavailable. Would you like to be added to the wishlist?",
     });
   }
 });
+
 
 // ✅ Approve Book Request (Library Staff)
 const approveBookRequest = asyncHandler(async (req, res) => {
