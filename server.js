@@ -25,7 +25,7 @@ const studentRoute = require("./routes/StudentRoute");
 const requestBook = require("./routes/requestRoutes");
 
 const wishlistRoutes=require("./routes/WishlistRoute");
-const notficationtoStudent=require("./routes/notficationtostud");
+const notfy=require("./routes/notficationtostud")
 
 // Use Routes
 app.use('/api/users', studentRoute);
@@ -35,7 +35,7 @@ app.use('/api/books', bookRoutes);
 app.use('/api/seats', seatRoutes); 
 app.use('/api/now', nowRoutes);  
 app.use('/api/requests', requestBook);
-app.use('/api/notfiystudent',notficationtoStudent);
+app.use('/api/notfiystudent',notfy);
 app.use('/api/the',wishlistRoutes);
 
 // Start Server
