@@ -9,6 +9,7 @@ router.get("/wishlist", protect, wishlistController.getWishlist);
 router.post("/wishlist/:bookId", protect, checkRole("student"), checkUserExists, wishlistController.addToWishlist);
 
 router.delete("/wishlist/:wishlistId", protect, checkRole("student"), checkUserExists, wishlistController.deleteFromWishlist);
+router.get("/wishlist", protect, checkRole("student"), checkUserExists, wishlistController.getWishlistBystudent);
 
 
 
