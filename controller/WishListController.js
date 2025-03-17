@@ -99,27 +99,23 @@ const deleteFromWishlist = asyncHandler(async (req, res) => {
     res.status(200).json({ status: "success", message: "Wishlist item deleted successfully" });
 });
 
-const getWishlistBystudent = asyncHandler(async (req, res) => {
+const getWishlistByStudent = asyncHandler(async (req, res) => {
     const studentId = res.locals.id; // Get the authenticated student's ID
 
     // Validate studentId format
     if (!mongoose.Types.ObjectId.isValid(studentId)) {
-        return res.status(400).json({ status: "failed", message: "Invalid student ID format" });
+        return res.status(400).json({ 
+            status: "failed", 
+            message: "Invalid student ID format" 
+        });
     }
 
     try {
-        // Fetch wishlist items for the authenticated student
+        // Fetch ONLY the authenticated student's wishlist
         const wishlistItems = await Wishlist.find({ student: studentId })
-            .populate("student")
-            .populate("book");
+            .populate("book"); // Populate book details (optional)
 
-        if (!wishlistItems.length) {
-            return res.status(404).json({
-                status: "failed",
-                message: "No wishlist items found for this student",
-            });
-        }
-
+        // Return the wishlist items (even if empty)
         res.status(200).json({
             status: "success",
             message: "Wishlist fetched successfully",
@@ -137,11 +133,10 @@ const getWishlistBystudent = asyncHandler(async (req, res) => {
 
 
 
-
 // Export all functions
 module.exports = {
     addToWishlist,
     getWishlist,
     deleteFromWishlist,
-    getWishlistBystudent, // Added this line
+    getWishlistByStudent, // Added this line
 };
