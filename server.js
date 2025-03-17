@@ -25,7 +25,7 @@ const studentRoute = require("./routes/StudentRoute");
 const requestBook = require("./routes/requestRoutes");
 
 const wishlistRoutes=require("./routes/WishlistRoute");
-const notficationtoStudent=require("./routes/notifcationtostudetn")
+const notficationtoStudent=require("./routes/notficationtostud");
 
 // Use Routes
 app.use('/api/users', studentRoute);
