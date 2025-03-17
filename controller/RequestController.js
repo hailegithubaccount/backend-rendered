@@ -166,6 +166,13 @@ const returnBook = asyncHandler(async (req, res) => {
     // Remove the student from the wishlist
     await Wishlist.findByIdAndDelete(nextWishlistEntry._id);
 
+    // Create a notification for the next student
+    await Notification.create({
+      user: nextWishlistEntry.student._id,
+      message: `The book "${nextWishlistEntry.book.name}" is now available. Please visit the library to collect it.`,
+      link: `/books/${nextWishlistEntry.book._id}`, // Link to the book details page
+    });
+
     return res.status(200).json({
       status: "success",
       message: "Book returned. A new request has been created for the next student on the wishlist.",
@@ -195,7 +202,6 @@ const returnBook = asyncHandler(async (req, res) => {
 
   res.status(200).json({
     status: "success",
-
     request,
   });
 });
