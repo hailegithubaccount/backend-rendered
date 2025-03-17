@@ -15,6 +15,9 @@ router.get("/read",bookController.getBooks);
 
 router.get("/read/catgoryfetch",bookController.catgoryfetch);
 
+router.get("/read/namefetch",bookController.namefetch);
+
+
 // Update a book
 router.patch("/update:id",protect,checkRole("library-staff"), checkUserExists, bookController.updateBook);
 

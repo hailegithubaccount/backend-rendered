@@ -86,6 +86,25 @@ const catgoryfetch = asyncHandler(async (req, res) => {
 });
 
 
+const namefetch = asyncHandler(async (req, res) => {
+  const {name } = req.query; // Get category from request query
+
+  let query = {}; // Default query object
+
+  if (name) {
+    query.name = category; // Filter books by name if provided
+  }
+
+  // Fetch books based on the query and populate relationships
+  const books = await bookModel.find(query).populate("borrowedBy managedBy");
+
+  res.status(200).json({
+    status: "success",
+    results: books.length,
+    data: books,
+  });
+});
+
 
 
 
@@ -212,4 +231,5 @@ module.exports = {
   updateBook,
   deleteBook,
   catgoryfetch,
+  namefetch,
 };
