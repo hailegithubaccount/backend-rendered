@@ -6,8 +6,8 @@ const Notification = require("../model/Notification");
 // @route   GET /api/notifications
 // @access  Private
 const getNotifications = asyncHandler(async (req, res) => {
-  // req.user is set by the authentication middleware (e.g., JWT)
-  const userId = res.locals.id;
+  const userId = res.locals.id; // Authenticated user ID from middleware
+  const { page = 1, limit = 10, unreadOnly = false } = req.query; // Pagination and filters
 
   // Validate that the userId is a valid ObjectId
   if (!mongoose.Types.ObjectId.isValid(userId)) {
@@ -17,14 +17,32 @@ const getNotifications = asyncHandler(async (req, res) => {
   // Convert userId to ObjectId
   const objectIdUserId = new mongoose.Types.ObjectId(userId);
 
+  // Build the query
+  const query = { user: objectIdUserId };
+  if (unreadOnly === "true") {
+    query.read = false; // Filter unread notifications only
+  }
+
   // Fetch notifications for the authenticated user
-  const notifications = await Notification.find({ user: objectIdUserId })
+  const notifications = await Notification.find(query)
     .sort({ createdAt: -1 }) // Sort by latest first
+    .skip((page - 1) * limit) // Pagination: skip
+    .limit(limit) // Pagination: limit
+    .populate("book", "name author photo") // Populate book details
     .exec();
+
+  // Get the total count of notifications (for pagination)
+  const totalNotifications = await Notification.countDocuments(query);
 
   res.status(200).json({
     status: "success",
     notifications,
+    pagination: {
+      page: parseInt(page),
+      limit: parseInt(limit),
+      total: totalNotifications,
+      totalPages: Math.ceil(totalNotifications / limit),
+    },
   });
 });
 
