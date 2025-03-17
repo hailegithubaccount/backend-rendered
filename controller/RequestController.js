@@ -5,6 +5,7 @@ const Book = require("../model/bookModel");
 const User = require("../model/userModel");
 const Wishlist = require("../model/wishlistModel");
 
+const Notification = require("../model/Notification"); 
 // ✅ Request a Book (Students Only)
 const requestBook = asyncHandler(async (req, res) => {
   const { bookId, addToWishlist } = req.body; // Accept `addToWishlist` from the request
@@ -134,7 +135,7 @@ const returnBook = asyncHandler(async (req, res) => {
   // Increment available copies
   await Book.findByIdAndUpdate(
     request.book.id,
-    { $inc: { availableCopies: 1 } }, // ✅ Increment available copies
+    { $inc: { availableCopies: 1 } }, // Increment available copies
     { new: true }
   );
 
@@ -168,7 +169,7 @@ const returnBook = asyncHandler(async (req, res) => {
 
     // Create a notification for the next student
     await Notification.create({
-      user: nextWishlistEntry.student._id,
+      user: nextWishlistEntry.student._id, // The student who needs the book
       message: `The book "${nextWishlistEntry.book.name}" is now available. Please visit the library to collect it.`,
       link: `/books/${nextWishlistEntry.book._id}`, // Link to the book details page
     });
@@ -181,8 +182,8 @@ const returnBook = asyncHandler(async (req, res) => {
         _id: newRequest._id,
         student: {
           _id: nextWishlistEntry.student._id,
-          name: nextWishlistEntry.student.name || "Unknown", // ✅ Fix missing name
-          email: nextWishlistEntry.student.email || "No Email", // ✅ Fix missing email
+          name: nextWishlistEntry.student.name || "Unknown", // Fix missing name
+          email: nextWishlistEntry.student.email || "No Email", // Fix missing email
         },
         book: {
           _id: nextWishlistEntry.book._id,
@@ -205,6 +206,7 @@ const returnBook = asyncHandler(async (req, res) => {
     request,
   });
 });
+
 
 // ✅ Delete a Book Request (Library Staff)
 const deleteBookRequest = asyncHandler(async (req, res) => {
