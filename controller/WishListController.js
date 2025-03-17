@@ -67,8 +67,28 @@ const getWishlist = async (req, res) => {
     }
 };
 
+// ✅ Delete a Book from Wishlist
+const deleteFromWishlist = asyncHandler(async (req, res) => {
+    const { wishlistId } = req.params;
 
+    // Validate ID format
+    if (!mongoose.Types.ObjectId.isValid(wishlistId)) {
+        return res.status(400).json({ status: "failed", message: "Invalid wishlist ID format" });
+    }
+
+    // Find and delete the wishlist item
+    const deletedWishlist = await Wishlist.findByIdAndDelete(wishlistId);
+
+    if (!deletedWishlist) {
+        return res.status(404).json({ status: "failed", message: "Wishlist item not found" });
+    }
+
+    res.status(200).json({ status: "success", message: "Wishlist item deleted successfully" });
+});
+
+// Export all functions
 module.exports = {
     addToWishlist,
     getWishlist,
+    deleteFromWishlist, // Added this line
 };
