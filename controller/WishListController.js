@@ -100,9 +100,8 @@ const deleteFromWishlist = asyncHandler(async (req, res) => {
 });
 
 const getWishlistByStudent = asyncHandler(async (req, res) => {
-    const studentId = res.locals.id; // Get the authenticated student's ID
+    const studentId = res.locals.id; // Authenticated student's ID
 
-    // Validate studentId format
     if (!mongoose.Types.ObjectId.isValid(studentId)) {
         return res.status(400).json({ 
             status: "failed", 
@@ -111,11 +110,13 @@ const getWishlistByStudent = asyncHandler(async (req, res) => {
     }
 
     try {
-        // Fetch ONLY the authenticated student's wishlist
-        const wishlistItems = await Wishlist.find({ student: studentId })
-            .populate("book"); // Populate book details (optional)
+        // Ensure filtering by studentId only
+        const wishlistItems = await Wishlist.find({ student: studentId }) 
+            .populate({
+                path: "book",
+                select: "title author", // Only fetch required fields
+            });
 
-        // Return the wishlist items (even if empty)
         res.status(200).json({
             status: "success",
             message: "Wishlist fetched successfully",
