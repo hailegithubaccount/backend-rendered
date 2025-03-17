@@ -92,7 +92,7 @@ const namefetch = asyncHandler(async (req, res) => {
   let query = {}; // Default query object
 
   if (name) {
-    query.name = category; // Filter books by name if provided
+    query.name = name; // Filter books by name if provided
   }
 
   // Fetch books based on the query and populate relationships
