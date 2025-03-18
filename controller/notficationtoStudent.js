@@ -18,7 +18,7 @@ const getNotifications = asyncHandler(async (req, res) => {
       .sort({ createdAt: -1 }) // Sort by latest notifications first
       .populate({
         path: "book", // Assuming there is a 'book' reference in notifications
-        select: "title author", // Fetch only title & author of the book
+        select: "title name", // Fetch only title & author of the book
       })
       .select("-link"); // Exclude 'link' from the response
 
