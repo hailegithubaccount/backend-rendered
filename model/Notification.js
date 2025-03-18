@@ -7,6 +7,11 @@ const notificationSchema = new mongoose.Schema(
       ref: "users", // Reference to the User model
       required: true,
     },
+    book: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "books", // Reference to the Book model
+      required: false, // Not all notifications may be about books
+    },
     message: {
       type: String,
       required: true,
@@ -14,10 +19,6 @@ const notificationSchema = new mongoose.Schema(
     read: {
       type: Boolean,
       default: false, // Notifications are unread by default
-    },
-    link: {
-      type: String,
-      default: "", // Optional link to redirect the user (e.g., book details page)
     },
   },
   { timestamps: true } // Adds createdAt and updatedAt fields
