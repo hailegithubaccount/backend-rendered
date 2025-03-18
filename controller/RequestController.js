@@ -170,9 +170,10 @@ const returnBook = asyncHandler(async (req, res) => {
     // Create a notification for the next student
     await Notification.create({
       user: nextWishlistEntry.student._id, // The student who needs the book
+      book: nextWishlistEntry.book._id, // Reference to the book (optional)
       message: `The book "${nextWishlistEntry.book.name}" is now available. Please visit the library to collect it.`,
-      link: `/books/${nextWishlistEntry.book._id}`, // Link to the book details page
     });
+    
 
     return res.status(200).json({
       status: "success",
