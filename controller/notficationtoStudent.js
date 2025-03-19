@@ -35,5 +35,57 @@ const getNotifications = asyncHandler(async (req, res) => {
   }
 });
 
+const deleteNotification = asyncHandler(async (req, res) => {
+  const { id } = req.params; // Notification ID from the URL
+  const userId = res.locals.id; // Authenticated user's ID
 
-module.exports = { getNotifications };
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ status: "failed", message: "Invalid notification ID format" });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ status: "failed", message: "Invalid user ID format" });
+  }
+  try {
+    // Find the notification by ID and ensure it belongs to the authenticated user
+    const notification = await Notification.findOneAndDelete({
+      _id: id,
+      user: userId,
+    });
+
+    if (!notification) {
+      return res.status(404).json({ status: "failed", message: "Notification not found or unauthorized" });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Notification deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    res.status(500).json({
+      status: "failed",
+      message: "Server error, unable to delete notification",
+    });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+module.exports = { 
+  getNotifications,
+  deleteNotification, 
+
+
+};
