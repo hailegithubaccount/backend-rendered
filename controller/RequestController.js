@@ -131,7 +131,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   });
 });
 // ✅ Return a Book
-const Seat = require("../model/seatModel");
+
 
 const returnBook = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
