@@ -26,6 +26,7 @@ const requestBook = require("./routes/requestRoutes");
 
 const wishlistRoutes=require("./routes/WishlistRoute");
 const notfy=require("./routes/notficationtostud")
+const seatNotfy = require("./routes/notificationSeatRoute")
 
 // Use Routes
 app.use('/api/users', studentRoute);
@@ -37,6 +38,7 @@ app.use('/api/now', nowRoutes);
 app.use('/api/requests', requestBook);
 app.use('/api/notfiystudent',notfy);
 app.use('/api/the',wishlistRoutes);
+app.use('/api/notfiyseat',seatNotfy);
 
 // Start Server
 const PORT = process.env.PORT || 3000;
