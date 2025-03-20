@@ -35,6 +35,11 @@ const seatSchema = new mongoose.Schema({
     type: Date,
     default: null, // Initially, the seat is not released
   },
+  managedBy: {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "users", // Reference to the User model (library-staff)
+    required: true, // Ensure every seat is managed by someone
+  },
 });
 
 const Seat = mongoose.model("Seat", seatSchema);
