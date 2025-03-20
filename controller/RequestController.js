@@ -128,12 +128,12 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   await request.save();
 
   // Create a notification for the student
-  const notificationMessage = `Your book "${book.name}" has been approved. Assigned seat: ${availableSeat.seatNumber}. Please collect your book within 2 hours.`;
+
   await NotifcactionForseat.create({
     user: request.student, // The student who made the request
     book: book._id, // Reference to the book
     seat: availableSeat.seatNumber, // Include the assigned seat
-    message: notificationMessage,
+   
   });
 
   res.status(200).json({

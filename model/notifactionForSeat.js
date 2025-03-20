@@ -32,6 +32,6 @@ const notificationSchema = new mongoose.Schema(
   { timestamps: true } // Adds `createdAt` and `updatedAt` fields
 );
 
-const Notification = mongoose.model("Notification", notificationSchema);
+const Notification = mongoose.model("NotificationSeat", notificationSchema);
 
 module.exports = Notification;
