@@ -9,6 +9,7 @@ const bookRequestSchema = new mongoose.Schema(
     takenBy: { type: mongoose.Schema.Types.ObjectId, ref: "users", default: null },
     takenAt: { type: Date, default: null },
     returnedAt: { type: Date, default: null },
+    seat: { type: String, default: null }, 
   },
   { timestamps: true }
 );
