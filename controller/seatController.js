@@ -1,4 +1,4 @@
-const seatModel = require("../model/seatModel");
+const Seat = require("../model/seatModel");
 const asyncHandler = require("express-async-handler");
 const mongoose = require("mongoose");
 
