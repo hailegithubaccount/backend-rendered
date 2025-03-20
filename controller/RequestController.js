@@ -3,6 +3,7 @@ const asyncHandler = require("express-async-handler");
 const BookRequest = require("../model/bookRequest");
 const Book = require("../model/bookModel");
 const User = require("../model/userModel");
+const Seat = require("../model/seatModel");
 const Wishlist = require("../model/wishlistModel");
 
 const Notification = require("../model/Notification"); 
@@ -61,6 +62,10 @@ const requestBook = asyncHandler(async (req, res) => {
 
 
 // ✅ Approve Book Request (Library Staff)
+
+
+
+// ✅ Approve Book Request (Library Staff)
 const approveBookRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
   const staffId = res.locals.id;
@@ -92,7 +97,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   // Decrement available copies
   const updatedBook = await Book.findByIdAndUpdate(
     book._id,
-    { $inc: { availableCopies: -1 } }, // ✅ Decrement available copies
+    { $inc: { availableCopies: -1 } }, // Decrement available copies
     { new: true }
   );
 
@@ -100,19 +105,34 @@ const approveBookRequest = asyncHandler(async (req, res) => {
     return res.status(500).json({ status: "failed", message: "Failed to update book availability" });
   }
 
-  // Update the request status to 'taken'
+  // Find an available seat of type "book"
+  const availableSeat = await Seat.findOne({ type: "book", isAvailable: true }).sort({ seatNumber: 1 });
+  if (!availableSeat) {
+    return res.status(400).json({ status: "failed", message: "No book-related seats available" });
+  }
+
+  // Assign the seat to the student
+  availableSeat.isAvailable = false;
+  availableSeat.reservedBy = request.student; // Link to the student
+  availableSeat.reservedAt = new Date();
+  await availableSeat.save();
+
+  // Update the request status to 'taken' and assign the seat
   request.status = "taken";
   request.takenBy = staffId;
   request.takenAt = new Date();
+  request.seat = availableSeat.seatNumber; // Assign the seat number
   await request.save();
 
   res.status(200).json({
     status: "success",
-    message: "Book marked as taken successfully",
+    message: `Book marked as taken successfully. Assigned seat: ${availableSeat.seatNumber}`,
     request,
   });
 });
 // ✅ Return a Book
+const Seat = require("../model/seatModel");
+
 const returnBook = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
 
@@ -139,6 +159,17 @@ const returnBook = asyncHandler(async (req, res) => {
     { new: true }
   );
 
+  // Release the seat
+  if (request.seat) {
+    const seat = await Seat.findOne({ seatNumber: request.seat });
+    if (seat) {
+      seat.isAvailable = true;
+      seat.reservedBy = null;
+      seat.releasedAt = new Date();
+      await seat.save();
+    }
+  }
+
   // Mark the request as returned
   request.status = "returned";
   request.returnedAt = new Date();
@@ -150,11 +181,20 @@ const returnBook = asyncHandler(async (req, res) => {
     .populate("student book");
 
   if (nextWishlistEntry) {
-    // Ensure full student details are fetched
-    nextWishlistEntry = await Wishlist.findById(nextWishlistEntry._id).populate({
-      path: "student",
-      select: "name email", // Only get required fields
-    });
+    // Find an available seat of type "book"
+    const availableSeat = await Seat.findOne({ type: "book", isAvailable: true }).sort({ seatNumber: 1 });
+    if (!availableSeat) {
+      return res.status(400).json({
+        status: "failed",
+        message: "No book-related seats available for the next student on the wishlist.",
+      });
+    }
+
+    // Assign the seat to the next student
+    availableSeat.isAvailable = false;
+    availableSeat.reservedBy = nextWishlistEntry.student._id;
+    availableSeat.reservedAt = new Date();
+    await availableSeat.save();
 
     // Create a new pending request for the next student
     const newRequest = await BookRequest.create({
@@ -162,6 +202,7 @@ const returnBook = asyncHandler(async (req, res) => {
       book: nextWishlistEntry.book._id,
       status: "pending",
       takenAt: null, // Not taken yet
+      seat: availableSeat.seatNumber, // Assign the seat number
     });
 
     // Remove the student from the wishlist
@@ -171,9 +212,8 @@ const returnBook = asyncHandler(async (req, res) => {
     await Notification.create({
       user: nextWishlistEntry.student._id, // The student who needs the book
       book: nextWishlistEntry.book._id, // Reference to the book (optional)
-      message: `The book "${nextWishlistEntry.book.name}" is now available. Please visit the library to collect it.`,
+      message: `The book "${nextWishlistEntry.book.name}" is now available. Please visit the library to collect it. Assigned seat: ${availableSeat.seatNumber}`,
     });
-    
 
     return res.status(200).json({
       status: "success",
@@ -198,6 +238,7 @@ const returnBook = asyncHandler(async (req, res) => {
         status: "pending",
         createdAt: newRequest.createdAt,
         updatedAt: newRequest.updatedAt,
+        seat: availableSeat.seatNumber, // Include the assigned seat in the response
       },
     });
   }
@@ -207,7 +248,6 @@ const returnBook = asyncHandler(async (req, res) => {
     request,
   });
 });
-
 
 // ✅ Delete a Book Request (Library Staff)
 const deleteBookRequest = asyncHandler(async (req, res) => {
