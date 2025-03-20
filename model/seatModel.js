@@ -11,6 +11,13 @@ const seatSchema = new mongoose.Schema({
     enum: ["book", "independent"], // "book" for A1-A20, "independent" for B1-B20
     required: true,
   },
+  location: {
+    type: String,
+    required: true, // Location is mandatory for every seat
+    trim: true, // Remove extra whitespace
+    minlength: [3, "Location must be at least 3 characters"],
+    maxlength: [50, "Location cannot exceed 50 characters"],
+  },
   isAvailable: {
     type: Boolean,
     default: true, // By default, the seat is available

@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 // @access  Private (library-staff)
 const createSeat = asyncHandler(async (req, res) => {
   try {
-    const { seatNumber, type } = req.body;
+    const { seatNumber, type, location } = req.body;
 
     // Ensure the logged-in user is library-staff
     if (res.locals.role !== "library-staff") {
@@ -18,10 +18,10 @@ const createSeat = asyncHandler(async (req, res) => {
     }
 
     // Validate input fields
-    if (!seatNumber || !type) {
+    if (!seatNumber || !type || !location) {
       return res.status(400).json({
         status: "failed",
-        message: "All fields (seatNumber, type) are required",
+        message: "All fields (seatNumber, type, location) are required",
       });
     }
 
@@ -34,7 +34,7 @@ const createSeat = asyncHandler(async (req, res) => {
     }
 
     // Check if the seat already exists
-    const existingSeat = await seatModel.findOne({ seatNumber });
+    const existingSeat = await Seat.findOne({ seatNumber });
     if (existingSeat) {
       return res.status(400).json({
         status: "failed",
@@ -43,9 +43,10 @@ const createSeat = asyncHandler(async (req, res) => {
     }
 
     // Create the seat
-    const seat = await seatModel.create({
+    const seat = await Seat.create({
       seatNumber,
       type,
+      location,
       managedBy: res.locals.id, // Assign the seat to the library-staff
     });
 
@@ -53,6 +54,63 @@ const createSeat = asyncHandler(async (req, res) => {
       status: "success",
       message: "Seat created successfully",
       data: seat,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+});
+
+
+const updateSeat = asyncHandler(async (req, res) => {
+  try {
+    const { seatNumber, type, isAvailable, location } = req.body;
+    const seatId = req.params.id;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(seatId)) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Invalid seat ID format",
+      });
+    }
+
+    // Find the seat
+    const seat = await Seat.findById(seatId);
+    if (!seat) {
+      return res.status(404).json({ status: "failed", message: "Seat not found" });
+    }
+
+    // Ensure the logged-in user is the library-staff managing the seat
+    if (seat.managedBy.toString() !== res.locals.id.toString()) {
+      return res.status(403).json({
+        status: "failed",
+        message: "You are not authorized to update this seat.",
+      });
+    }
+
+    // Validate type if provided
+    if (type && !["book", "independent"].includes(type)) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Invalid seat type. Must be 'book' or 'independent'.",
+      });
+    }
+
+    // Update the seat
+    const updatedSeat = await Seat.findByIdAndUpdate(
+      seatId,
+      { seatNumber, type, isAvailable, location },
+      { new: true, runValidators: true }
+    );
+
+    res.status(200).json({
+      status: "success",
+      message: "Seat updated successfully",
+      data: updatedSeat,
     });
   } catch (error) {
     res.status(500).json({
@@ -88,61 +146,7 @@ const getSeats = asyncHandler(async (req, res) => {
 // @desc    Update a seat (Only library-staff)
 // @route   PATCH /api/seats/:id
 // @access  Private (library-staff)
-const updateSeat = asyncHandler(async (req, res) => {
-  try {
-    const { seatNumber, type, isAvailable } = req.body;
-    const seatId = req.params.id;
 
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(seatId)) {
-      return res.status(400).json({
-        status: "failed",
-        message: "Invalid seat ID format",
-      });
-    }
-
-    // Find the seat
-    const seat = await seatModel.findById(seatId);
-    if (!seat) {
-      return res.status(404).json({ status: "failed", message: "Seat not found" });
-    }
-
-    // Ensure the logged-in user is the library-staff managing the seat
-    if (seat.managedBy.toString() !== res.locals.id.toString()) {
-      return res.status(403).json({
-        status: "failed",
-        message: "You are not authorized to update this seat.",
-      });
-    }
-
-    // Validate type if provided
-    if (type && !["book", "independent"].includes(type)) {
-      return res.status(400).json({
-        status: "failed",
-        message: "Invalid seat type. Must be 'book' or 'independent'.",
-      });
-    }
-
-    // Update the seat
-    const updatedSeat = await seatModel.findByIdAndUpdate(
-      seatId,
-      { seatNumber, type, isAvailable },
-      { new: true, runValidators: true }
-    );
-
-    res.status(200).json({
-      status: "success",
-      message: "Seat updated successfully",
-      data: updatedSeat,
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Something went wrong",
-      error: error.message,
-    });
-  }
-});
 
 // @desc    Delete a seat (Only library-staff)
 // @route   DELETE /api/seats/:id
