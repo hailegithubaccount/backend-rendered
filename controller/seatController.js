@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 // @access  Private (library-staff)
 const createSeat = asyncHandler(async (req, res) => {
   try {
-    const { seatNumber, location } = req.body;
+    const { seatNumber, type } = req.body;
 
     // Ensure the logged-in user is library-staff
     if (res.locals.role !== "library-staff") {
@@ -18,18 +18,18 @@ const createSeat = asyncHandler(async (req, res) => {
     }
 
     // Validate input fields
-    if (!seatNumber || !location) {
+    if (!seatNumber || !type) {
       return res.status(400).json({
         status: "failed",
-        message: "All fields (seatNumber, location) are required",
+        message: "All fields (seatNumber, type) are required",
       });
     }
 
-    // Ensure req.user exists and has an ID
-    if (!res.locals.id) {
-      return res.status(401).json({
+    // Validate type
+    if (!["book", "independent"].includes(type)) {
+      return res.status(400).json({
         status: "failed",
-        message: "User not authenticated",
+        message: "Invalid seat type. Must be 'book' or 'independent'.",
       });
     }
 
@@ -45,7 +45,7 @@ const createSeat = asyncHandler(async (req, res) => {
     // Create the seat
     const seat = await seatModel.create({
       seatNumber,
-      location,
+      type,
       managedBy: res.locals.id, // Assign the seat to the library-staff
     });
 
@@ -90,7 +90,7 @@ const getSeats = asyncHandler(async (req, res) => {
 // @access  Private (library-staff)
 const updateSeat = asyncHandler(async (req, res) => {
   try {
-    const { seatNumber, location, isAvailable } = req.body;
+    const { seatNumber, type, isAvailable } = req.body;
     const seatId = req.params.id;
 
     // Validate ObjectId
@@ -115,10 +115,18 @@ const updateSeat = asyncHandler(async (req, res) => {
       });
     }
 
+    // Validate type if provided
+    if (type && !["book", "independent"].includes(type)) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Invalid seat type. Must be 'book' or 'independent'.",
+      });
+    }
+
     // Update the seat
     const updatedSeat = await seatModel.findByIdAndUpdate(
       seatId,
-      { seatNumber, location, isAvailable },
+      { seatNumber, type, isAvailable },
       { new: true, runValidators: true }
     );
 
