@@ -17,3 +17,11 @@ const getNotifications = asyncHandler(async (req, res) => {
       data: notifications,
     });
   });
+
+
+  module.exports = { 
+    getNotifications,
+   
+  
+  
+  };
