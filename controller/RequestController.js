@@ -71,7 +71,7 @@ const requestBook = asyncHandler(async (req, res) => {
 
 const approveBookRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
-  const staffId = res.locals.id;
+  const staffId = res.locals.id; // Extract staff ID from the token
 
   // Validate request ID
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
@@ -86,8 +86,15 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 
   // Fetch the request and populate the associated book
   const request = await BookRequest.findById(requestId).populate("book");
-  if (!request || request.status !== "pending") {
-    return res.status(404).json({ status: "failed", message: "Invalid or already processed request" });
+  if (!request) {
+    return res.status(404).json({ status: "failed", message: "Book request not found" });
+  }
+
+  if (request.status !== "pending") {
+    return res.status(400).json({
+      status: "failed",
+      message: `This request has already been processed. Current status: ${request.status}`,
+    });
   }
 
   const book = request.book;
@@ -128,12 +135,11 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   await request.save();
 
   // Create a notification for the student
-
-  await NotifcactionForseat.create({
+  await Notification.create({
     user: request.student, // The student who made the request
     book: book._id, // Reference to the book
     seat: availableSeat.seatNumber, // Include the assigned seat
-   
+    message: `Your book "${book.name}" has been approved. Assigned seat: ${availableSeat.seatNumber}. Please collect your book within 2 hours.`,
   });
 
   res.status(200).json({
@@ -142,8 +148,6 @@ const approveBookRequest = asyncHandler(async (req, res) => {
     request,
   });
 });
-// ✅ Return a Book
-
 
 const returnBook = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
