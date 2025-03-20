@@ -127,7 +127,7 @@ const updateSeat = asyncHandler(async (req, res) => {
 const getSeats = asyncHandler(async (req, res) => {
   try {
     // Fetch all seats and populate the managedBy field
-    const seats = await seatModel.find().populate("managedBy", "name email");
+    const seats = await Seat.find().populate("managedBy", "name email");
 
     res.status(200).json({
       status: "success",
