@@ -5,6 +5,7 @@ const Book = require("../model/bookModel");
 const User = require("../model/userModel");
 const Seat = require("../model/seatModel");
 const Wishlist = require("../model/wishlistModel");
+const NotifcactionForseat = require("../model/notifactionForSeat");
 
 const Notification = require("../model/Notification"); 
 // ✅ Request a Book (Students Only)
@@ -66,6 +67,8 @@ const requestBook = asyncHandler(async (req, res) => {
 
 
 // ✅ Approve Book Request (Library Staff)
+
+
 const approveBookRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
   const staffId = res.locals.id;
@@ -75,7 +78,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
     return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
   }
 
-  // Check if the user is authorized (library staff)
+  // Check if the user is authorized (library-staff)
   const staff = await User.findById(staffId);
   if (!staff || staff.role !== "library-staff") {
     return res.status(403).json({ status: "failed", message: "Only library staff can approve requests" });
@@ -123,6 +126,15 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   request.takenAt = new Date();
   request.seat = availableSeat.seatNumber; // Assign the seat number
   await request.save();
+
+  // Create a notification for the student
+  const notificationMessage = `Your book "${book.name}" has been approved. Assigned seat: ${availableSeat.seatNumber}. Please collect your book within 2 hours.`;
+  await NotifcactionForseat.create({
+    user: request.student, // The student who made the request
+    book: book._id, // Reference to the book
+    seat: availableSeat.seatNumber, // Include the assigned seat
+    message: notificationMessage,
+  });
 
   res.status(200).json({
     status: "success",
