@@ -18,10 +18,24 @@ const requestBook = asyncHandler(async (req, res) => {
     return res.status(400).json({ status: "failed", message: "Invalid book ID format" });
   }
 
-  // Check if the book exists and has available copies
+  // Check if the book exists
   const book = await Book.findById(bookId);
   if (!book) {
     return res.status(404).json({ status: "failed", message: "Book not found" });
+  }
+
+  // Check if the student already has a pending request for this book
+  const existingRequest = await BookRequest.findOne({
+    student: studentId,
+    book: bookId,
+    status: "pending",
+  });
+
+  if (existingRequest) {
+    return res.status(400).json({
+      status: "failed",
+      message: "You already have a pending request for this book.",
+    });
   }
 
   if (book.availableCopies > 0) {
@@ -29,19 +43,19 @@ const requestBook = asyncHandler(async (req, res) => {
     const request = await BookRequest.create({
       student: studentId,
       book: bookId,
-      status: "pending",
-      takenAt: null,
+      status: "pending", // Initial status is always "pending"
+      takenAt: null, // No book has been taken yet
     });
 
     return res.status(200).json({
       status: "success",
       message: "Book request submitted successfully. Awaiting approval.",
-      request,
+      data: request,
     });
   } else {
     // Book is unavailable
-    if (addToWishlist) {
-      // Only add to wishlist if the student explicitly requests
+    if (addToWishlist === true) {
+      // Add the student to the wishlist if they explicitly requested
       const existingWishlist = await Wishlist.findOne({ student: studentId, book: bookId });
       if (!existingWishlist) {
         await Wishlist.create({ student: studentId, book: bookId });
@@ -51,16 +65,21 @@ const requestBook = asyncHandler(async (req, res) => {
         status: "waiting",
         message: "Book is currently unavailable. You have been added to the wishlist.",
       });
+    } else if (addToWishlist === false) {
+      // Student does not want to join the wishlist
+      return res.status(200).json({
+        status: "unavailable",
+        message: "Book is currently unavailable. You chose not to join the wishlist.",
+      });
+    } else {
+      // Prompt the student to decide whether to join the wishlist
+      return res.status(200).json({
+        status: "unavailable",
+        message: "Book is currently unavailable. Would you like to be added to the wishlist?",
+      });
     }
-
-    // Ask the student whether they want to join the wishlist
-    return res.status(200).json({
-      status: "unavailable",
-      message: "Book is currently unavailable. Would you like to be added to the wishlist?",
-    });
   }
 });
-
 
 // ✅ Approve Book Request (Library Staff)
 
