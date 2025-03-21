@@ -79,7 +79,7 @@ const requestBook = asyncHandler(async (req, res) => {
       });
     }
   }
-});
+});d
 
 // ✅ Approve Book Request (Library Staff)
 
@@ -154,7 +154,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   await request.save();
 
   // Create a notification for the student
-  await Notification.create({
+  await NotifcactionForseat.create({
     user: request.student, // The student who made the request
     book: book._id, // Reference to the book
     seat: availableSeat.seatNumber, // Include the assigned seat
