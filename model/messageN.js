@@ -1,3 +1,6 @@
+const mongoose = require("mongoose");
+
+
 const messageSchema = new mongoose.Schema({
   text: String, // Message text (e.g., "Are you in the chair?")
   status: String, // "yes", "no", "inactive"
