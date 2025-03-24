@@ -1,10 +1,9 @@
 const mongoose = require("mongoose");
 
-
 const messageSchema = new mongoose.Schema({
-  text: String, // Message text (e.g., "Are you in the chair?")
-  status: String, // "yes", "no", "inactive"
-  createdAt: { type: Date, default: Date.now }, // Timestamp
+  text: { type: String, required: true },
+  status: { type: String, default: "pending" }, // Can be 'pending', 'yes', 'no'
+  createdAt: { type: Date, default: Date.now },
 });
 
-const Message = mongoose.model("Message", messageSchema);
+module.exports = mongoose.model("Message", messageSchema);
