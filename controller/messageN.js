@@ -1,7 +1,9 @@
-const Message = require("../model/messageN");
+
+const Message = require("../model/messageN")
+const mongoose = require("mongoose");
 
 // 🚀 **Insert Message (Staff)**
-exports.addMessage = async (req, res) => {
+const addMessage = async (req, res) => {
   try {
     const { text } = req.body;
     const newMessage = new Message({ text, status: "pending" });
@@ -13,7 +15,7 @@ exports.addMessage = async (req, res) => {
 };
 
 // 🚀 **Fetch Latest Message (Student)**
-exports.getLatestMessage = async (req, res) => {
+const getLatestMessage = async (req, res) => {
   try {
     const message = await Message.findOne().sort({ createdAt: -1 });
     if (!message) {
@@ -26,7 +28,7 @@ exports.getLatestMessage = async (req, res) => {
 };
 
 // 🚀 **Student Response to Message**
-exports.respondToMessage = async (req, res) => {
+const respondToMessage = async (req, res) => {
   try {
     const { response } = req.body;
     const latestMessage = await Message.findOne().sort({ createdAt: -1 });
@@ -43,3 +45,12 @@ exports.respondToMessage = async (req, res) => {
     res.status(500).json({ error: "Error saving response" });
   }
 };
+
+ module.exports = { 
+  addMessage,
+  getLatestMessage,
+  respondToMessage, 
+   
+  
+  
+  };
