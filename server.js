@@ -27,6 +27,8 @@ const requestBook = require("./routes/requestRoutes");
 const wishlistRoutes=require("./routes/WishlistRoute");
 const notfy=require("./routes/notficationtostud")
 const seatNotfy = require("./routes/notificationSeatRoute")
+// for aother app notifcation 
+const real=require("./routes/routeM")
 
 // Use Routes
 app.use('/api/users', studentRoute);
@@ -39,6 +41,13 @@ app.use('/api/requests', requestBook);
 app.use('/api/notfiystudent',notfy);
 app.use('/api/the',wishlistRoutes);
 app.use('/api/notfiyseat',seatNotfy);
+
+
+
+
+//for trying the real message in the abother application code
+
+app.use('/api/realN',real);
 
 // Start Server
 const PORT = process.env.PORT || 3000;
