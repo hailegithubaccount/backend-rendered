@@ -1,37 +1,43 @@
 const mongoose = require("mongoose");
 
-const notificationSchema = new mongoose.Schema(
+const seatNotificationSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "users", // Reference to the User model (student)
+      ref: "users",
       required: true,
     },
     book: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "books", // Reference to the Book model
+      ref: "books",
       required: true,
     },
     seat: {
-      type: String, // Store the seat number (e.g., "A1")
+      type: String,
       required: true,
     },
     message: {
       type: String,
       required: true,
     },
+    type: {
+      type: String,
+      enum: ['seat_assigned', 'return_reminder', 'return_overdue', 'return_confirmation'],
+      required: true
+    },
+    deadline: {  // For tracking return deadlines
+      type: Date,
+      required: function() {
+        return this.type === 'seat_assigned'; // Only required for assignment notifications
+      }
+    },
     isRead: {
       type: Boolean,
-      default: false, // Mark notifications as unread by default
-    },
-    createdAt: {
-      type: Date,
-      default: Date.now, // Automatically set the creation timestamp
-    },
+      default: false,
+    }
   },
-  { timestamps: true } // Adds `createdAt` and `updatedAt` fields
+  { timestamps: true }
 );
 
-const NotificationSeat = mongoose.model("NotificationSeat", notificationSchema);
-
+const NotificationSeat = mongoose.model("NotificationSeat", seatNotificationSchema);
 module.exports = NotificationSeat;

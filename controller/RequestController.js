@@ -147,26 +147,63 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   availableSeat.reservedAt = new Date();
   await availableSeat.save();
 
+  const returnDeadline = new Date(Date.now() + 2 * 60 * 1000); 
   // Update the request status to 'taken' and assign the seat
   request.status = "taken";
   request.takenBy = staffId;
   request.takenAt = new Date();
-  request.seat = availableSeat.seatNumber; // Assign the seat number
+  request.seat = availableSeat.seatNumber;
+  request.returnDeadline = returnDeadline; // Set the deadline
   await request.save();
 
   // Create a notification for the student
   await NotifcactionForseat.create({
-    user: request.student, // The student who made the request
-    book: book.id, // ✅ Use `id` instead of `_id`
-    seat: availableSeat.seatNumber, // Include the assigned seat
-    message: `Your book "${book.name}" has been approved. Assigned seat: ${availableSeat.seatNumber}. Please collect your book within 2 hours.`,
+    user: request.student,
+    book: book._id,
+    seat: availableSeat.seatNumber,
+    message: `Your book "${book.name}" has been assigned to seat ${availableSeat.seatNumber}. Please return by ${returnDeadline.toLocaleTimeString()}.`,
+    type: 'seat_assigned',
+    deadline: returnDeadline
   });
   
+  setTimeout(async () => {
+    const currentRequest = await BookRequest.findById(requestId);
+    if (currentRequest?.status === 'taken') {
+      await NotifcactionForseat.create({
+        user: request.student,
+        book: book._id,
+        seat: availableSeat.seatNumber,
+        message: `REMINDER: Please return "${book.name}" from seat ${availableSeat.seatNumber} soon.`,
+        type: 'return_reminder'
+      });
+    }
+  }, 1 * 60 * 1000);
+
+  setTimeout(async () => {
+    const currentRequest = await BookRequest.findById(requestId);
+    if (currentRequest?.status === 'taken') {
+      await NotifcactionForseat.create({
+        user: request.student,
+        book: book._id,
+        seat: availableSeat.seatNumber,
+        message: `OVERDUE: Please return "${book.name}" from seat ${availableSeat.seatNumber} immediately!`,
+        type: 'return_overdue'
+      });
+      
+      // Also notify staff
+      await NotifcactionForseat.create({
+        user: staffId,
+        message: `Student ${request.student} has overdue book "${book.name}" at seat ${availableSeat.seatNumber}`,
+        notificationType: 'general'
+      });
+    }
+  }, 2 * 60 * 1000);
 
   res.status(200).json({
     status: "success",
-    message: `Book marked as taken successfully. Assigned seat: ${availableSeat.seatNumber}`,
+    message: `Book marked as taken successfully. Please return by ${returnDeadline.toLocaleTimeString()}`,
     request,
+    returnDeadline
   });
 });
 
@@ -242,6 +279,14 @@ const returnBook = asyncHandler(async (req, res) => {
     request.status = "returned";
     request.returnedAt = new Date();
     await request.save({ session });
+
+    await NotifcactionForseat.create({
+      user: request.student,
+      book: book._id,
+      seat: request.seat,
+      message: `You have successfully returned "${book.name}" from seat ${request.seat}.`,
+      type: 'return_confirmation'
+    });
 
     // Check wishlist for next student
     const nextWishlistEntry = await Wishlist.findOne({ book: book._id })

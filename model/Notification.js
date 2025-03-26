@@ -4,13 +4,13 @@ const notificationSchema = new mongoose.Schema(
   {
     user: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "users", // Reference to the User model
+      ref: "users",
       required: true,
     },
     book: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "books", // Reference to the Book model
-      required: false, // Not all notifications may be about books
+      ref: "books",
+      required: false,
     },
     message: {
       type: String,
@@ -18,12 +18,16 @@ const notificationSchema = new mongoose.Schema(
     },
     read: {
       type: Boolean,
-      default: false, // Notifications are unread by default
+      default: false,
     },
+    notificationType: {  // Specific to wishlist notifications
+      type: String,
+      enum: ['wishlist_available', 'general'],
+      default: 'general'
+    }
   },
-  { timestamps: true } // Adds createdAt and updatedAt fields
+  { timestamps: true }
 );
 
 const Notification = mongoose.model("Notification", notificationSchema);
-
 module.exports = Notification;
