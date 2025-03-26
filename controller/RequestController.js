@@ -182,50 +182,61 @@ const returnBook = asyncHandler(async (req, res) => {
   try {
     // Validate request ID
     if (!mongoose.Types.ObjectId.isValid(requestId)) {
-      return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
+      return res.status(400).json({ 
+        status: "failed", 
+        message: "Invalid request ID format" 
+      });
     }
 
-    // Fetch the request with book and seat populated
+    // Fetch the request with book populated
     const request = await BookRequest.findById(requestId)
       .populate("book")
-      .populate("seat") // Populate seat if you have reference
       .session(session);
 
     if (!request) {
-      return res.status(404).json({ status: "failed", message: "Book request not found" });
+      return res.status(404).json({ 
+        status: "failed", 
+        message: "Book request not found" 
+      });
     }
 
     // Validate book status
     if (request.status !== "taken" || !request.takenAt) {
-      return res.status(400).json({ status: "failed", message: "This book was not borrowed" });
-    }
-
-    // Verify the book still exists
-    const book = await Book.findById(request.book._id).session(session);
-    if (!book) {
-      return res.status(404).json({ status: "failed", message: "Associated book not found" });
-    }
-
-    // Ensure we don't exceed total copies
-    if (book.availableCopies >= book.totalCopies) {
       return res.status(400).json({ 
         status: "failed", 
-        message: "Cannot return book - available copies already match total copies" 
+        message: "This book was not borrowed" 
       });
     }
 
-    // Update both book and seat in parallel for better performance
+    // Verify the book exists
+    const book = await Book.findById(request.book._id).session(session);
+    if (!book) {
+      return res.status(404).json({ 
+        status: "failed", 
+        message: "Associated book not found" 
+      });
+    }
+
+    // Check available copies
+    if (book.availableCopies >= book.totalCopies) {
+      return res.status(400).json({ 
+        status: "failed", 
+        message: "All copies already available" 
+      });
+    }
+
+    // Process updates in parallel
     const [updatedBook, releasedSeat] = await Promise.all([
-      // 1. Increment available copies
+      // 1. Update book availability
       Book.findByIdAndUpdate(
-        request.book._id,
+        book._id,
         { $inc: { availableCopies: 1 } },
         { new: true, session }
       ),
       
-      // 2. Release the seat if exists
+      // 2. Release the seat (using seatNumber instead of _id)
       request.seat ? Seat.findOneAndUpdate(
-        { _id: request.seat._id || request.seat }, // Handle both reference and seatNumber
+        { seatNumber: request.seat }, // Key change here
         { 
           isAvailable: true,
           reservedBy: null,
@@ -241,27 +252,31 @@ const returnBook = asyncHandler(async (req, res) => {
     await request.save({ session });
 
     // Check wishlist for next student
-    const nextWishlistEntry = await Wishlist.findOne({ book: request.book._id })
+    const nextWishlistEntry = await Wishlist.findOne({ book: book._id })
       .sort("createdAt")
       .populate("student book")
       .session(session);
 
-    let responseData = {
+    const responseData = {
       status: "success",
-      message: "Book and seat released successfully",
-      returnedRequest: request,
-      bookUpdate: {
-        before: book.availableCopies,
-        after: updatedBook.availableCopies
-      },
-      seatUpdate: request.seat ? {
-        seatNumber: releasedSeat?.seatNumber || request.seat,
-        status: "released"
-      } : null
+      message: "Book and seat successfully released",
+      details: {
+        book: {
+          id: book._id,
+          title: book.name,
+          availableCopies: updatedBook.availableCopies,
+          totalCopies: book.totalCopies
+        },
+        seat: request.seat ? {
+          seatNumber: request.seat,
+          status: "released",
+          releasedAt: new Date()
+        } : null
+      }
     };
 
     if (nextWishlistEntry) {
-      // Find and assign seat to next student
+      // Find available seat
       const availableSeat = await Seat.findOne({ 
         type: "book", 
         isAvailable: true 
@@ -275,7 +290,7 @@ const returnBook = asyncHandler(async (req, res) => {
         });
       }
 
-      // Create new request and update seat in parallel
+      // Process next student assignment in parallel
       const [newRequest] = await Promise.all([
         BookRequest.create([{
           student: nextWishlistEntry.student._id,
@@ -284,8 +299,8 @@ const returnBook = asyncHandler(async (req, res) => {
           seat: availableSeat.seatNumber
         }], { session }),
         
-        Seat.findByIdAndUpdate(
-          availableSeat._id,
+        Seat.findOneAndUpdate(
+          { seatNumber: availableSeat.seatNumber },
           {
             isAvailable: false,
             reservedBy: nextWishlistEntry.student._id,
@@ -299,19 +314,17 @@ const returnBook = asyncHandler(async (req, res) => {
         Notification.create([{
           user: nextWishlistEntry.student._id,
           book: nextWishlistEntry.book._id,
-          message: `Book "${nextWishlistEntry.book.name}" available. Seat: ${availableSeat.seatNumber}`
+          message: `Book "${nextWishlistEntry.book.name}" is ready. Seat: ${availableSeat.seatNumber}`
         }], { session })
       ]);
 
-      responseData = {
-        ...responseData,
-        message: "Resources released and assigned to next student",
-        nextAssignment: {
-          student: nextWishlistEntry.student._id,
-          newRequestId: newRequest[0]._id,
-          assignedSeat: availableSeat.seatNumber
-        }
+      responseData.nextStudent = {
+        studentId: nextWishlistEntry.student._id,
+        requestId: newRequest[0]._id,
+        assignedSeat: availableSeat.seatNumber,
+        notification: `Notification sent to ${nextWishlistEntry.student.email}`
       };
+      responseData.message = "Resources released and assigned to next student";
     }
 
     await session.commitTransaction();
@@ -322,7 +335,7 @@ const returnBook = asyncHandler(async (req, res) => {
     res.status(500).json({ 
       status: "failed", 
       message: "Error processing return",
-      error: error.message 
+      error: error.message.replace(/^CastError: /, "") // Clean error message
     });
   } finally {
     session.endSession();
