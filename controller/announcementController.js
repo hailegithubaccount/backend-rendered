@@ -65,8 +65,29 @@ const createAnnouncement = asyncHandler(async (req, res) => {
   }
 });
 
+const getAllAnnouncements = asyncHandler(async (req, res) => {
+    try {
+      // Fetch all announcements from the database
+      const announcements = await Announcement.find().sort({ createdAt: -1 }); // Sort by most recent
+  
+      // Return success response with the list of announcements
+      res.status(200).json({
+        status: "success",
+        message: "All announcements fetched successfully",
+        data: announcements,
+      });
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: "Failed to fetch announcements",
+        error: error.message,
+      });
+    }
+  });
+
 
 
 module.exports = {
     createAnnouncement,
+    getAllAnnouncements,
 };
