@@ -185,9 +185,10 @@ const returnBook = asyncHandler(async (req, res) => {
       return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
     }
 
-    // Fetch the request with book populated
+    // Fetch the request with book and seat populated
     const request = await BookRequest.findById(requestId)
       .populate("book")
+      .populate("seat") // Populate seat if you have reference
       .session(session);
 
     if (!request) {
@@ -213,32 +214,33 @@ const returnBook = asyncHandler(async (req, res) => {
       });
     }
 
-    // Increment available copies safely
-    const updatedBook = await Book.findByIdAndUpdate(
-      request.book._id,
-      { $inc: { availableCopies: 1 } },
-      { new: true, session }
-    );
-
-    // Release the seat if exists
-    if (request.seat) {
-      await Seat.findOneAndUpdate(
-        { seatNumber: request.seat },
+    // Update both book and seat in parallel for better performance
+    const [updatedBook, releasedSeat] = await Promise.all([
+      // 1. Increment available copies
+      Book.findByIdAndUpdate(
+        request.book._id,
+        { $inc: { availableCopies: 1 } },
+        { new: true, session }
+      ),
+      
+      // 2. Release the seat if exists
+      request.seat ? Seat.findOneAndUpdate(
+        { _id: request.seat._id || request.seat }, // Handle both reference and seatNumber
         { 
           isAvailable: true,
           reservedBy: null,
           releasedAt: new Date() 
         },
-        { session }
-      );
-    }
+        { new: true, session }
+      ) : Promise.resolve(null)
+    ]);
 
     // Mark request as returned
     request.status = "returned";
     request.returnedAt = new Date();
     await request.save({ session });
 
-    // Check wishlist
+    // Check wishlist for next student
     const nextWishlistEntry = await Wishlist.findOne({ book: request.book._id })
       .sort("createdAt")
       .populate("student book")
@@ -246,16 +248,20 @@ const returnBook = asyncHandler(async (req, res) => {
 
     let responseData = {
       status: "success",
-      message: "Book returned successfully",
+      message: "Book and seat released successfully",
       returnedRequest: request,
-      updatedBook: {
-        availableCopies: updatedBook.availableCopies,
-        totalCopies: updatedBook.totalCopies
-      }
+      bookUpdate: {
+        before: book.availableCopies,
+        after: updatedBook.availableCopies
+      },
+      seatUpdate: request.seat ? {
+        seatNumber: releasedSeat?.seatNumber || request.seat,
+        status: "released"
+      } : null
     };
 
     if (nextWishlistEntry) {
-      // Find available seat
+      // Find and assign seat to next student
       const availableSeat = await Seat.findOne({ 
         type: "book", 
         isAvailable: true 
@@ -269,35 +275,42 @@ const returnBook = asyncHandler(async (req, res) => {
         });
       }
 
-      // Assign seat
-      availableSeat.isAvailable = false;
-      availableSeat.reservedBy = nextWishlistEntry.student._id;
-      availableSeat.reservedAt = new Date();
-      await availableSeat.save({ session });
-
-      // Create new request
-      const newRequest = await BookRequest.create([{
-        student: nextWishlistEntry.student._id,
-        book: nextWishlistEntry.book._id,
-        status: "pending",
-        seat: availableSeat.seatNumber
-      }], { session });
-
-      // Remove from wishlist
-      await Wishlist.findByIdAndDelete(nextWishlistEntry._id, { session });
-
-      // Create notification
-      await Notification.create([{
-        user: nextWishlistEntry.student._id,
-        book: nextWishlistEntry.book._id,
-        message: `Book "${nextWishlistEntry.book.name}" available. Seat: ${availableSeat.seatNumber}`
-      }], { session });
+      // Create new request and update seat in parallel
+      const [newRequest] = await Promise.all([
+        BookRequest.create([{
+          student: nextWishlistEntry.student._id,
+          book: nextWishlistEntry.book._id,
+          status: "pending",
+          seat: availableSeat.seatNumber
+        }], { session }),
+        
+        Seat.findByIdAndUpdate(
+          availableSeat._id,
+          {
+            isAvailable: false,
+            reservedBy: nextWishlistEntry.student._id,
+            reservedAt: new Date()
+          },
+          { session }
+        ),
+        
+        Wishlist.findByIdAndDelete(nextWishlistEntry._id, { session }),
+        
+        Notification.create([{
+          user: nextWishlistEntry.student._id,
+          book: nextWishlistEntry.book._id,
+          message: `Book "${nextWishlistEntry.book.name}" available. Seat: ${availableSeat.seatNumber}`
+        }], { session })
+      ]);
 
       responseData = {
         ...responseData,
-        message: "Book returned and assigned to next student",
-        nextStudentRequest: newRequest[0],
-        assignedSeat: availableSeat.seatNumber
+        message: "Resources released and assigned to next student",
+        nextAssignment: {
+          student: nextWishlistEntry.student._id,
+          newRequestId: newRequest[0]._id,
+          assignedSeat: availableSeat.seatNumber
+        }
       };
     }
 
