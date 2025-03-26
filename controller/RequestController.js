@@ -172,6 +172,206 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 
 
 
+
+
+const returnBook = asyncHandler(async (req, res) => {
+  const { requestId } = req.params;
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    // Validate request ID
+    if (!mongoose.Types.ObjectId.isValid(requestId)) {
+      return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
+    }
+
+    // Fetch the request with book populated
+    const request = await BookRequest.findById(requestId)
+      .populate("book")
+      .session(session);
+
+    if (!request) {
+      return res.status(404).json({ status: "failed", message: "Book request not found" });
+    }
+
+    // Validate book status
+    if (request.status !== "taken" || !request.takenAt) {
+      return res.status(400).json({ status: "failed", message: "This book was not borrowed" });
+    }
+
+    // Verify the book still exists
+    const book = await Book.findById(request.book._id).session(session);
+    if (!book) {
+      return res.status(404).json({ status: "failed", message: "Associated book not found" });
+    }
+
+    // Ensure we don't exceed total copies
+    if (book.availableCopies >= book.totalCopies) {
+      return res.status(400).json({ 
+        status: "failed", 
+        message: "Cannot return book - available copies already match total copies" 
+      });
+    }
+
+    // Increment available copies safely
+    const updatedBook = await Book.findByIdAndUpdate(
+      request.book._id,
+      { $inc: { availableCopies: 1 } },
+      { new: true, session }
+    );
+
+    // Release the seat if exists
+    if (request.seat) {
+      await Seat.findOneAndUpdate(
+        { seatNumber: request.seat },
+        { 
+          isAvailable: true,
+          reservedBy: null,
+          releasedAt: new Date() 
+        },
+        { session }
+      );
+    }
+
+    // Mark request as returned
+    request.status = "returned";
+    request.returnedAt = new Date();
+    await request.save({ session });
+
+    // Check wishlist
+    const nextWishlistEntry = await Wishlist.findOne({ book: request.book._id })
+      .sort("createdAt")
+      .populate("student book")
+      .session(session);
+
+    let responseData = {
+      status: "success",
+      message: "Book returned successfully",
+      returnedRequest: request,
+      updatedBook: {
+        availableCopies: updatedBook.availableCopies,
+        totalCopies: updatedBook.totalCopies
+      }
+    };
+
+    if (nextWishlistEntry) {
+      // Find available seat
+      const availableSeat = await Seat.findOne({ 
+        type: "book", 
+        isAvailable: true 
+      }).session(session);
+
+      if (!availableSeat) {
+        await session.abortTransaction();
+        return res.status(400).json({
+          status: "failed",
+          message: "No available seats for next student",
+        });
+      }
+
+      // Assign seat
+      availableSeat.isAvailable = false;
+      availableSeat.reservedBy = nextWishlistEntry.student._id;
+      availableSeat.reservedAt = new Date();
+      await availableSeat.save({ session });
+
+      // Create new request
+      const newRequest = await BookRequest.create([{
+        student: nextWishlistEntry.student._id,
+        book: nextWishlistEntry.book._id,
+        status: "pending",
+        seat: availableSeat.seatNumber
+      }], { session });
+
+      // Remove from wishlist
+      await Wishlist.findByIdAndDelete(nextWishlistEntry._id, { session });
+
+      // Create notification
+      await Notification.create([{
+        user: nextWishlistEntry.student._id,
+        book: nextWishlistEntry.book._id,
+        message: `Book "${nextWishlistEntry.book.name}" available. Seat: ${availableSeat.seatNumber}`
+      }], { session });
+
+      responseData = {
+        ...responseData,
+        message: "Book returned and assigned to next student",
+        nextStudentRequest: newRequest[0],
+        assignedSeat: availableSeat.seatNumber
+      };
+    }
+
+    await session.commitTransaction();
+    res.status(200).json(responseData);
+
+  } catch (error) {
+    await session.abortTransaction();
+    res.status(500).json({ 
+      status: "failed", 
+      message: "Error processing return",
+      error: error.message 
+    });
+  } finally {
+    session.endSession();
+  }
+});
+// ✅ Delete a Book Request (Library Staff)
+const deleteBookRequest = asyncHandler(async (req, res) => {
+  const { requestId } = req.params;
+  const staffId = res.locals.id;
+
+  if (!mongoose.Types.ObjectId.isValid(requestId)) {
+    return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
+  }
+
+  const staff = await User.findById(staffId);
+  if (!staff || staff.role !== "library-staff") {
+    return res.status(403).json({ status: "failed", message: "Only library staff can delete requests" });
+  }
+
+  const request = await BookRequest.findById(requestId);
+  if (!request) {
+    return res.status(404).json({ status: "failed", message: "Book request not found" });
+  }
+
+  if (request.status === "taken") {
+    return res.status(400).json({ status: "failed", message: "Cannot delete a request that has already been taken" });
+  }
+
+  await BookRequest.findByIdAndDelete(requestId);
+
+  res.status(200).json({ status: "success", message: "Book request deleted successfully" });
+});
+
+
+
+// ✅ Get All Book Requests (Library Staff)
+const getAllBookRequests = asyncHandler(async (req, res) => {
+  const staffId = res.locals.id;
+  const staff = await User.findById(staffId);
+
+  if (!staff || staff.role !== "library-staff") {
+    return res.status(403).json({ status: "failed", message: "Access denied" });
+  }
+
+  const requests = await BookRequest.find().populate("book student");
+  res.status(200).json({ status: "success", data: requests });
+});
+
+module.exports = {
+  requestBook,
+  approveBookRequest,
+  returnBook,
+  deleteBookRequest, // ✅ New delete function added
+  getAllBookRequests,
+};
+
+
+
+
+
+
+
 // const { Expo } = require('expo-server-sdk'); // Add this at the top of your file
 // const expo = new Expo();
 
@@ -285,171 +485,3 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 //     request,
 //   });
 // });
-
-
-const returnBook = asyncHandler(async (req, res) => {
-  const { requestId } = req.params;
-
-  // Validate request ID
-  if (!mongoose.Types.ObjectId.isValid(requestId)) {
-    return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
-  }
-
-  // Fetch the request and populate the associated book
-  const request = await BookRequest.findById(requestId).populate("book");
-  if (!request) {
-    return res.status(404).json({ status: "failed", message: "Book request not found" });
-  }
-
-  // Ensure the book was borrowed
-  if (request.status !== "taken" || !request.takenAt) {
-    return res.status(400).json({ status: "failed", message: "This book was not borrowed" });
-  }
-
-  // Increment available copies
-  await Book.findByIdAndUpdate(
-    request.book.id,
-    { $inc: { availableCopies: 1 } }, // Increment available copies
-    { new: true }
-  );
-
-  // Release the seat
-  if (request.seat) {
-    const seat = await Seat.findOne({ seatNumber: request.seat });
-    if (seat) {
-      seat.isAvailable = true;
-      seat.reservedBy = null;
-      seat.releasedAt = new Date();
-      await seat.save();
-    }
-  }
-
-  // Mark the request as returned
-  request.status = "returned";
-  request.returnedAt = new Date();
-  await request.save();
-
-  // Check the wishlist for the next student
-  let nextWishlistEntry = await Wishlist.findOne({ book: request.book.id })
-    .sort("createdAt")
-    .populate("student book");
-
-  if (nextWishlistEntry) {
-    // Find an available seat of type "book"
-    const availableSeat = await Seat.findOne({ type: "book", isAvailable: true }).sort({ seatNumber: 1 });
-    if (!availableSeat) {
-      return res.status(400).json({
-        status: "failed",
-        message: "No book-related seats available for the next student on the wishlist.",
-      });
-    }
-
-    // Assign the seat to the next student
-    availableSeat.isAvailable = false;
-    availableSeat.reservedBy = nextWishlistEntry.student._id;
-    availableSeat.reservedAt = new Date();
-    await availableSeat.save();
-
-    // Create a new pending request for the next student
-    const newRequest = await BookRequest.create({
-      student: nextWishlistEntry.student._id,
-      book: nextWishlistEntry.book._id,
-      status: "pending",
-      takenAt: null, // Not taken yet
-      seat: availableSeat.seatNumber, // Assign the seat number
-    });
-
-    // Remove the student from the wishlist
-    await Wishlist.findByIdAndDelete(nextWishlistEntry._id);
-
-    // Create a notification for the next student
-    await Notification.create({
-      user: nextWishlistEntry.student._id, // The student who needs the book
-      book: nextWishlistEntry.book._id, // Reference to the book (optional)
-      message: `The book "${nextWishlistEntry.book.name}" is now available. Please visit the library to collect it. Assigned seat: ${availableSeat.seatNumber}`,
-    });
-
-    return res.status(200).json({
-      status: "success",
-      message: "Book returned. A new request has been created for the next student on the wishlist.",
-      request,
-      nextStudentRequest: {
-        _id: newRequest._id,
-        student: {
-          _id: nextWishlistEntry.student._id,
-          name: nextWishlistEntry.student.name || "Unknown", // Fix missing name
-          email: nextWishlistEntry.student.email || "No Email", // Fix missing email
-        },
-        book: {
-          _id: nextWishlistEntry.book._id,
-          name: nextWishlistEntry.book.name,
-          category: nextWishlistEntry.book.category,
-          author: nextWishlistEntry.book.author,
-          photo: nextWishlistEntry.book.photo,
-          totalCopies: nextWishlistEntry.book.totalCopies,
-          availableCopies: nextWishlistEntry.book.availableCopies,
-        },
-        status: "pending",
-        createdAt: newRequest.createdAt,
-        updatedAt: newRequest.updatedAt,
-        seat: availableSeat.seatNumber, // Include the assigned seat in the response
-      },
-    });
-  }
-
-  res.status(200).json({
-    status: "success",
-    request,
-  });
-});
-
-// ✅ Delete a Book Request (Library Staff)
-const deleteBookRequest = asyncHandler(async (req, res) => {
-  const { requestId } = req.params;
-  const staffId = res.locals.id;
-
-  if (!mongoose.Types.ObjectId.isValid(requestId)) {
-    return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
-  }
-
-  const staff = await User.findById(staffId);
-  if (!staff || staff.role !== "library-staff") {
-    return res.status(403).json({ status: "failed", message: "Only library staff can delete requests" });
-  }
-
-  const request = await BookRequest.findById(requestId);
-  if (!request) {
-    return res.status(404).json({ status: "failed", message: "Book request not found" });
-  }
-
-  if (request.status === "taken") {
-    return res.status(400).json({ status: "failed", message: "Cannot delete a request that has already been taken" });
-  }
-
-  await BookRequest.findByIdAndDelete(requestId);
-
-  res.status(200).json({ status: "success", message: "Book request deleted successfully" });
-});
-
-
-
-// ✅ Get All Book Requests (Library Staff)
-const getAllBookRequests = asyncHandler(async (req, res) => {
-  const staffId = res.locals.id;
-  const staff = await User.findById(staffId);
-
-  if (!staff || staff.role !== "library-staff") {
-    return res.status(403).json({ status: "failed", message: "Access denied" });
-  }
-
-  const requests = await BookRequest.find().populate("book student");
-  res.status(200).json({ status: "success", data: requests });
-});
-
-module.exports = {
-  requestBook,
-  approveBookRequest,
-  returnBook,
-  deleteBookRequest, // ✅ New delete function added
-  getAllBookRequests,
-};
