@@ -65,4 +65,8 @@ const createAnnouncement = asyncHandler(async (req, res) => {
   }
 });
 
-module.exports = createAnnouncement;
+
+
+module.exports = {
+    createAnnouncement,
+};
