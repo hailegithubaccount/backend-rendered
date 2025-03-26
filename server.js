@@ -4,6 +4,8 @@ require('dotenv').config();
 const cookieParser = require("cookie-parser"); 
 const cors = require("cors");
 
+
+
 const app = express();
 
 // Middleware
@@ -30,6 +32,9 @@ const seatNotfy = require("./routes/notificationSeatRoute")
 // for aother app notifcation 
 const real=require("./routes/routeM")
 
+
+const announcementRoute=require("./routes/announcementRoutes")
+
 // Use Routes
 app.use('/api/users', studentRoute);
 app.use('/api/users', userRoutes);
@@ -41,6 +46,7 @@ app.use('/api/requests', requestBook);
 app.use('/api/notfiystudent',notfy);
 app.use('/api/the',wishlistRoutes);
 app.use('/api/notfiyseat',seatNotfy);
+app.use('/api/Announc',announcementRoute);
 
 
 
