@@ -89,95 +89,9 @@ const requestBook = asyncHandler(async (req, res) => {
 // ✅ Approve Book Request (Library Staff)
 
 
-// const approveBookRequest = asyncHandler(async (req, res) => {
-//   const { requestId } = req.params;
-//   const staffId = res.locals.id; // Extract staff ID from the token
-
-//   // Validate request ID
-//   if (!mongoose.Types.ObjectId.isValid(requestId)) {
-//     return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
-//   }
-
-//   // Check if the user is authorized (library-staff)
-//   const staff = await User.findById(staffId);
-//   if (!staff || staff.role !== "library-staff") {
-//     return res.status(403).json({ status: "failed", message: "Only library staff can approve requests" });
-//   }
-
-//   // Fetch the request and populate the associated book
-//   const request = await BookRequest.findById(requestId).populate("book");
-//   if (!request) {
-//     return res.status(404).json({ status: "failed", message: "Book request not found" });
-//   }
-
-//   if (request.status !== "pending") {
-//     return res.status(400).json({
-//       status: "failed",
-//       message: `This request has already been processed. Current status: ${request.status}`,
-//     });
-//   }
-
-//   const book = request.book;
-
-//   // Ensure the book has available copies before approving
-//   if (book.availableCopies <= 0) {
-//     return res.status(400).json({ status: "failed", message: "No copies available" });
-//   }
-
-//   // Decrement available copies
-//   const updatedBook = await Book.findByIdAndUpdate(
-//     book._id,
-//     { $inc: { availableCopies: -1 } }, // Decrement available copies
-//     { new: true }
-//   );
-
-//   if (!updatedBook) {
-//     return res.status(500).json({ status: "failed", message: "Failed to update book availability" });
-//   }
-
-//   // Find an available seat of type "book"
-//   const availableSeat = await Seat.findOne({ type: "book", isAvailable: true }).sort({ seatNumber: 1 });
-//   if (!availableSeat) {
-//     return res.status(400).json({ status: "failed", message: "No book-related seats available" });
-//   }
-
-//   // Assign the seat to the student
-//   availableSeat.isAvailable = false;
-//   availableSeat.reservedBy = request.student; // Link to the student
-//   availableSeat.reservedAt = new Date();
-//   await availableSeat.save();
-
-//   // Update the request status to 'taken' and assign the seat
-//   request.status = "taken";
-//   request.takenBy = staffId;
-//   request.takenAt = new Date();
-//   request.seat = availableSeat.seatNumber; // Assign the seat number
-//   await request.save();
-
-//   // Create a notification for the student
-//   await NotifcactionForseat.create({
-//     user: request.student, // The student who made the request
-//     book: book.id, // ✅ Use `id` instead of `_id`
-//     seat: availableSeat.seatNumber, // Include the assigned seat
-//     message: `Your book "${book.name}" has been approved. Assigned seat: ${availableSeat.seatNumber}. Please collect your book within 2 hours.`,
-//   });
-  
-
-//   res.status(200).json({
-//     status: "success",
-//     message: `Book marked as taken successfully. Assigned seat: ${availableSeat.seatNumber}`,
-//     request,
-//   });
-// });
-
-
-
-const { Expo } = require('expo-server-sdk'); // Add this at the top of your file
-const expo = new Expo();
-
 const approveBookRequest = asyncHandler(async (req, res) => {
   const { requestId } = req.params;
-  const staffId = res.locals.id;
+  const staffId = res.locals.id; // Extract staff ID from the token
 
   // Validate request ID
   if (!mongoose.Types.ObjectId.isValid(requestId)) {
@@ -190,11 +104,8 @@ const approveBookRequest = asyncHandler(async (req, res) => {
     return res.status(403).json({ status: "failed", message: "Only library staff can approve requests" });
   }
 
-  // Fetch the request and populate the associated book and student
-  const request = await BookRequest.findById(requestId)
-    .populate("book")
-    .populate("student"); // Populate the student to get their pushToken
-
+  // Fetch the request and populate the associated book
+  const request = await BookRequest.findById(requestId).populate("book");
   if (!request) {
     return res.status(404).json({ status: "failed", message: "Book request not found" });
   }
@@ -216,7 +127,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   // Decrement available copies
   const updatedBook = await Book.findByIdAndUpdate(
     book._id,
-    { $inc: { availableCopies: -1 } },
+    { $inc: { availableCopies: -1 } }, // Decrement available copies
     { new: true }
   );
 
@@ -232,7 +143,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
 
   // Assign the seat to the student
   availableSeat.isAvailable = false;
-  availableSeat.reservedBy = request.student;
+  availableSeat.reservedBy = request.student; // Link to the student
   availableSeat.reservedAt = new Date();
   await availableSeat.save();
 
@@ -240,51 +151,140 @@ const approveBookRequest = asyncHandler(async (req, res) => {
   request.status = "taken";
   request.takenBy = staffId;
   request.takenAt = new Date();
-  request.seat = availableSeat.seatNumber;
+  request.seat = availableSeat.seatNumber; // Assign the seat number
   await request.save();
 
   // Create a notification for the student
-  const notification = await NotifcactionForseat.create({
-    user: request.student._id,
-    book: book._id,
-    seat: availableSeat.seatNumber,
+  await NotifcactionForseat.create({
+    user: request.student, // The student who made the request
+    book: book.id, // ✅ Use `id` instead of `_id`
+    seat: availableSeat.seatNumber, // Include the assigned seat
     message: `Your book "${book.name}" has been approved. Assigned seat: ${availableSeat.seatNumber}. Please collect your book within 2 hours.`,
   });
-
-  // Get the student's Expo push token
-  const student = await User.findById(request.student._id);
-  const pushToken = student.expoPushToken; // Ensure this field exists in your User model
-
-  // Send the push notification to the student
-  if (pushToken && Expo.isExpoPushToken(pushToken)) {
-    const message = {
-      to: pushToken,
-      sound: 'default',
-      title: '📚 Book Approved!',
-      body: `Your book "${book.name}" is ready. Seat: ${availableSeat.seatNumber}`,
-      data: { 
-        bookId: book._id, 
-        seat: availableSeat.seatNumber,
-        notificationId: notification._id, // For handling taps
-      },
-    };
-
-    try {
-      await expo.sendPushNotificationsAsync([message]);
-      console.log('Push notification sent successfully!');
-    } catch (error) {
-      console.error('Error sending push notification:', error);
-    }
-  } else {
-    console.warn('Invalid Expo push token:', pushToken);
-  }
+  
 
   res.status(200).json({
     status: "success",
-    message: `Book marked as taken. Seat: ${availableSeat.seatNumber}`,
+    message: `Book marked as taken successfully. Assigned seat: ${availableSeat.seatNumber}`,
     request,
   });
 });
+
+
+
+// const { Expo } = require('expo-server-sdk'); // Add this at the top of your file
+// const expo = new Expo();
+
+// const approveBookRequest = asyncHandler(async (req, res) => {
+//   const { requestId } = req.params;
+//   const staffId = res.locals.id;
+
+//   // Validate request ID
+//   if (!mongoose.Types.ObjectId.isValid(requestId)) {
+//     return res.status(400).json({ status: "failed", message: "Invalid request ID format" });
+//   }
+
+//   // Check if the user is authorized (library-staff)
+//   const staff = await User.findById(staffId);
+//   if (!staff || staff.role !== "library-staff") {
+//     return res.status(403).json({ status: "failed", message: "Only library staff can approve requests" });
+//   }
+
+//   // Fetch the request and populate the associated book and student
+//   const request = await BookRequest.findById(requestId)
+//     .populate("book")
+//     .populate("student"); // Populate the student to get their pushToken
+
+//   if (!request) {
+//     return res.status(404).json({ status: "failed", message: "Book request not found" });
+//   }
+
+//   if (request.status !== "pending") {
+//     return res.status(400).json({
+//       status: "failed",
+//       message: `This request has already been processed. Current status: ${request.status}`,
+//     });
+//   }
+
+//   const book = request.book;
+
+//   // Ensure the book has available copies before approving
+//   if (book.availableCopies <= 0) {
+//     return res.status(400).json({ status: "failed", message: "No copies available" });
+//   }
+
+//   // Decrement available copies
+//   const updatedBook = await Book.findByIdAndUpdate(
+//     book._id,
+//     { $inc: { availableCopies: -1 } },
+//     { new: true }
+//   );
+
+//   if (!updatedBook) {
+//     return res.status(500).json({ status: "failed", message: "Failed to update book availability" });
+//   }
+
+//   // Find an available seat of type "book"
+//   const availableSeat = await Seat.findOne({ type: "book", isAvailable: true }).sort({ seatNumber: 1 });
+//   if (!availableSeat) {
+//     return res.status(400).json({ status: "failed", message: "No book-related seats available" });
+//   }
+
+//   // Assign the seat to the student
+//   availableSeat.isAvailable = false;
+//   availableSeat.reservedBy = request.student;
+//   availableSeat.reservedAt = new Date();
+//   await availableSeat.save();
+
+//   // Update the request status to 'taken' and assign the seat
+//   request.status = "taken";
+//   request.takenBy = staffId;
+//   request.takenAt = new Date();
+//   request.seat = availableSeat.seatNumber;
+//   await request.save();
+
+//   // Create a notification for the student
+//   const notification = await NotifcactionForseat.create({
+//     user: request.student._id,
+//     book: book._id,
+//     seat: availableSeat.seatNumber,
+//     message: `Your book "${book.name}" has been approved. Assigned seat: ${availableSeat.seatNumber}. Please collect your book within 2 hours.`,
+//   });
+
+//   // Get the student's Expo push token
+//   const student = await User.findById(request.student._id);
+//   const pushToken = student.expoPushToken; // Ensure this field exists in your User model
+
+//   // Send the push notification to the student
+//   if (pushToken && Expo.isExpoPushToken(pushToken)) {
+//     const message = {
+//       to: pushToken,
+//       sound: 'default',
+//       title: '📚 Book Approved!',
+//       body: `Your book "${book.name}" is ready. Seat: ${availableSeat.seatNumber}`,
+//       data: { 
+//         bookId: book._id, 
+//         seat: availableSeat.seatNumber,
+//         notificationId: notification._id, // For handling taps
+//       },
+//     };
+
+//     try {
+//       await expo.sendPushNotificationsAsync([message]);
+//       console.log('Push notification sent successfully!');
+//     } catch (error) {
+//       console.error('Error sending push notification:', error);
+//     }
+//   } else {
+//     console.warn('Invalid Expo push token:', pushToken);
+//   }
+
+//   res.status(200).json({
+//     status: "success",
+//     message: `Book marked as taken. Seat: ${availableSeat.seatNumber}`,
+//     request,
+//   });
+// });
 
 
 const returnBook = asyncHandler(async (req, res) => {
