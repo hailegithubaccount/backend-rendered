@@ -49,6 +49,6 @@ const getNotifications = asyncHandler(async (req, res) => {
 });
 
 module.exports = { 
-  savePushToken,
+
   getNotifications
 };
