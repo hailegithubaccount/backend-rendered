@@ -217,14 +217,6 @@ const returnBook = asyncHandler(async (req, res) => {
       });
     }
 
-    // Check available copies
-    if (book.availableCopies >= book.totalCopies) {
-      return res.status(400).json({ 
-        status: "failed", 
-        message: "All copies already available" 
-      });
-    }
-
     // Process updates in parallel
     const [updatedBook, releasedSeat] = await Promise.all([
       // 1. Update book availability
@@ -234,9 +226,9 @@ const returnBook = asyncHandler(async (req, res) => {
         { new: true, session }
       ),
       
-      // 2. Release the seat (using seatNumber instead of _id)
+      // 2. Release the seat
       request.seat ? Seat.findOneAndUpdate(
-        { seatNumber: request.seat }, // Key change here
+        { seatNumber: request.seat },
         { 
           isAvailable: true,
           reservedBy: null,
@@ -264,67 +256,37 @@ const returnBook = asyncHandler(async (req, res) => {
         book: {
           id: book._id,
           title: book.name,
-          availableCopies: updatedBook.availableCopies,
-          totalCopies: book.totalCopies
+          availableCopies: updatedBook.availableCopies
         },
-        seat: request.seat ? {
-          seatNumber: request.seat,
-          status: "released",
-          releasedAt: new Date()
-        } : null
+        seatReleased: request.seat ? true : false
       }
     };
 
     if (nextWishlistEntry) {
-      // Find available seat
-      const availableSeat = await Seat.findOne({ 
-        type: "book", 
-        isAvailable: true 
-      }).session(session);
+      // Create new pending request WITHOUT seat assignment
+      const newRequest = await BookRequest.create([{
+        student: nextWishlistEntry.student._id,
+        book: nextWishlistEntry.book._id,
+        status: "pending",
+        seat: null // No seat assigned yet
+      }], { session });
 
-      if (!availableSeat) {
-        await session.abortTransaction();
-        return res.status(400).json({
-          status: "failed",
-          message: "No available seats for next student",
-        });
-      }
-
-      // Process next student assignment in parallel
-      const [newRequest] = await Promise.all([
-        BookRequest.create([{
-          student: nextWishlistEntry.student._id,
-          book: nextWishlistEntry.book._id,
-          status: "pending",
-          seat: availableSeat.seatNumber
-        }], { session }),
-        
-        Seat.findOneAndUpdate(
-          { seatNumber: availableSeat.seatNumber },
-          {
-            isAvailable: false,
-            reservedBy: nextWishlistEntry.student._id,
-            reservedAt: new Date()
-          },
-          { session }
-        ),
-        
+      // Remove from wishlist and notify student
+      await Promise.all([
         Wishlist.findByIdAndDelete(nextWishlistEntry._id, { session }),
-        
         Notification.create([{
           user: nextWishlistEntry.student._id,
           book: nextWishlistEntry.book._id,
-          message: `Book "${nextWishlistEntry.book.name}" is ready. Seat: ${availableSeat.seatNumber}`
+          message: `The book "${nextWishlistEntry.book.name}" is now available. ` +
+                  "Please visit the library to request it."
         }], { session })
       ]);
 
       responseData.nextStudent = {
         studentId: nextWishlistEntry.student._id,
-        requestId: newRequest[0]._id,
-        assignedSeat: availableSeat.seatNumber,
-        notification: `Notification sent to ${nextWishlistEntry.student.email}`
+        newRequestId: newRequest[0]._id,
+        notification: "Student notified about availability"
       };
-      responseData.message = "Resources released and assigned to next student";
     }
 
     await session.commitTransaction();
@@ -335,7 +297,7 @@ const returnBook = asyncHandler(async (req, res) => {
     res.status(500).json({ 
       status: "failed", 
       message: "Error processing return",
-      error: error.message.replace(/^CastError: /, "") // Clean error message
+      error: error.message.replace(/^CastError: /, "")
     });
   } finally {
     session.endSession();
