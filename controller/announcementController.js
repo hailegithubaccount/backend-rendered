@@ -24,23 +24,7 @@ const createAnnouncement = asyncHandler(async (req, res) => {
     }
 
     // Validate date range
-    const currentDate = new Date();
-    const parsedStartDate = new Date(startDate);
-    const parsedEndDate = new Date(endDate);
-
-    if (parsedStartDate > parsedEndDate) {
-      return res.status(400).json({
-        status: "failed",
-        message: "Start date must be before or equal to end date",
-      });
-    }
-
-    if (parsedStartDate < currentDate) {
-      return res.status(400).json({
-        status: "failed",
-        message: "Start date cannot be in the past",
-      });
-    }
+   
 
     // Create the announcement
     const announcement = await Announcement.create({
