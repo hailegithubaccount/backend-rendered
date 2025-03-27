@@ -94,10 +94,10 @@ const getAllAnnouncements = asyncHandler(async (req, res) => {
 // Delete an announcement
 const deleteAnnouncement = asyncHandler(async (req, res) => {
   try {
-    const { id } = req.params; // Extract announcement ID from URL parameters
+    const snnId = req.params.id; // Extract announcement ID from URL parameters
 
     // Validate the ID format
-    if (!mongoose.Types.ObjectId.isValid(id)) {
+    if (!mongoose.Types.ObjectId.isValid(snnId)) {
       return res.status(400).json({
         status: "failed",
         message: "Invalid announcement ID. Please provide a valid MongoDB ObjectId.",
