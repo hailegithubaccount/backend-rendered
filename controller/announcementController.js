@@ -91,38 +91,32 @@ const getAllAnnouncements = asyncHandler(async (req, res) => {
 // Delete an announcement
 // Delete an announcement
 const deleteAnnouncement = asyncHandler(async (req, res) => {
-  const { id } = req.params;
+  const { AnnouncementId } = req.params;
 
   // 1. Validate ID format
-  if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+  if (!mongoose.Types.ObjectId.isValid(AnnouncementId)) {
     return res.status(400).json({
       status: "failed",
-      message: "Please provide a valid announcement ID",
+      message: "Invalid announcement ID format",
       details: {
-        providedId: id,
-        expectedFormat: "24-character hexadecimal string (e.g., 507f1f77bcf86cd799439011)"
+        providedId: AnnouncementId,
+        expectedFormat: "24-character hexadecimal MongoDB ObjectId"
       }
     });
   }
 
-  // 2. Check user permissions
-  if (res.locals.role !== "library-staff") {
-    return res.status(403).json({
-      status: "failed",
-      message: "Access denied",
-      details: "Only library staff can delete announcements"
-    });
-  }
-
   try {
-    // 3. Attempt deletion
-    const deletedAnnouncement = await Announcement.findByIdAndDelete(id);
-    
+    // 2. Find and delete the announcement
+    const deletedAnnouncement = await Announcement.findOneAndDelete({
+      _id: AnnouncementId
+    });
+
+    // 3. Check if announcement exists
     if (!deletedAnnouncement) {
       return res.status(404).json({
         status: "failed",
-        message: "Announcement not found",
-        details: `No announcement found with ID: ${id}`
+        message: "Announcement not found or already deleted",
+        details: `No announcement found with ID: ${AnnouncementId}`
       });
     }
 
@@ -145,7 +139,7 @@ const deleteAnnouncement = asyncHandler(async (req, res) => {
       error: {
         name: error.name,
         message: error.message,
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
       }
     });
   }
