@@ -1,6 +1,7 @@
 const asyncHandler = require("express-async-handler");
 const Announcement = require("../model/Announcement");
 
+// Create an announcement
 const createAnnouncement = asyncHandler(async (req, res) => {
   try {
     const { title, description, startDate, endDate, isLibraryClosed } = req.body;
@@ -65,29 +66,68 @@ const createAnnouncement = asyncHandler(async (req, res) => {
   }
 });
 
+// Get all announcements
 const getAllAnnouncements = asyncHandler(async (req, res) => {
-    try {
-      // Fetch all announcements from the database
-      const announcements = await Announcement.find().sort({ createdAt: -1 }); // Sort by most recent
-  
-      // Return success response with the list of announcements
-      res.status(200).json({
-        status: "success",
-        message: "All announcements fetched successfully",
-        data: announcements,
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: "error",
-        message: "Failed to fetch announcements",
-        error: error.message,
+  try {
+    // Fetch all announcements from the database
+    const announcements = await Announcement.find().sort({ createdAt: -1 }); // Sort by most recent
+
+    // Return success response with the list of announcements
+    res.status(200).json({
+      status: "success",
+      message: "All announcements fetched successfully",
+      data: announcements,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch announcements",
+      error: error.message,
+    });
+  }
+});
+
+// Delete an announcement
+const deleteAnnouncement = asyncHandler(async (req, res) => {
+  try {
+    const { id } = req.params; // Extract announcement ID from URL parameters
+
+    // Role-based access control
+    if (res.locals.role !== "library-staff") {
+      return res.status(403).json({
+        status: "failed",
+        message: "Only library-staff can delete an announcement",
       });
     }
-  });
 
+    // Find and delete the announcement
+    const deletedAnnouncement = await Announcement.findByIdAndDelete(id);
 
+    // Check if the announcement exists
+    if (!deletedAnnouncement) {
+      return res.status(404).json({
+        status: "failed",
+        message: "Announcement not found",
+      });
+    }
+
+    // Return success response
+    res.status(200).json({
+      status: "success",
+      message: "Announcement deleted successfully",
+      data: deletedAnnouncement,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to delete announcement",
+      error: error.message,
+    });
+  }
+});
 
 module.exports = {
-    createAnnouncement,
-    getAllAnnouncements,
+  createAnnouncement,
+  getAllAnnouncements,
+  deleteAnnouncement, // Export the deleteAnnouncement function
 };
