@@ -5,7 +5,7 @@ const { protect,checkRole, checkUserExists} = require('../middleware/auth'); // 
 
 router.post("/createAnnouncement",protect,checkRole("library-staff"), checkUserExists, AnnouncementController.createAnnouncement);
 router.get("/read",AnnouncementController.getAllAnnouncements);
-router.delete("/delete/:AnnouncementId",protect, checkRole("library-staff"), checkUserExists, RequestController.deleteBookRequest); 
+router.delete("/delete/:AnnouncementId",protect, checkRole("library-staff"), checkUserExists, AnnouncementController.deleteAnnouncement); 
 
 
 module.exports = router;
