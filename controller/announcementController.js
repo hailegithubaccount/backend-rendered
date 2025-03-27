@@ -100,7 +100,7 @@ const deleteAnnouncement = asyncHandler(async (req, res) => {
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return res.status(400).json({
         status: "failed",
-        message: "Invalid announcement ID",
+        message: "Invalid announcement ID. Please provide a valid MongoDB ObjectId.",
       });
     }
 
@@ -119,7 +119,7 @@ const deleteAnnouncement = asyncHandler(async (req, res) => {
     if (!deletedAnnouncement) {
       return res.status(404).json({
         status: "failed",
-        message: "Announcement not found",
+        message: "Announcement not found. Please check the provided ID.",
       });
     }
 
@@ -130,6 +130,9 @@ const deleteAnnouncement = asyncHandler(async (req, res) => {
       data: deletedAnnouncement,
     });
   } catch (error) {
+    // Log the error for debugging purposes
+    console.error("Error deleting announcement:", error);
+
     res.status(500).json({
       status: "error",
       message: "Failed to delete announcement",
@@ -137,6 +140,7 @@ const deleteAnnouncement = asyncHandler(async (req, res) => {
     });
   }
 });
+
 
 module.exports = {
   createAnnouncement,
