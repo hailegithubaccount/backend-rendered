@@ -1,5 +1,6 @@
 const asyncHandler = require("express-async-handler");
 const Announcement = require("../model/Announcement");
+const mongoose = require('mongoose');
 
 // Create an announcement
 const createAnnouncement = asyncHandler(async (req, res) => {
@@ -88,9 +89,20 @@ const getAllAnnouncements = asyncHandler(async (req, res) => {
 });
 
 // Delete an announcement
+
+
+// Delete an announcement
 const deleteAnnouncement = asyncHandler(async (req, res) => {
   try {
     const { id } = req.params; // Extract announcement ID from URL parameters
+
+    // Validate the ID format
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Invalid announcement ID",
+      });
+    }
 
     // Role-based access control
     if (res.locals.role !== "library-staff") {
