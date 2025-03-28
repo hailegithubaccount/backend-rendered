@@ -78,6 +78,81 @@ const reserveSeat = asyncHandler(async (req, res) => {
 });
 
 
+// @desc    Release a seat (Only students)
+// @route   POST /api/seats/release/:id
+// @access  Private (student)
+const releaseSeat = asyncHandler(async (req, res) => {
+  try {
+    const seatId = req.params.id;
+
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(seatId)) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Invalid seat ID format",
+      });
+    }
+
+    // Find the seat
+    const seat = await Seat.findById(seatId);
+    if (!seat) {
+      return res.status(404).json({ status: "failed", message: "Seat not found" });
+    }
+
+    // Check if the seat is already available
+    if (seat.isAvailable) {
+      return res.status(400).json({
+        status: "failed",
+        message: "This seat is already available and cannot be released",
+      });
+    }
+
+    // Ensure the logged-in user is the one who reserved the seat
+    if (seat.reservedBy.toString() !== res.locals.id.toString()) {
+      return res.status(403).json({
+        status: "failed",
+        message: "You are not authorized to release this seat",
+      });
+    }
+
+    // Release the seat
+    seat.isAvailable = true; // Mark the seat as available
+    seat.reservedBy = null; // Clear the reservation
+    seat.releasedAt = new Date(); // Record the release time
+
+    await seat.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Seat released successfully",
+      data: seat,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // @desc    Get only 'independent' type seats
 // @route   GET /api/seats/independent
 // @access  Public
@@ -121,5 +196,6 @@ const getIndependentSeats = asyncHandler(async (req, res) => {
   module.exports = {
     reserveSeat,
     getIndependentSeats,
+    releaseSeat,
     
   };
