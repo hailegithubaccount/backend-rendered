@@ -47,6 +47,19 @@ const reserveSeat = asyncHandler(async (req, res) => {
       });
     }
 
+    // Check if the student has already reserved a seat
+    const existingReservation = await Seat.findOne({
+      reservedBy: res.locals.id,
+      isAvailable: false,
+    });
+
+    if (existingReservation) {
+      return res.status(400).json({
+        status: "failed",
+        message: "You have already reserved a seat. Please release it before reserving another.",
+      });
+    }
+
     // Reserve the seat
     seat.isAvailable = false;
     seat.reservedBy = res.locals.id; // Assign the seat to the student
