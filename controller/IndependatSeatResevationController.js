@@ -72,7 +72,7 @@ const reserveSeat = asyncHandler(async (req, res) => {
       status: "success",
       message: "Seat reserved successfully",
       data: {
-        id: seat._id, // Explicitly include the seat ID
+        id: seat._id,
         seatNumber: seat.seatNumber,
         type: seat.type,
         location: seat.location,
