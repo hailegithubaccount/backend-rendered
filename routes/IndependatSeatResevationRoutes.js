@@ -1,5 +1,6 @@
 const express = require("express");
 const router = express.Router();
+const { protect,checkRole, checkUserExists} = require('../middleware/auth');
 
 const seatIndependatController = require('../controller/IndependatSeatResevationController');
 
