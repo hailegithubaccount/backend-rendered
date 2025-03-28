@@ -6,7 +6,7 @@ const seatIndependatController = require('../controller/IndependatSeatResevation
 
 
 
-router.post("/reserve/id",protect,checkRole("student"), checkUserExists,seatIndependatController.reserveSeat);
+router.post("/reserve/:id",protect,checkRole("student"), checkUserExists,seatIndependatController.reserveSeat);
 
 
 module.exports = router;
