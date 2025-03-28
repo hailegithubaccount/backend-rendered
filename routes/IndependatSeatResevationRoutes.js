@@ -7,6 +7,7 @@ const seatIndependatController = require('../controller/IndependatSeatResevation
 
 
 router.post("/reserve/:id",protect,checkRole("student"), checkUserExists,seatIndependatController.reserveSeat);
+router.get("/reserve/read",seatIndependatController.getIndependentSeats);
 
 
 module.exports = router;

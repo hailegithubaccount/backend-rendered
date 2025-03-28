@@ -77,7 +77,49 @@ const reserveSeat = asyncHandler(async (req, res) => {
   }
 });
 
+
+// @desc    Get only 'independent' type seats
+// @route   GET /api/seats/independent
+// @access  Public
+const getIndependentSeats = asyncHandler(async (req, res) => {
+  try {
+    // Fetch only seats of type "independent"
+    const independentSeats = await Seat.find({ type: "independent" })
+      .populate("reservedBy", "name email") // Populate reservedBy with user details (optional)
+      .populate("managedBy", "name email"); // Populate managedBy with staff details (optional)
+
+    // Categorize seats into available and occupied
+    const availableSeats = independentSeats.filter((seat) => seat.isAvailable);
+    const occupiedSeats = independentSeats.filter((seat) => !seat.isAvailable);
+
+    res.status(200).json({
+      status: "success",
+      results: independentSeats.length,
+      data: {
+        availableSeats,
+        occupiedSeats,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+});
+
+
+
+
+
+
+
+
+
+
   module.exports = {
-    reserveSeat
+    reserveSeat,
+    getIndependentSeats,
     
   };
