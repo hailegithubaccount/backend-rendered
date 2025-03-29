@@ -195,14 +195,11 @@ const releaseSeat = asyncHandler(async (req, res) => {
 
 const getReservedStudentBySeatNumber = asyncHandler(async (req, res) => {
   try {
-    const { seatNumber } = req.params.id;
+    const { seatNumber } = req.params;
+    const seatId = req.params.id;
 
-    // Ensure the logged-in user is a library staff member
-    if (res.locals.role !== "library-staff") {
-      return res.status(403).json({
-        status: "failed",
-        message: "Only library staff can access this information",
-      });
+    if (!mongoose.Types.ObjectId.isValid(seatId)) {
+      return res.status(400).json({ status: "failed", message: "Invalid seat ID" });
     }
 
     // Find the seat by seatNumber
@@ -239,6 +236,7 @@ const getReservedStudentBySeatNumber = asyncHandler(async (req, res) => {
     });
   }
 });
+
 
 
 
