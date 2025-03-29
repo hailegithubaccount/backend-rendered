@@ -1,7 +1,6 @@
 const Seat = require("../model/seatModel");
 const asyncHandler = require("express-async-handler");
 const mongoose = require("mongoose");
-const Notification = require('../model/messageN')
 
 // @desc    Reserve a seat (Only students)
 // @route   POST /api/seats/reserve/:id
@@ -66,25 +65,16 @@ const reserveSeat = asyncHandler(async (req, res) => {
       });
     }
 
-    // Reserve the seat (temporarily)
+    // Reserve the seat
     seat.isAvailable = false;
     seat.reservedBy = studentId;
     seat.reservedAt = new Date();
-    seat.isConfirmed = false; // Add this field to your Seat model
 
     await seat.save();
 
-    // Create a notification for the student to confirm their presence
-    const notification = await Notification.create({
-      seatId: seat._id,
-      studentId: studentId,
-      message: "Are you in your reserved seat?",
-      expiresAt: new Date(Date.now() + 15 * 60 * 1000) // 15 minutes to respond
-    });
-
     res.status(200).json({
       status: "success",
-      message: "Seat reserved temporarily. Please confirm your presence within 15 minutes.",
+      message: "Seat reserved successfully",
       data: {
         id: seat._id,
         seatNumber: seat.seatNumber,
@@ -93,8 +83,6 @@ const reserveSeat = asyncHandler(async (req, res) => {
         isAvailable: seat.isAvailable,
         reservedBy: seat.reservedBy,
         reservedAt: seat.reservedAt,
-        isConfirmed: seat.isConfirmed,
-        notificationId: notification._id
       },
     });
   } catch (error) {
@@ -105,122 +93,11 @@ const reserveSeat = asyncHandler(async (req, res) => {
     });
   }
 });
+
 // @desc    Release a seat (Only students)
 // @route   POST /api/seats/release/:id
 // @access  Private (student)
-const handleNotificationResponse = asyncHandler(async (req, res) => {
-  try {
-    const { notificationId, response } = req.body;
-    const studentId = res.locals.id;
 
-    if (!mongoose.Types.ObjectId.isValid(notificationId)) {
-      return res.status(400).json({ status: "failed", message: "Invalid notification ID" });
-    }
-
-    const notification = await Notification.findById(notificationId);
-    if (!notification) {
-      return res.status(404).json({ status: "failed", message: "Notification not found" });
-    }
-
-    // Check if the responding student is the intended recipient
-    if (notification.studentId.toString() !== studentId.toString()) {
-      return res.status(403).json({ 
-        status: "failed", 
-        message: "Not authorized to respond to this notification" 
-      });
-    }
-
-    // Check if notification has expired
-    if (new Date() > notification.expiresAt) {
-      notification.status = 'rejected';
-      await notification.save();
-      
-      // Release the seat
-      await Seat.findByIdAndUpdate(notification.seatId, {
-        isAvailable: true,
-        reservedBy: null,
-        releasedAt: new Date(),
-        isConfirmed: false
-      });
-
-      return res.status(400).json({ 
-        status: "failed", 
-        message: "Response time expired. Seat has been released." 
-      });
-    }
-
-    // Update notification status based on response
-    if (response === 'yes') {
-      notification.status = 'confirmed';
-      await notification.save();
-      
-      // Confirm the seat reservation
-      await Seat.findByIdAndUpdate(notification.seatId, {
-        isConfirmed: true
-      });
-
-      return res.status(200).json({ 
-        status: "success", 
-        message: "Seat reservation confirmed. Enjoy your seat!" 
-      });
-    } else if (response === 'no') {
-      notification.status = 'rejected';
-      await notification.save();
-      
-      // Release the seat
-      await Seat.findByIdAndUpdate(notification.seatId, {
-        isAvailable: true,
-        reservedBy: null,
-        releasedAt: new Date(),
-        isConfirmed: false
-      });
-
-      return res.status(200).json({ 
-        status: "success", 
-        message: "Seat has been released for others." 
-      });
-    } else {
-      return res.status(400).json({ 
-        status: "failed", 
-        message: "Invalid response. Please respond with 'yes' or 'no'." 
-      });
-    }
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Something went wrong",
-      error: error.message
-    });
-  }
-});
-
-
-const checkExpiredNotifications = async () => {
-  try {
-    const now = new Date();
-    const expiredNotifications = await Notification.find({
-      status: 'pending',
-      expiresAt: { $lt: now }
-    });
-
-    for (const notification of expiredNotifications) {
-      notification.status = 'rejected';
-      await notification.save();
-      
-      await Seat.findByIdAndUpdate(notification.seatId, {
-        isAvailable: true,
-        reservedBy: null,
-        releasedAt: new Date(),
-        isConfirmed: false
-      });
-    }
-  } catch (error) {
-    console.error("Error processing expired notifications:", error);
-  }
-};
-
-// Run this every minute
-setInterval(checkExpiredNotifications, 60 * 1000);
 
 const getIndependentSeats = asyncHandler(async (req, res) => {
   try {
@@ -258,12 +135,6 @@ const getIndependentSeats = asyncHandler(async (req, res) => {
     });
   }
 });
-
-
-
-
-
-
 
 
 const releaseSeat = asyncHandler(async (req, res) => {
@@ -322,36 +193,32 @@ const releaseSeat = asyncHandler(async (req, res) => {
 });
 
 
-const getReservedIndependentSeats = asyncHandler(async (req, res) => {
+const getAllReservedSeats = asyncHandler(async (req, res) => {
   try {
     // Ensure only library staff can access this route
-    if (res.locals.user.role !== "library-staff") {
+    if (res.locals.role !== "library-staff") {
       return res.status(403).json({
         status: "failed",
         message: "Access denied. Only library staff can fetch reserved seats.",
       });
     }
 
-    // Find all reserved independent seats (isAvailable = false and type = "independent")
-    const reservedSeats = await Seat.find({ 
-      isAvailable: false,
-      type: "independent" 
-    }).populate(
+    // Find all reserved seats (isAvailable = false) and populate reservedBy details
+    const reservedSeats = await Seat.find({ isAvailable: false }).populate(
       "reservedBy",
       "name email studentId"
     );
 
     if (reservedSeats.length === 0) {
       return res.status(404).json({
-        status: "success",
-        message: "No reserved independent seats found",
-        data: []
+        status: "failed",
+        message: "No reserved seats found",
       });
     }
 
     res.status(200).json({
       status: "success",
-      message: "Reserved independent seats fetched successfully",
+      message: "Reserved seats fetched successfully",
       data: reservedSeats,
     });
   } catch (error) {
@@ -362,6 +229,7 @@ const getReservedIndependentSeats = asyncHandler(async (req, res) => {
     });
   }
 });
+
 
 const releaseSeatByStaff = asyncHandler(async (req, res) => {
   try {
@@ -475,9 +343,7 @@ const releaseSeatByStaff = asyncHandler(async (req, res) => {
     reserveSeat,
     getIndependentSeats ,
     releaseSeat,
-    getReservedIndependentSeats ,
+    getAllReservedSeats,
     releaseSeatByStaff,
-    handleNotificationResponse,
-    
     
   };
