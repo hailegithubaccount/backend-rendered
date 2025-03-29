@@ -97,61 +97,100 @@ const reserveSeat = asyncHandler(async (req, res) => {
 // @desc    Release a seat (Only students)
 // @route   POST /api/seats/release/:id
 // @access  Private (student)
-const releaseSeat = asyncHandler(async (req, res) => {
-  try {
-    const seatId = req.params.id;
 
-    // Validate ObjectId
-    if (!mongoose.Types.ObjectId.isValid(seatId)) {
-      return res.status(400).json({
-        status: "failed",
-        message: "Invalid seat ID format",
+
+const getIndependentSeats = asyncHandler(async (req, res) => {
+  try {
+    const { populate = 'false' } = req.query;
+    
+    let query = Seat.find({ type: "independent" });
+    
+    if (populate === 'true') {
+      query = query.populate({
+        path: 'reservedBy',
+        select: 'name email' // Only include these fields
       });
     }
 
-    // Find the seat
+    const independentSeats = await query.exec();
+    
+    // Categorize seats
+    const availableSeats = independentSeats.filter(seat => seat.isAvailable);
+    const occupiedSeats = independentSeats.filter(seat => !seat.isAvailable);
+
+    res.status(200).json({
+      status: "success",
+      results: independentSeats.length,
+      data: {
+        availableSeats,
+        occupiedSeats,
+        populated: populate === 'true' // Indicate if results are populated
+      }
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+      error: error.message
+    });
+  }
+});
+
+
+const releaseSeat = asyncHandler(async (req, res) => {
+  try {
+    const seatId = req.params.id;
+    const userId = res.locals.id;
+
+    if (!mongoose.Types.ObjectId.isValid(seatId)) {
+      return res.status(400).json({ status: "failed", message: "Invalid seat ID" });
+    }
+
     const seat = await Seat.findById(seatId);
     if (!seat) {
       return res.status(404).json({ status: "failed", message: "Seat not found" });
     }
 
-    // Check if the seat is already available
     if (seat.isAvailable) {
-      return res.status(400).json({
-        status: "failed",
-        message: "This seat is already available and cannot be released",
+      return res.status(400).json({ 
+        status: "failed", 
+        message: "Seat is already available" 
       });
     }
 
-    // Ensure the logged-in user is the one who reserved the seat
-    if (seat.reservedBy.toString() !== res.locals.id.toString()) {
-      return res.status(403).json({
-        status: "failed",
-        message: "You are not authorized to release this seat",
+    // Convert both IDs to string for comparison
+    if (seat.reservedBy?.toString() !== userId.toString()) {
+      return res.status(403).json({ 
+        status: "failed", 
+        message: "Not authorized to release this seat" 
       });
     }
 
     // Release the seat
-    seat.isAvailable = true; // Mark the seat as available
-    seat.reservedBy = null; // Clear the reservation
-    seat.releasedAt = new Date(); // Record the release time
+    seat.isAvailable = true;
+    seat.reservedBy = null;
+    seat.releasedAt = new Date();
 
     await seat.save();
 
     res.status(200).json({
       status: "success",
       message: "Seat released successfully",
-      data: seat,
+      data: {
+        id: seat._id,
+        seatNumber: seat.seatNumber,
+        isAvailable: seat.isAvailable,
+        releasedAt: seat.releasedAt
+      }
     });
   } catch (error) {
     res.status(500).json({
       status: "error",
       message: "Something went wrong",
-      error: error.message,
+      error: error.message
     });
   }
 });
-
 
 
 
@@ -172,33 +211,33 @@ const releaseSeat = asyncHandler(async (req, res) => {
 // @desc    Get only 'independent' type seats
 // @route   GET /api/seats/independent
 // @access  Public
-const getIndependentSeats = asyncHandler(async (req, res) => {
-  try {
-    // Fetch only seats of type "independent"
-    const independentSeats = await Seat.find({ type: "independent" })
-      .populate("reservedBy", "name email") // Populate reservedBy with user details (optional)
-      .populate("managedBy", "name email"); // Populate managedBy with staff details (optional)
+// const getIndependentSeats = asyncHandler(async (req, res) => {
+//   try {
+//     // Fetch only seats of type "independent"
+//     const independentSeats = await Seat.find({ type: "independent" })
+//       .populate("reservedBy", "name email") // Populate reservedBy with user details (optional)
+//       .populate("managedBy", "name email"); // Populate managedBy with staff details (optional)
 
-    // Categorize seats into available and occupied
-    const availableSeats = independentSeats.filter((seat) => seat.isAvailable);
-    const occupiedSeats = independentSeats.filter((seat) => !seat.isAvailable);
+//     // Categorize seats into available and occupied
+//     const availableSeats = independentSeats.filter((seat) => seat.isAvailable);
+//     const occupiedSeats = independentSeats.filter((seat) => !seat.isAvailable);
 
-    res.status(200).json({
-      status: "success",
-      results: independentSeats.length,
-      data: {
-        availableSeats,
-        occupiedSeats,
-      },
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Something went wrong",
-      error: error.message,
-    });
-  }
-});
+//     res.status(200).json({
+//       status: "success",
+//       results: independentSeats.length,
+//       data: {
+//         availableSeats,
+//         occupiedSeats,
+//       },
+//     });
+//   } catch (error) {
+//     res.status(500).json({
+//       status: "error",
+//       message: "Something went wrong",
+//       error: error.message,
+//     });
+//   }
+// });
 
 
 
@@ -211,7 +250,7 @@ const getIndependentSeats = asyncHandler(async (req, res) => {
 
   module.exports = {
     reserveSeat,
-    getIndependentSeats,
+    getIndependentSeats ,
     releaseSeat,
     
   };
