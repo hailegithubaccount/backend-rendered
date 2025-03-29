@@ -38,6 +38,9 @@ const announcementRoute=require("./routes/announcementRoutes")
 
 const IndependatSeatResevationRoutes=require("./routes/IndependatSeatResevationRoutes")
 
+
+const bookSeatRoutes=require("./routes/bookSeatRoute");
+
 // Use Routes
 app.use('/api/users', studentRoute);
 app.use('/api/users', userRoutes);
@@ -54,6 +57,10 @@ app.use('/api/Announc',announcementRoute);
 
 // indepedate resevation seat routes
 app.use('/api/indepenadteSeat',IndependatSeatResevationRoutes);
+
+// Books seat routes
+
+app.use('/api/BookSeat',bookSeatRoutes);
 
 
 
