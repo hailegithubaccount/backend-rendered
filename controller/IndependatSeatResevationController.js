@@ -195,7 +195,7 @@ const releaseSeat = asyncHandler(async (req, res) => {
 
 const getReservedStudentBySeatNumber = asyncHandler(async (req, res) => {
   try {
-    const { seatNumber } = req.params;
+    const { seatNumber } = req.params.id;
 
     // Ensure the logged-in user is a library staff member
     if (res.locals.role !== "library-staff") {
