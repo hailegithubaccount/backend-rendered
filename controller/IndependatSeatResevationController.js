@@ -193,6 +193,53 @@ const releaseSeat = asyncHandler(async (req, res) => {
 });
 
 
+const getReservedStudentBySeatNumber = asyncHandler(async (req, res) => {
+  try {
+    const { seatNumber } = req.params;
+
+    // Ensure the logged-in user is a library staff member
+    if (res.locals.role !== "library-staff") {
+      return res.status(403).json({
+        status: "failed",
+        message: "Only library staff can access this information",
+      });
+    }
+
+    // Find the seat by seatNumber
+    const seat = await Seat.findOne({ seatNumber }).populate('reservedBy', 'name email studentId');
+
+    if (!seat) {
+      return res.status(404).json({
+        status: "failed",
+        message: "Seat not found",
+      });
+    }
+
+    if (seat.isAvailable) {
+      return res.status(400).json({
+        status: "failed",
+        message: "This seat is not reserved",
+      });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Reserved student fetched successfully",
+      data: {
+        seatId: seat._id,
+        seatNumber: seat.seatNumber,
+        reservedBy: seat.reservedBy,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+});
+
 
 
 
@@ -252,5 +299,6 @@ const releaseSeat = asyncHandler(async (req, res) => {
     reserveSeat,
     getIndependentSeats ,
     releaseSeat,
+    getReservedStudentBySeatNumber
     
   };
