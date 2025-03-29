@@ -126,7 +126,7 @@ const releaseBookSeatByStaff = asyncHandler(async (req, res) => {
 
  module.exports = {
     getBookSeats,
-    releaseBookSeatByStaff 
+    releaseBookSeatByStaff, 
    
     
     
