@@ -40,6 +40,7 @@ const seatSchema = new mongoose.Schema({
     ref: "users", // Reference to the User model (library-staff)
     required: true, // Ensure every seat is managed by someone
   },
+  isConfirmed: { type: Boolean, default: false }
 });
 
 const Seat = mongoose.model("Seat", seatSchema);
