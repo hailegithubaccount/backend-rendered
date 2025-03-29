@@ -8,6 +8,7 @@ const mongoose = require("mongoose");
 const reserveSeat = asyncHandler(async (req, res) => {
   try {
     const seatId = req.params.id;
+    const studentId = res.locals.id;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(seatId)) {
@@ -47,27 +48,30 @@ const reserveSeat = asyncHandler(async (req, res) => {
       });
     }
 
-    // Check if the student has already reserved a seat
+    // Check if the student has already reserved ANY seat (available or not)
     const existingReservation = await Seat.findOne({
-      reservedBy: res.locals.id,
-      isAvailable: false,  // Changed from true to false
+      reservedBy: studentId,
+      isAvailable: false
     });
 
     if (existingReservation) {
       return res.status(400).json({
         status: "failed",
         message: "You have already reserved a seat. Please release it before reserving another.",
+        data: {
+          reservedSeatId: existingReservation._id,
+          seatNumber: existingReservation.seatNumber
+        }
       });
     }
 
     // Reserve the seat
     seat.isAvailable = false;
-    seat.reservedBy = res.locals.id; // Assign the seat to the student
-    seat.reservedAt = new Date(); // Record the reservation time
+    seat.reservedBy = studentId;
+    seat.reservedAt = new Date();
 
     await seat.save();
 
-    // Include the seat ID in the response
     res.status(200).json({
       status: "success",
       message: "Seat reserved successfully",
@@ -89,7 +93,6 @@ const reserveSeat = asyncHandler(async (req, res) => {
     });
   }
 });
-
 
 // @desc    Release a seat (Only students)
 // @route   POST /api/seats/release/:id
