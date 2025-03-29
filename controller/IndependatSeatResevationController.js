@@ -297,6 +297,6 @@ const getReservedStudentBySeatNumber = asyncHandler(async (req, res) => {
     reserveSeat,
     getIndependentSeats ,
     releaseSeat,
-    getReservedStudentBySeatNumber
+    getReservedStudentBySeatNumber,
     
   };
