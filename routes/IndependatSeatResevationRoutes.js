@@ -12,6 +12,8 @@ router.get("/reserve/read",seatIndependatController.getIndependentSeats);
 router.get("/reserve/forstaff",protect,checkRole("library-staff"), checkUserExists,seatIndependatController.getAllReservedSeats);
 router.put('/releasebystaff/:seatId',protect,checkRole("library-staff"), checkUserExists,seatIndependatController.releaseSeatByStaff);
 
+router.get("/bookSeat/read",protect,checkRole("library-staff"), checkUserExists,seatIndependatController.getBookSeats);
+
 
 module.exports = router;
 
