@@ -5,52 +5,91 @@ const mongoose = require("mongoose");
 
 const getBookSeats = asyncHandler(async (req, res) => {
     try {
-      // Ensure only library staff can access this route
-      if (res.locals.role !== "library-staff") {
-        return res.status(403).json({
-          status: "failed",
-          message: "Access denied. Only library staff can fetch book seats.",
-        });
-      }
-  
-      const { populate = 'false' } = req.query;
-      
-      let query = Seat.find({ type: "book" });
-      
-      if (populate === 'true') {
-        query = query.populate({
-          path: 'reservedBy',
-          select: 'name email' // Only include these fields
-        });
-      }
-  
-      const bookSeats = await query.exec();
-      
-      // Categorize seats
-      const availableSeats = bookSeats.filter(seat => seat.isAvailable);
-      const occupiedSeats = bookSeats.filter(seat => !seat.isAvailable);
-  
-      res.status(200).json({
-        status: "success",
-        results: bookSeats.length,
-        data: {
-          availableSeats,
-          occupiedSeats,
-          populated: populate === 'true',
-          accessedBy: {
-            staffId: res.locals.id,
-            name: res.locals.name
-          }
+        // Authorization check
+        if (res.locals.user?.role !== "library-staff") {
+            return res.status(403).json({
+                status: "fail",
+                code: 403,
+                message: "Unauthorized access. Only library staff can view book seats.",
+            });
         }
-      });
+
+        // Validate and parse query parameters
+        const populate = req.query.populate === 'true';
+        const { location } = req.query;
+        
+        // Build base query
+        let query = Seat.find({ type: "book" });
+        
+        // Apply location filter if provided
+        if (location && ['north', 'south', 'east', 'west'].includes(location)) {
+            query = query.where('location').equals(location);
+        }
+        
+        // Apply population if requested
+        if (populate) {
+            query = query.populate({
+                path: 'reservedBy',
+                select: 'name email studentId',
+                options: { lean: true }
+            });
+        }
+        
+        // Execute query
+        const bookSeats = await query.lean().exec();
+        
+        if (!bookSeats.length) {
+            return res.status(200).json({
+                status: "success",
+                code: 200,
+                message: "No book seats found",
+                data: {
+                    availableSeats: [],
+                    occupiedSeats: [],
+                    total: 0
+                }
+            });
+        }
+        
+        // Categorize seats
+        const availableSeats = bookSeats.filter(seat => seat.isAvailable);
+        const occupiedSeats = bookSeats.filter(seat => !seat.isAvailable);
+        
+        // Prepare response
+        const response = {
+            status: "success",
+            code: 200,
+            message: "Book seats retrieved successfully",
+            data: {
+                total: bookSeats.length,
+                available: availableSeats.length,
+                occupied: occupiedSeats.length,
+                availableSeats,
+                occupiedSeats,
+                metadata: {
+                    populated: populate,
+                    locationFilter: location || 'all',
+                    accessedAt: new Date().toISOString(),
+                    accessedBy: {
+                        staffId: res.locals.user._id,
+                        name: res.locals.user.name
+                    }
+                }
+            }
+        };
+        
+        res.status(200).json(response);
+        
     } catch (error) {
-      res.status(500).json({
-        status: "error",
-        message: "Something went wrong",
-        error: error.message
-      });
+        console.error('Error fetching book seats:', error);
+        res.status(500).json({
+            status: "error",
+            code: 500,
+            message: "Internal server error while fetching book seats",
+            error: process.env.NODE_ENV === 'development' ? error.message : undefined
+        });
     }
-  });
+});
 
 
 
