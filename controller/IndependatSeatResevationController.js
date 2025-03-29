@@ -196,11 +196,9 @@ const releaseSeat = asyncHandler(async (req, res) => {
 const getReservedStudentBySeatNumber = asyncHandler(async (req, res) => {
   try {
     const { seatNumber } = req.params;
-    const seatId = req.params.id;
+    
 
-    if (!mongoose.Types.ObjectId.isValid(seatId)) {
-      return res.status(400).json({ status: "failed", message: "Invalid seat ID" });
-    }
+   
 
     // Find the seat by seatNumber
     const seat = await Seat.findOne({ seatNumber }).populate('reservedBy', 'name email studentId');
