@@ -231,6 +231,59 @@ const getAllReservedSeats = asyncHandler(async (req, res) => {
 });
 
 
+const releaseSeatByStaff = asyncHandler(async (req, res) => {
+  try {
+    if (res.locals.role !== "library-staff") {
+      return res.status(403).json({
+        status: "failed",
+        message: "Only library staff can release seats",
+      });
+    }
+
+    const { seatId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(seatId)) {
+      return res.status(400).json({ status: "failed", message: "Invalid seat ID" });
+    }
+
+    const seat = await Seat.findById(seatId);
+
+    if (!seat) {
+      return res.status(404).json({ status: "failed", message: "Seat not found" });
+    }
+
+    if (seat.isAvailable) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Seat is already available",
+      });
+    }
+
+    // Release the seat
+    seat.isAvailable = true;
+    seat.reservedBy = null;
+    seat.releasedAt = new Date();
+
+    await seat.save();
+
+    res.status(200).json({
+      status: "success",
+      message: "Seat released by staff successfully",
+      data: {
+        seatNumber: seat.seatNumber,
+        isAvailable: seat.isAvailable,
+      },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+});
+
+
 
 
 
@@ -291,5 +344,6 @@ const getAllReservedSeats = asyncHandler(async (req, res) => {
     getIndependentSeats ,
     releaseSeat,
     getAllReservedSeats,
+    releaseSeatByStaff,
     
   };
