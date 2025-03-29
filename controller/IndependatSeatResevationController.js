@@ -199,32 +199,36 @@ const releaseSeat = asyncHandler(async (req, res) => {
 });
 
 
-const getAllReservedSeats = asyncHandler(async (req, res) => {
+const getReservedIndependentSeats = asyncHandler(async (req, res) => {
   try {
     // Ensure only library staff can access this route
-    if (res.locals.role !== "library-staff") {
+    if (res.locals.user.role !== "library-staff") {
       return res.status(403).json({
         status: "failed",
         message: "Access denied. Only library staff can fetch reserved seats.",
       });
     }
 
-    // Find all reserved seats (isAvailable = false) and populate reservedBy details
-    const reservedSeats = await Seat.find({ isAvailable: false }).populate(
+    // Find all reserved independent seats (isAvailable = false and type = "independent")
+    const reservedSeats = await Seat.find({ 
+      isAvailable: false,
+      type: "independent" 
+    }).populate(
       "reservedBy",
       "name email studentId"
     );
 
     if (reservedSeats.length === 0) {
       return res.status(404).json({
-        status: "failed",
-        message: "No reserved seats found",
+        status: "success",
+        message: "No reserved independent seats found",
+        data: []
       });
     }
 
     res.status(200).json({
       status: "success",
-      message: "Reserved seats fetched successfully",
+      message: "Reserved independent seats fetched successfully",
       data: reservedSeats,
     });
   } catch (error) {
@@ -235,7 +239,6 @@ const getAllReservedSeats = asyncHandler(async (req, res) => {
     });
   }
 });
-
 
 const releaseSeatByStaff = asyncHandler(async (req, res) => {
   try {
@@ -349,7 +352,7 @@ const releaseSeatByStaff = asyncHandler(async (req, res) => {
     reserveSeat,
     getIndependentSeats ,
     releaseSeat,
-    getAllReservedSeats,
+    getReservedIndependentSeats ,
     releaseSeatByStaff,
     
     
