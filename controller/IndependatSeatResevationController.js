@@ -50,7 +50,7 @@ const reserveSeat = asyncHandler(async (req, res) => {
     // Check if the student has already reserved a seat
     const existingReservation = await Seat.findOne({
       reservedBy: res.locals.id,
-      isAvailable: true,
+      isAvailable: false,  // Changed from true to false
     });
 
     if (existingReservation) {
