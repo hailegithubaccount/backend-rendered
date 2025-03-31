@@ -212,7 +212,8 @@ const handleSeatResponse = asyncHandler(async (req, res) => {
   session.startTransaction();
 
   try {
-    const { notificationId, response } = req.body;
+    const { response } = req.body;
+    const notificationId = req.params.id;
     const studentId = res.locals.id;
 
     // Validate response
