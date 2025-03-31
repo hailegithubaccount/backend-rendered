@@ -40,7 +40,10 @@ const seatSchema = new mongoose.Schema({
     ref: "users", // Reference to the User model (library-staff)
     required: true, // Ensure every seat is managed by someone
   },
-  isConfirmed: { type: Boolean, default: false }
+  reservationDuration: {
+    type: Number, // in minutes
+    default: 120 // 2 hours default duration
+  },
 });
 
 const Seat = mongoose.model("Seat", seatSchema);

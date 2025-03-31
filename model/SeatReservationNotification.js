@@ -1,10 +1,9 @@
-// models/SeatReservationNotification.js
 const mongoose = require('mongoose');
 
-const seatReservationNotificationSchema = new mongoose.Schema({
+const notificationSchema = new mongoose.Schema({
   studentId: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'users',
     required: true
   },
   seatId: {
@@ -14,19 +13,38 @@ const seatReservationNotificationSchema = new mongoose.Schema({
   },
   message: {
     type: String,
-    required: true,
-    default: "Welcome! Have a nice read at your reserved seat."
+    required: true
   },
   isRead: {
     type: Boolean,
     default: false
   },
+  requiresAction: {
+    type: Boolean,
+    default: false
+  },
+  actionResponse: {
+    type: String,
+    enum: ['pending', 'extend', 'release'],
+    default: 'pending'
+  },
+  deadline: {
+    type: Date,
+    required: true
+  },
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  updatedAt: {
+    type: Date,
+    default: Date.now
   }
-}, {
-  timestamps: true // Adds createdAt and updatedAt automatically
 });
 
-module.exports = mongoose.model('SeatReservationNotification', seatReservationNotificationSchema);
+notificationSchema.pre('save', function(next) {
+  this.updatedAt = new Date();
+  next();
+});
+
+module.exports = mongoose.model('SeatReservationNotification', notificationSchema);

@@ -6,13 +6,79 @@ const SeatReservationNotification = require('../model/SeatReservationNotificatio
 // @desc    Reserve a seat (Only students)
 // @route   POST /api/seats/reserve/:id
 // @access  Private (student)
+const mongoose = require('mongoose');
+const Seat = require('../models/Seat');
+const SeatReservationNotification = require('../models/SeatReservationNotification');
+const asyncHandler = require('express-async-handler');
+
+// Utility function to schedule automatic release
+const scheduleReleaseCheck = (seatId, deadline) => {
+  const now = new Date();
+  const timeUntilDeadline = deadline - now;
+
+  setTimeout(async () => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    
+    try {
+      const seat = await Seat.findById(seatId).session(session);
+      if (!seat || seat.isAvailable) {
+        await session.commitTransaction();
+        return;
+      }
+
+      const notification = await SeatReservationNotification.findOne({
+        seatId: seatId,
+        requiresAction: true,
+        actionResponse: 'pending'
+      }).session(session);
+
+      if (notification && notification.actionResponse === 'pending') {
+        // Automatic release process
+        seat.isAvailable = true;
+        seat.reservedBy = null;
+        seat.reservedAt = null;
+        seat.releasedAt = new Date();
+        await seat.save({ session });
+
+        // Update notification
+        notification.actionResponse = 'release';
+        notification.message = `Seat ${seat.seatNumber} was automatically released after deadline.`;
+        await notification.save({ session });
+
+        // Create release notification
+        await SeatReservationNotification.create([{
+          studentId: seat.reservedBy,
+          seatId: seat._id,
+          message: `Your seat ${seat.seatNumber} has been automatically released.`,
+          isRead: false,
+          requiresAction: false,
+          deadline: new Date()
+        }], { session });
+      }
+
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      console.error('Automatic release error:', error);
+    } finally {
+      session.endSession();
+    }
+  }, Math.max(0, timeUntilDeadline)); // Ensure timeout is not negative
+};
+
+// Reserve Seat Controller
 const reserveSeat = asyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
     const seatId = req.params.id;
     const studentId = res.locals.id;
 
     // Validate ObjectId
     if (!mongoose.Types.ObjectId.isValid(seatId)) {
+      await session.abortTransaction();
       return res.status(400).json({
         status: "failed",
         message: "Invalid seat ID format",
@@ -20,16 +86,18 @@ const reserveSeat = asyncHandler(async (req, res) => {
     }
 
     // Find the seat
-    const seat = await Seat.findById(seatId);
+    const seat = await Seat.findById(seatId).session(session);
     if (!seat) {
+      await session.abortTransaction();
       return res.status(404).json({ 
         status: "failed", 
         message: "Seat not found" 
       });
     }
 
-    // Check if the seat is already reserved
+    // Check if seat is available
     if (!seat.isAvailable) {
+      await session.abortTransaction();
       return res.status(400).json({
         status: "failed",
         message: "This seat is already reserved",
@@ -40,8 +108,9 @@ const reserveSeat = asyncHandler(async (req, res) => {
       });
     }
 
-    // Ensure the seat type is "independent"
+    // Check seat type
     if (seat.type !== "independent") {
+      await session.abortTransaction();
       return res.status(400).json({
         status: "failed",
         message: "Only 'independent' type seats can be reserved",
@@ -49,8 +118,9 @@ const reserveSeat = asyncHandler(async (req, res) => {
       });
     }
 
-    // Ensure the logged-in user is a student
+    // Check user role
     if (res.locals.role !== "student") {
+      await session.abortTransaction();
       return res.status(403).json({
         status: "failed",
         message: "Only students can reserve a seat",
@@ -58,13 +128,14 @@ const reserveSeat = asyncHandler(async (req, res) => {
       });
     }
 
-    // Check if the student has already reserved ANY seat
+    // Check existing reservation
     const existingReservation = await Seat.findOne({
       reservedBy: studentId,
       isAvailable: false
-    });
+    }).session(session);
 
     if (existingReservation) {
+      await session.abortTransaction();
       return res.status(400).json({
         status: "failed",
         message: "You have already reserved a seat",
@@ -77,56 +148,54 @@ const reserveSeat = asyncHandler(async (req, res) => {
       });
     }
 
-    // Start a transaction to ensure atomic operations
-    const session = await mongoose.startSession();
-    session.startTransaction();
+    // Calculate deadline
+    const deadline = new Date();
+    deadline.setMinutes(deadline.getMinutes() + seat.reservationDuration);
 
-    try {
-      // Reserve the seat
-      seat.isAvailable = false;
-      seat.reservedBy = studentId;
-      seat.reservedAt = new Date();
-      const savedSeat = await seat.save({ session });
+    // Reserve the seat
+    seat.isAvailable = false;
+    seat.reservedBy = studentId;
+    seat.reservedAt = new Date();
+    await seat.save({ session });
 
-      // Create the reservation notification
-      const notification = await SeatReservationNotification.create([{
-        studentId: studentId,
-        seatId: seat._id,
-        message: `Seat ${seat.seatNumber} reservation confirmed! Welcome to ${seat.location}.`
-      }], { session });
+    // Create notification
+    const notification = await SeatReservationNotification.create([{
+      studentId: studentId,
+      seatId: seat._id,
+      message: `Seat ${seat.seatNumber} reserved until ${deadline.toLocaleTimeString()}. Continue using this seat?`,
+      requiresAction: true,
+      deadline: deadline,
+      actionResponse: 'pending'
+    }], { session });
 
-      await session.commitTransaction();
+    await session.commitTransaction();
 
-      // Successful response
-      return res.status(200).json({
-        status: "success",
-        message: "Seat reserved successfully",
-        data: {
-          seat: {
-            id: savedSeat._id,
-            seatNumber: savedSeat.seatNumber,
-            type: savedSeat.type,
-            location: savedSeat.location,
-            isAvailable: savedSeat.isAvailable,
-            reservedBy: savedSeat.reservedBy,
-            reservedAt: savedSeat.reservedAt
-          },
-          notification: {
-            id: notification[0]._id,
-            message: notification[0].message,
-            createdAt: notification[0].createdAt
-          }
+    // Schedule automatic release check
+    scheduleReleaseCheck(seat._id, deadline);
+
+    return res.status(200).json({
+      status: "success",
+      message: "Seat reserved successfully",
+      data: {
+        seat: {
+          id: seat._id,
+          seatNumber: seat.seatNumber,
+          type: seat.type,
+          location: seat.location,
+          reservedAt: seat.reservedAt,
+          reservationDeadline: deadline
+        },
+        notification: {
+          id: notification[0]._id,
+          message: notification[0].message,
+          requiresAction: notification[0].requiresAction,
+          deadline: notification[0].deadline
         }
-      });
-
-    } catch (transactionError) {
-      await session.abortTransaction();
-      throw transactionError;
-    } finally {
-      session.endSession();
-    }
+      }
+    });
 
   } catch (error) {
+    await session.abortTransaction();
     console.error("Seat reservation error:", error);
     return res.status(500).json({
       status: "error",
@@ -134,8 +203,108 @@ const reserveSeat = asyncHandler(async (req, res) => {
       error: error.message,
       timestamp: new Date().toISOString()
     });
+  } finally {
+    session.endSession();
   }
 });
+
+// Handle Seat Extension/Release Response
+const handleSeatResponse = asyncHandler(async (req, res) => {
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
+  try {
+    const { notificationId, response } = req.body;
+    const studentId = res.locals.id;
+
+    // Validate response
+    if (!['extend', 'release'].includes(response)) {
+      await session.abortTransaction();
+      return res.status(400).json({
+        status: "failed",
+        message: "Invalid response type"
+      });
+    }
+
+    // Find notification
+    const notification = await SeatReservationNotification.findById(notificationId).session(session);
+    if (!notification || notification.studentId.toString() !== studentId) {
+      await session.abortTransaction();
+      return res.status(404).json({
+        status: "failed",
+        message: "Notification not found"
+      });
+    }
+
+    // Find seat
+    const seat = await Seat.findById(notification.seatId).session(session);
+    if (!seat) {
+      await session.abortTransaction();
+      return res.status(404).json({
+        status: "failed",
+        message: "Seat not found"
+      });
+    }
+
+    if (response === 'extend') {
+      // Extend reservation
+      const newDeadline = new Date();
+      newDeadline.setMinutes(newDeadline.getMinutes() + seat.reservationDuration);
+      
+      seat.reservationDeadline = newDeadline;
+      await seat.save({ session });
+
+      // Update notification
+      notification.actionResponse = 'extend';
+      notification.message = `Seat ${seat.seatNumber} reservation extended until ${newDeadline.toLocaleTimeString()}`;
+      notification.deadline = newDeadline;
+      await notification.save({ session });
+
+      // Schedule new automatic release check
+      scheduleReleaseCheck(seat._id, newDeadline);
+
+      await session.commitTransaction();
+      return res.status(200).json({
+        status: "success",
+        message: "Seat reservation extended",
+        data: {
+          newDeadline: newDeadline
+        }
+      });
+    } else {
+      // Release seat
+      seat.isAvailable = true;
+      seat.reservedBy = null;
+      seat.reservedAt = null;
+      seat.releasedAt = new Date();
+      await seat.save({ session });
+
+      // Update notification
+      notification.actionResponse = 'release';
+      notification.message = `Seat ${seat.seatNumber} has been released.`;
+      notification.requiresAction = false;
+      await notification.save({ session });
+
+      await session.commitTransaction();
+      return res.status(200).json({
+        status: "success",
+        message: "Seat released successfully"
+      });
+    }
+  } catch (error) {
+    await session.abortTransaction();
+    console.error("Seat response error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to process seat response",
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  } finally {
+    session.endSession();
+  }
+});
+
 
 // @desc    Release a seat (Only students)
 // @route   POST /api/seats/release/:id
@@ -393,5 +562,6 @@ const releaseSeatByStaff = asyncHandler(async (req, res) => {
     releaseSeat,
     getAllReservedSeats,
     releaseSeatByStaff,
+    handleSeatResponse,
     
   };
