@@ -41,6 +41,10 @@ const IndependatSeatResevationRoutes=require("./routes/IndependatSeatResevationR
 
 const bookSeatRoutes=require("./routes/bookSeatRoute");
 
+
+//Notification  after reserved the independate seat reseravation
+const independateSeatNotficationRoutes=require("./routes/independateSeatNotficationRoutes")
+
 // Use Routes
 app.use('/api/users', studentRoute);
 app.use('/api/users', userRoutes);
@@ -61,6 +65,10 @@ app.use('/api/indepenadteSeat',IndependatSeatResevationRoutes);
 // Books seat routes
 
 app.use('/api/BookSeat',bookSeatRoutes);
+
+
+//Notification  after reserved the independate seat reseravationa
+app.use('/api/independatSeat',independateSeatNotficationRoutes);
 
 
 
