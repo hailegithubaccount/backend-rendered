@@ -42,7 +42,7 @@ const seatSchema = new mongoose.Schema({
   },
   reservationDuration: {
     type: Number, // in minutes
-    default: 1 // 2 hours default duration
+    default: 3 // 2 hours default duration
   },
 });
 
