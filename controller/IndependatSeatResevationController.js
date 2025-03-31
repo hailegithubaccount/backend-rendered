@@ -304,6 +304,39 @@ const handleSeatResponse = asyncHandler(async (req, res) => {
 });
 
 
+const fetchPendingNotifications = asyncHandler(async (req, res) => {
+  const studentId = res.locals.id;
+
+  try {
+    const notifications = await SeatReservationNotification.find({
+      studentId: studentId,
+      requiresAction: true,
+      actionResponse: 'pending'
+    }).sort({ deadline: 1 }); // Sort by earliest deadline first
+
+    return res.status(200).json({
+      status: "success",
+      message: "Pending notifications retrieved successfully",
+      data: notifications.map(notification => ({
+        id: notification._id,
+        message: notification.message,
+        deadline: notification.deadline,
+        seatId: notification.seatId
+      }))
+    });
+  } catch (error) {
+    console.error("Error fetching pending notifications:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to fetch pending notifications",
+      error: error.message,
+      timestamp: new Date().toISOString()
+    });
+  }
+});
+
+
+
 // @desc    Release a seat (Only students)
 // @route   POST /api/seats/release/:id
 // @access  Private (student)
@@ -561,5 +594,8 @@ const releaseSeatByStaff = asyncHandler(async (req, res) => {
     getAllReservedSeats,
     releaseSeatByStaff,
     handleSeatResponse,
+    fetchPendingNotifications,
+    
+
     
   };

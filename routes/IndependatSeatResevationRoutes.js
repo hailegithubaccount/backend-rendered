@@ -16,6 +16,9 @@ router.put('/releasebystaff/:seatId',protect,checkRole("library-staff"), checkUs
 router.post("/handle-seat-response", protect, checkRole("student"), checkUserExists, seatIndependatController.handleSeatResponse);
 
 
+router.get("/SeatNotfication",protect,checkRole("student"), checkUserExists, seatIndependatController.fetchPendingNotifications);
+
+
 
 
 module.exports = router;
