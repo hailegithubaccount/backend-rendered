@@ -6,10 +6,8 @@ const SeatReservationNotification = require('../model/SeatReservationNotificatio
 // @desc    Reserve a seat (Only students)
 // @route   POST /api/seats/reserve/:id
 // @access  Private (student)
-const mongoose = require('mongoose');
-const Seat = require('../models/Seat');
-const SeatReservationNotification = require('../models/SeatReservationNotification');
-const asyncHandler = require('express-async-handler');
+
+
 
 // Utility function to schedule automatic release
 const scheduleReleaseCheck = (seatId, deadline) => {
