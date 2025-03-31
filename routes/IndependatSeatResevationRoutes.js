@@ -8,7 +8,7 @@ const seatIndependatController = require('../controller/IndependatSeatResevation
 
 router.post("/reserve/:id",protect,checkRole("student"), checkUserExists,seatIndependatController.reserveSeat);
 router.post("/release/:id",protect,checkRole("student"), checkUserExists,seatIndependatController.releaseSeat);
-router.post('/notifications/:id/respond', checkRole('student'),checkUserExists,seatIndependatController.handleNotificationResponse);
+//router.post('/notifications/:id/respond', checkRole('student'),checkUserExists,seatIndependatController.handleNotificationResponse);
 router.get("/reserve/read",seatIndependatController.getIndependentSeats);
 router.get("/reserve/forstaff",protect,checkRole("library-staff"), checkUserExists,seatIndependatController.getReservedIndependentSeats);
 router.put('/releasebystaff/:seatId',protect,checkRole("library-staff"), checkUserExists,seatIndependatController.releaseSeatByStaff);
