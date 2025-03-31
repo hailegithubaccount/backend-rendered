@@ -1,6 +1,7 @@
 const Seat = require("../model/seatModel");
 const asyncHandler = require("express-async-handler");
 const mongoose = require("mongoose");
+const SeatReservationNotification = require('../model/SeatReservationNotification');
 
 // @desc    Reserve a seat (Only students)
 // @route   POST /api/seats/reserve/:id
@@ -21,7 +22,10 @@ const reserveSeat = asyncHandler(async (req, res) => {
     // Find the seat
     const seat = await Seat.findById(seatId);
     if (!seat) {
-      return res.status(404).json({ status: "failed", message: "Seat not found" });
+      return res.status(404).json({ 
+        status: "failed", 
+        message: "Seat not found" 
+      });
     }
 
     // Check if the seat is already reserved
@@ -29,6 +33,10 @@ const reserveSeat = asyncHandler(async (req, res) => {
       return res.status(400).json({
         status: "failed",
         message: "This seat is already reserved",
+        data: {
+          reservedBy: seat.reservedBy,
+          reservedAt: seat.reservedAt
+        }
       });
     }
 
@@ -37,6 +45,7 @@ const reserveSeat = asyncHandler(async (req, res) => {
       return res.status(400).json({
         status: "failed",
         message: "Only 'independent' type seats can be reserved",
+        allowedTypes: ["independent"]
       });
     }
 
@@ -45,10 +54,11 @@ const reserveSeat = asyncHandler(async (req, res) => {
       return res.status(403).json({
         status: "failed",
         message: "Only students can reserve a seat",
+        requiredRole: "student"
       });
     }
 
-    // Check if the student has already reserved ANY seat (available or not)
+    // Check if the student has already reserved ANY seat
     const existingReservation = await Seat.findOne({
       reservedBy: studentId,
       isAvailable: false
@@ -57,39 +67,72 @@ const reserveSeat = asyncHandler(async (req, res) => {
     if (existingReservation) {
       return res.status(400).json({
         status: "failed",
-        message: "You have already reserved a seat. Please release it before reserving another.",
+        message: "You have already reserved a seat",
+        actionRequired: "Please release your current seat before reserving another",
         data: {
           reservedSeatId: existingReservation._id,
-          seatNumber: existingReservation.seatNumber
+          seatNumber: existingReservation.seatNumber,
+          reservedAt: existingReservation.reservedAt
         }
       });
     }
 
-    // Reserve the seat
-    seat.isAvailable = false;
-    seat.reservedBy = studentId;
-    seat.reservedAt = new Date();
+    // Start a transaction to ensure atomic operations
+    const session = await mongoose.startSession();
+    session.startTransaction();
 
-    await seat.save();
+    try {
+      // Reserve the seat
+      seat.isAvailable = false;
+      seat.reservedBy = studentId;
+      seat.reservedAt = new Date();
+      const savedSeat = await seat.save({ session });
 
-    res.status(200).json({
-      status: "success",
-      message: "Seat reserved successfully",
-      data: {
-        id: seat._id,
-        seatNumber: seat.seatNumber,
-        type: seat.type,
-        location: seat.location,
-        isAvailable: seat.isAvailable,
-        reservedBy: seat.reservedBy,
-        reservedAt: seat.reservedAt,
-      },
-    });
+      // Create the reservation notification
+      const notification = await SeatReservationNotification.create([{
+        studentId: studentId,
+        seatId: seat._id,
+        message: `Seat ${seat.seatNumber} reservation confirmed! Welcome to ${seat.location}.`
+      }], { session });
+
+      await session.commitTransaction();
+
+      // Successful response
+      return res.status(200).json({
+        status: "success",
+        message: "Seat reserved successfully",
+        data: {
+          seat: {
+            id: savedSeat._id,
+            seatNumber: savedSeat.seatNumber,
+            type: savedSeat.type,
+            location: savedSeat.location,
+            isAvailable: savedSeat.isAvailable,
+            reservedBy: savedSeat.reservedBy,
+            reservedAt: savedSeat.reservedAt
+          },
+          notification: {
+            id: notification[0]._id,
+            message: notification[0].message,
+            createdAt: notification[0].createdAt
+          }
+        }
+      });
+
+    } catch (transactionError) {
+      await session.abortTransaction();
+      throw transactionError;
+    } finally {
+      session.endSession();
+    }
+
   } catch (error) {
-    res.status(500).json({
+    console.error("Seat reservation error:", error);
+    return res.status(500).json({
       status: "error",
-      message: "Something went wrong",
+      message: "Failed to reserve seat",
       error: error.message,
+      timestamp: new Date().toISOString()
     });
   }
 });
@@ -282,6 +325,11 @@ const releaseSeatByStaff = asyncHandler(async (req, res) => {
     });
   }
 });
+
+
+
+
+
 
 
 
