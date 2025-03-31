@@ -44,7 +44,7 @@ const scheduleReleaseCheck = (seatId, deadline) => {
         notification.message = `Seat ${seat.seatNumber} was automatically released after deadline.`;
         await notification.save({ session });
 
-        // Create release notification
+        // Create release notification (this is a new notification about the release)
         await SeatReservationNotification.create([{
           studentId: seat.reservedBy,
           seatId: seat._id,
@@ -62,7 +62,7 @@ const scheduleReleaseCheck = (seatId, deadline) => {
     } finally {
       session.endSession();
     }
-  }, Math.max(0, timeUntilDeadline)); // Ensure timeout is not negative
+  }, Math.max(0, timeUntilDeadline));
 };
 
 // Reserve Seat Controller
@@ -156,15 +156,24 @@ const reserveSeat = asyncHandler(async (req, res) => {
     seat.reservedAt = new Date();
     await seat.save({ session });
 
-    // Create notification
-    const notification = await SeatReservationNotification.create([{
-      studentId: studentId,
-      seatId: seat._id,
-      message: `Seat ${seat.seatNumber} reserved until ${deadline.toLocaleTimeString()}. Continue using this seat?`,
-      requiresAction: true,
-      deadline: deadline,
-      actionResponse: 'pending'
-    }], { session });
+    // Check for existing notification before creating a new one
+    let notification = await SeatReservationNotification.findOneAndUpdate(
+      {
+        seatId: seat._id,
+        studentId: studentId,
+        requiresAction: true
+      },
+      {
+        message: `Seat ${seat.seatNumber} reserved until ${deadline.toLocaleTimeString()}. Continue using this seat?`,
+        deadline: deadline,
+        actionResponse: 'pending'
+      },
+      {
+        new: true,
+        upsert: true,
+        session: session
+      }
+    );
 
     await session.commitTransaction();
 
@@ -184,10 +193,10 @@ const reserveSeat = asyncHandler(async (req, res) => {
           reservationDeadline: deadline
         },
         notification: {
-          id: notification[0]._id,
-          message: notification[0].message,
-          requiresAction: notification[0].requiresAction,
-          deadline: notification[0].deadline
+          id: notification._id,
+          message: notification.message,
+          requiresAction: notification.requiresAction,
+          deadline: notification.deadline
         }
       }
     });
@@ -252,10 +261,11 @@ const handleSeatResponse = asyncHandler(async (req, res) => {
       seat.reservationDeadline = newDeadline;
       await seat.save({ session });
 
-      // Update notification
+      // Update the existing notification
       notification.actionResponse = 'extend';
       notification.message = `Seat ${seat.seatNumber} reservation extended until ${newDeadline.toLocaleTimeString()}`;
       notification.deadline = newDeadline;
+      notification.requiresAction = true; // Keep it actionable
       await notification.save({ session });
 
       // Schedule new automatic release check
@@ -303,7 +313,6 @@ const handleSeatResponse = asyncHandler(async (req, res) => {
   }
 });
 
-
 const fetchPendingNotifications = asyncHandler(async (req, res) => {
   const studentId = res.locals.id;
 
@@ -312,7 +321,7 @@ const fetchPendingNotifications = asyncHandler(async (req, res) => {
       studentId: studentId,
       requiresAction: true,
       actionResponse: 'pending'
-    }).sort({ deadline: 1 }); // Sort by earliest deadline first
+    }).sort({ deadline: 1 });
 
     return res.status(200).json({
       status: "success",
