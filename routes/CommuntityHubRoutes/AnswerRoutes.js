@@ -5,7 +5,7 @@ const { protect,checkRole, checkUserExists} = require('../../middleware/auth');
 
 
 
-router.post('/',protect,checkRole("student"), checkUserExists, questionController.createQuestion);
+
 
 
 // Public routes
