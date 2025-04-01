@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const questionController = require("../../controller/CommunityHubController/questionContoller")
-const { protect,checkRole, checkUserExists} = require('../middleware/auth'); 
+const { protect,checkRole, checkUserExists} = require('../../middleware/auth'); 
 
 
 
