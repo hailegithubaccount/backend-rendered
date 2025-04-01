@@ -2,3 +2,269 @@ const Question = require("../../model/CommutiyHUbmodel/question");
 const Answer = require("../../model/CommutiyHUbmodel/answer");
 const asyncHandler = require("express-async-handler");
 const mongoose = require('mongoose');
+
+// @desc    Get all answers for a question
+// @route   GET /api/community/questions/:questionId/answers
+// @access  Public
+const getAnswersForQuestion = asyncHandler(async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.questionId)) {
+    return res.status(400).json({ status: "failed", message: "Invalid question ID" });
+  }
+
+  const answers = await Answer.find({ question: req.params.questionId })
+    .populate("author", "firstName lastName email")
+    .sort("-createdAt");
+
+  res.status(200).json({
+    status: "success",
+    results: answers.length,
+    data: answers
+  });
+});
+
+// @desc    Create an answer
+// @route   POST /api/community/questions/:questionId/answers
+// @access  Private (students only)
+const createAnswer = asyncHandler(async (req, res) => {
+  if (res.locals.role !== "student") {
+    return res.status(403).json({ 
+      status: "failed", 
+      message: "Only students can post answers" 
+    });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(req.params.questionId)) {
+    return res.status(400).json({ status: "failed", message: "Invalid question ID" });
+  }
+
+  const question = await Question.findById(req.params.questionId);
+
+  if (!question) {
+    return res.status(404).json({ status: "failed", message: "Question not found" });
+  }
+
+  const answer = await Answer.create({
+    content: req.body.content,
+    question: req.params.questionId,
+    author: res.locals.userId
+  });
+
+  // Add answer to question's answers array
+  question.answers.push(answer._id);
+  await question.save();
+
+  res.status(201).json({
+    status: "success",
+    data: answer
+  });
+});
+
+// @desc    Update an answer
+// @route   PATCH /api/community/answers/:id
+// @access  Private (answer author or admin)
+const updateAnswer = asyncHandler(async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ status: "failed", message: "Invalid answer ID" });
+  }
+
+  const answer = await Answer.findById(req.params.id);
+
+  if (!answer) {
+    return res.status(404).json({ status: "failed", message: "Answer not found" });
+  }
+
+  // Check if user is the author or admin
+  if (answer.author.toString() !== res.locals.id && res.locals.role !== "admin") {
+    return res.status(403).json({ 
+      status: "failed", 
+      message: "Not authorized to update this answer" 
+    });
+  }
+
+  const updatedAnswer = await Answer.findByIdAndUpdate(
+    req.params.id,
+    req.body,
+    { new: true, runValidators: true }
+  );
+
+  res.status(200).json({
+    status: "success",
+    data: updatedAnswer
+  });
+});
+
+// @desc    Delete an answer
+// @route   DELETE /api/community/answers/:id
+// @access  Private (answer author or admin)
+const deleteAnswer = asyncHandler(async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ status: "failed", message: "Invalid answer ID" });
+  }
+
+  const answer = await Answer.findById(req.params.id);
+
+  if (!answer) {
+    return res.status(404).json({ status: "failed", message: "Answer not found" });
+  }
+
+  // Check if user is the author or admin
+  if (answer.author.toString() !== res.locals.userId && res.locals.role !== "admin") {
+    return res.status(403).json({ 
+      status: "failed", 
+      message: "Not authorized to delete this answer" 
+    });
+  }
+
+  // Remove answer from question's answers array
+  await Question.findByIdAndUpdate(answer.question, {
+    $pull: { answers: answer._id }
+  });
+
+  await answer.deleteOne();
+
+  res.status(204).json({
+    status: "success",
+    data: null
+  });
+});
+
+// @desc    Accept an answer
+// @route   PATCH /api/community/answers/:id/accept
+// @access  Private (question author only)
+const acceptAnswer = asyncHandler(async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ status: "failed", message: "Invalid answer ID" });
+  }
+
+  const answer = await Answer.findById(req.params.id);
+
+  if (!answer) {
+    return res.status(404).json({ status: "failed", message: "Answer not found" });
+  }
+
+  const question = await Question.findById(answer.question);
+
+  // Check if user is the question author
+  if (question.author.toString() !== res.locals.userId) {
+    return res.status(403).json({ 
+      status: "failed", 
+      message: "Only the question author can accept an answer" 
+    });
+  }
+
+  // Unaccept any previously accepted answer for this question
+  await Answer.updateMany(
+    { question: answer.question, _id: { $ne: answer._id } },
+    { isAccepted: false }
+  );
+
+  // Accept this answer
+  answer.isAccepted = true;
+  await answer.save();
+
+  // Mark question as solved
+  question.solved = true;
+  question.acceptedAnswer = answer._id;
+  await question.save();
+
+  res.status(200).json({
+    status: "success",
+    data: answer
+  });
+});
+
+// @desc    Upvote an answer
+// @route   POST /api/community/answers/:id/upvote
+// @access  Private
+const upvoteAnswer = asyncHandler(async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ status: "failed", message: "Invalid answer ID" });
+  }
+
+  const answer = await Answer.findById(req.params.id);
+
+  if (!answer) {
+    return res.status(404).json({ status: "failed", message: "Answer not found" });
+  }
+
+  // Check if user already upvoted
+  if (answer.upvotes.includes(res.locals.userId)) {
+    return res.status(400).json({ 
+      status: "failed", 
+      message: "You have already upvoted this answer" 
+    });
+  }
+
+  // Remove from downvotes if exists
+  if (answer.downvotes.includes(res.locals.userId)) {
+    answer.downvotes = answer.downvotes.filter(
+      id => id.toString() !== res.locals.userId
+    );
+  }
+
+  answer.upvotes.push(res.locals.userId);
+  await answer.save();
+
+  res.status(200).json({
+    status: "success",
+    data: answer
+  });
+});
+
+// @desc    Downvote an answer
+// @route   POST /api/community/answers/:id/downvote
+// @access  Private
+const downvoteAnswer = asyncHandler(async (req, res) => {
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    return res.status(400).json({ status: "failed", message: "Invalid answer ID" });
+  }
+
+  const answer = await Answer.findById(req.params.id);
+
+  if (!answer) {
+    return res.status(404).json({ status: "failed", message: "Answer not found" });
+  }
+
+  // Check if user already downvoted
+  if (answer.downvotes.includes(res.locals.userId)) {
+    return res.status(400).json({ 
+      status: "failed", 
+      message: "You have already downvoted this answer" 
+    });
+  }
+
+  // Remove from upvotes if exists
+  if (answer.upvotes.includes(res.locals.userId)) {
+    answer.upvotes = answer.upvotes.filter(
+      id => id.toString() !== res.locals.userId
+    );
+  }
+
+  answer.downvotes.push(res.locals.userId);
+  await answer.save();
+
+  res.status(200).json({
+    status: "success",
+    data: answer
+  });
+});
+
+
+
+
+
+ module.exports = {
+   
+    downvoteAnswer,
+    upvoteAnswer,
+    acceptAnswer ,
+    deleteAnswer,
+    deleteAnswer,
+    getAnswersForQuestion,
+    createAnswer
+    
+
+    
+
+    
+  };

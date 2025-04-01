@@ -26,7 +26,7 @@ router.patch('/:id',protect,checkRole("student"), checkUserExists, questionContr
 router.delete('/:id',protect,checkRole("student"), checkUserExists, questionController.deleteQuestion);
 
 // Voting routes (authenticated users)
-router.post('/:id/upvote',protect,checkRole("student"), checkUserExists, questionController.upvoteQuestion);
-router.post('/:id/downvote',protect,checkRole("student"), checkUserExists, questionController.downvoteQuestion);
+router.post('/:id/upvote',protect, questionController.upvoteQuestion);
+router.post('/:id/downvote',protect, questionController.downvoteQuestion);
 
 module.exports = router;
