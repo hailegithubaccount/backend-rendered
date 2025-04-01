@@ -62,36 +62,36 @@ const createAnswer = asyncHandler(async (req, res) => {
 // @desc    Update an answer
 // @route   PATCH /api/community/answers/:id
 // @access  Private (answer author or admin)
-const updateAnswer = asyncHandler(async (req, res) => {
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-    return res.status(400).json({ status: "failed", message: "Invalid answer ID" });
-  }
+// const updateAnswer = asyncHandler(async (req, res) => {
+//   if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+//     return res.status(400).json({ status: "failed", message: "Invalid answer ID" });
+//   }
 
-  const answer = await Answer.findById(req.params.id);
+//   const answer = await Answer.findById(req.params.id);
 
-  if (!answer) {
-    return res.status(404).json({ status: "failed", message: "Answer not found" });
-  }
+//   if (!answer) {
+//     return res.status(404).json({ status: "failed", message: "Answer not found" });
+//   }
 
-  // Check if user is the author or admin
-  if (answer.author.toString() !== res.locals.id && res.locals.role !== "admin") {
-    return res.status(403).json({ 
-      status: "failed", 
-      message: "Not authorized to update this answer" 
-    });
-  }
+//   // Check if user is the author or admin
+//   if (answer.author.toString() !== res.locals.id && res.locals.role !== "admin") {
+//     return res.status(403).json({ 
+//       status: "failed", 
+//       message: "Not authorized to update this answer" 
+//     });
+//   }
 
-  const updatedAnswer = await Answer.findByIdAndUpdate(
-    req.params.id,
-    req.body,
-    { new: true, runValidators: true }
-  );
+//   const updatedAnswer = await Answer.findByIdAndUpdate(
+//     req.params.id,
+//     req.body,
+//     { new: true, runValidators: true }
+//   );
 
-  res.status(200).json({
-    status: "success",
-    data: updatedAnswer
-  });
-});
+//   res.status(200).json({
+//     status: "success",
+//     data: updatedAnswer
+//   });
+// });
 
 // @desc    Delete an answer
 // @route   DELETE /api/community/answers/:id
@@ -259,9 +259,10 @@ const downvoteAnswer = asyncHandler(async (req, res) => {
     upvoteAnswer,
     acceptAnswer ,
     deleteAnswer,
-    deleteAnswer,
+  
     getAnswersForQuestion,
     createAnswer
+
     
 
     

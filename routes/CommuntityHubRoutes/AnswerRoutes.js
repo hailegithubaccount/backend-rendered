@@ -23,7 +23,7 @@ router.post('/questions/:questionId/answers',
     answerController.createAnswer
   );
 // Author or Admin routes
-router.patch('/:id', answerController.updateAnswer);
+// router.patch('/:id', answerController.updateAnswer);
 router.delete('/:id', answerController.deleteAnswer);
 
 // Question author only routes
