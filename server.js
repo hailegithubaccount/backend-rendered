@@ -42,6 +42,44 @@ const IndependatSeatResevationRoutes=require("./routes/IndependatSeatResevationR
 const bookSeatRoutes=require("./routes/bookSeatRoute");
 
 
+
+
+
+
+//   the following routes is use for the contoller that used to the commnutoy hub    
+
+const questionroutes =require("./routes/CommuntityHubRoutes/QuestionsRoutes")
+
+
+
+
+app.use('/api/questions',questionroutes);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 //Notification  after reserved the independate seat reseravation
 
 
