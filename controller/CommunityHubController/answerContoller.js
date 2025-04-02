@@ -26,37 +26,56 @@ const getAnswersForQuestion = asyncHandler(async (req, res) => {
 // @route   POST /api/community/questions/:questionId/answers
 // @access  Private (students only)
 const createAnswer = asyncHandler(async (req, res) => {
-  if (res.locals.role !== "student") {
-    return res.status(403).json({ 
-      status: "failed", 
-      message: "Only students can post answers" 
+  try {
+    // Validate user role
+    if (res.locals.role !== "student") {
+      return res.status(403).json({ 
+        status: "failed", 
+        message: "Only students can post answers" 
+      });
+    }
+
+    // Validate question ID
+    if (!mongoose.Types.ObjectId.isValid(req.params.questionId)) {
+      return res.status(400).json({ 
+        status: "failed", 
+        message: "Invalid question ID" 
+      });
+    }
+
+    // Find question
+    const question = await Question.findById(req.params.questionId);
+    if (!question) {
+      return res.status(404).json({ 
+        status: "failed", 
+        message: "Question not found" 
+      });
+    }
+
+    // Create answer
+    const answer = await Answer.create({
+      content: req.body.content,
+      question: req.params.questionId,
+      author: res.locals.userId
+    });
+
+    // Update question
+    question.answers.push(answer._id);
+    await question.save();
+
+    res.status(201).json({
+      status: "success",
+      data: answer
+    });
+
+  } catch (error) {
+    console.error("Error in createAnswer:", error); // Critical for debugging
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+      error: process.env.NODE_ENV === "development" ? error.message : undefined
     });
   }
-
-  if (!mongoose.Types.ObjectId.isValid(req.params.questionId)) {
-    return res.status(400).json({ status: "failed", message: "Invalid question ID" });
-  }
-
-  const question = await Question.findById(req.params.questionId);
-
-  if (!question) {
-    return res.status(404).json({ status: "failed", message: "Question not found" });
-  }
-
-  const answer = await Answer.create({
-    content: req.body.content,
-    question: req.params.questionId,
-    author: res.locals.userId
-  });
-
-  // Add answer to question's answers array
-  question.answers.push(answer._id);
-  await question.save();
-
-  res.status(201).json({
-    status: "success",
-    data: answer
-  });
 });
 
 // @desc    Update an answer
