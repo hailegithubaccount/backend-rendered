@@ -39,7 +39,7 @@ const getAllStudent = async (req, res, next) => {
       if (res.locals.role !== "admin") {
         return res.status(403).json({
           status: "failed",
-          message: "Only admins can view library staff",
+          message: "Only admins can view students",
         });
       }
   

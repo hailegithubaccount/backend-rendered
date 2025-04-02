@@ -117,18 +117,18 @@ require("dotenv").config();
         // 7. Send the response (without the token in the body for security)
         res.status(200).json({
             token,
-            role: user.role,
+            // role: user.role,
             status: "success",
             message: "User logged in successfully.",
-            user: {
-                id: user._id,
+            // user: {
+            //     id: user._id,
 
-                firstName: user.firstName,
-                lastName: user.lastName,
-                email: user.email,
-                password:user.password,
-                role: user.role,
-            },
+            //     firstName: user.firstName,
+            //     lastName: user.lastName,
+            //     email: user.email,
+            //     password:user.password,
+            //     role: user.role,
+            // },
         });
     } catch (error) {
         console.error("Error in login:", error);
