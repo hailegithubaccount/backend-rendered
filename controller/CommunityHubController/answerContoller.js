@@ -7,11 +7,12 @@ const mongoose = require('mongoose');
 // @route   GET /api/community/questions/:questionId/answers
 // @access  Public
 const getAnswersForQuestion = asyncHandler(async (req, res) => {
-  if (!mongoose.Types.ObjectId.isValid(req.params.questionId)) {
+  // Change from req.params.questionId to req.params.id
+  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
     return res.status(400).json({ status: "failed", message: "Invalid question ID" });
   }
 
-  const answers = await Answer.find({ question: req.params.questionId })
+  const answers = await Answer.find({ question: req.params.id })
     .populate("author", "firstName lastName email")
     .sort("-createdAt");
 
