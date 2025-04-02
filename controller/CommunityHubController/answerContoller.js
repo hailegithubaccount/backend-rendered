@@ -8,7 +8,10 @@ const mongoose = require('mongoose');
 // @access  Public
 const getAnswersForQuestion = asyncHandler(async (req, res) => {
   // Change from req.params.questionId to req.params.id
-  if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+
+
+  const { questionId } = req.params;
+  if (!mongoose.Types.ObjectId.isValid(questionId)) {
     return res.status(400).json({ status: "failed", message: "Invalid question ID" });
   }
 
