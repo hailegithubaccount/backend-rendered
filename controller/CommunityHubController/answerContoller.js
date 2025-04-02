@@ -27,7 +27,7 @@ const getAnswersForQuestion = asyncHandler(async (req, res) => {
 // @access  Private (students only)
 const createAnswer = asyncHandler(async (req, res) => {
   try {
-    // Validate user role
+    // 1. Authorization Check
     if (res.locals.role !== "student") {
       return res.status(403).json({ 
         status: "failed", 
@@ -35,45 +35,94 @@ const createAnswer = asyncHandler(async (req, res) => {
       });
     }
 
-    // Validate question ID
-    if (!mongoose.Types.ObjectId.isValid(req.params.questionId)) {
-      return res.status(400).json({ 
-        status: "failed", 
-        message: "Invalid question ID" 
+    // 2. Input Validation
+    const { content } = req.body;
+    const { questionId } = req.params;
+
+    if (!content?.trim()) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Answer content cannot be empty"
       });
     }
 
-    // Find question
-    const question = await Question.findById(req.params.questionId);
+    if (!mongoose.Types.ObjectId.isValid(questionId)) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Invalid question ID format"
+      });
+    }
+
+    // 3. Verify Question Exists
+    const question = await Question.findById(questionId)
+      .select('_id answers isSolved')
+      .lean();
+
     if (!question) {
-      return res.status(404).json({ 
-        status: "failed", 
-        message: "Question not found" 
+      return res.status(404).json({
+        status: "failed",
+        message: "Question not found"
       });
     }
 
-    // Create answer
+    if (question.isSolved) {
+      return res.status(403).json({
+        status: "failed",
+        message: "Cannot add answers to solved questions"
+      });
+    }
+
+    // 4. Create Answer (Transaction recommended)
     const answer = await Answer.create({
-      content: req.body.content,
-      question: req.params.questionId,
-      author: res.locals.userId
+      content: content.trim(),
+      question: questionId,
+      author: res.locals.userId,
+      upvotes: [],
+      downvotes: []
     });
 
-    // Update question
-    question.answers.push(answer._id);
-    await question.save();
+    // 5. Update Question
+    await Question.findByIdAndUpdate(
+      questionId,
+      { $push: { answers: answer._id } },
+      { new: true }
+    );
 
+    // 6. Optimized Response
     res.status(201).json({
       status: "success",
-      data: answer
+      data: {
+        id: answer._id,
+        content: answer.content,
+        questionId: answer.question,
+        author: {
+          id: res.locals.userId,
+          role: res.locals.role
+        },
+        stats: {
+          upvotes: answer.upvotes.length,
+          downvotes: answer.downvotes.length
+        },
+        createdAt: answer.createdAt
+      }
     });
 
   } catch (error) {
-    console.error("Error in createAnswer:", error); // Critical for debugging
+    console.error("Answer Creation Error:", error);
+    
+    // Handle duplicate answers
+    if (error.code === 11000 && error.keyPattern?.content) {
+      return res.status(409).json({
+        status: "failed",
+        message: "Similar answer already exists"
+      });
+    }
+
     res.status(500).json({
       status: "error",
-      message: "Internal server error",
-      error: process.env.NODE_ENV === "development" ? error.message : undefined
+      message: process.env.NODE_ENV === "development" 
+        ? error.message 
+        : "Internal server error"
     });
   }
 });
