@@ -26,6 +26,11 @@ const getAnswersForQuestion = asyncHandler(async (req, res) => {
 // @route   POST /api/community/questions/:questionId/answers
 // @access  Private (students only)
 const createAnswer = asyncHandler(async (req, res) => {
+  console.log('=== STARTING ANSWER CREATION ===');
+  console.log('Params:', req.params);
+  console.log('Body:', req.body);
+  console.log('User ID:', res.locals.userId);
+  console.log('User Role:', res.locals.role);
   try {
     // 1. Authorization Check
     if (res.locals.role !== "student") {
