@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Public routes
 
-router.post('/login', checkRole('student', 'library-staff', 'admin'), checkUserExists, authController.login);
+router.post('/login', authController.login);
 
 
 
