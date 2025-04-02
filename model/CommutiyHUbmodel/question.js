@@ -45,9 +45,11 @@ const questionSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
-    acceptedAnswer: {
+    answers: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "answers",
+
+      
     },
   },
   {

@@ -6,23 +6,57 @@ const mongoose = require('mongoose');
 // @desc    Get all answers for a question
 // @route   GET /api/community/questions/:questionId/answers
 // @access  Public
+// @desc    Get all answers for a question
+// @route   GET /api/community/questions/:questionId/answers
+// @access  Private (students only)
 const getAnswersForQuestion = asyncHandler(async (req, res) => {
-  // Change from req.params.questionId to req.params.id
-
-
   const { questionId } = req.params;
+
+  // Validate question ID
   if (!mongoose.Types.ObjectId.isValid(questionId)) {
-    return res.status(400).json({ status: "failed", message: "Invalid question ID" });
+    return res.status(400).json({ 
+      status: "failed", 
+      message: "Invalid question ID format" 
+    });
   }
 
-  const answers = await Answer.find({ question: req.params.id })
-    .populate("author", "firstName lastName email")
-    .sort("-createdAt");
+  // Check if question exists
+  const questionExists = await Question.exists({ _id: questionId });
+  if (!questionExists) {
+    return res.status(404).json({ 
+      status: "failed", 
+      message: "Question not found" 
+    });
+  }
+
+  // Get answers with pagination
+  const page = parseInt(req.query.page) || 1;
+  const limit = parseInt(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const [answers, total] = await Promise.all([
+    Answer.find({ question: questionId })
+      .populate("author", "firstName lastName email")
+      .sort("-createdAt")
+      .skip(skip)
+      .limit(limit)
+      .lean(),
+    Answer.countDocuments({ question: questionId })
+  ]);
 
   res.status(200).json({
     status: "success",
-    results: answers.length,
-    data: answers
+    pagination: {
+      total,
+      page,
+      pages: Math.ceil(total / limit),
+      limit
+    },
+    data: answers.map(answer => ({
+      ...answer,
+      upvotes: answer.upvotes.length,
+      downvotes: answer.downvotes.length
+    }))
   });
 });
 
@@ -30,112 +64,101 @@ const getAnswersForQuestion = asyncHandler(async (req, res) => {
 // @route   POST /api/community/questions/:questionId/answers
 // @access  Private (students only)
 const createAnswer = asyncHandler(async (req, res) => {
-  console.log('=== STARTING ANSWER CREATION for the sta===');
-  console.log('Params:', req.params);
-  console.log('Body:', req.body);
-  console.log('User ID:', res.locals.id);
-  console.log('User Role:', res.locals.role);
+  // Authorization check is already handled by protect and checkRole middleware
+  const { content } = req.body;
+  const { questionId } = req.params;
+  const authorId = res.locals.id;
+
+  // Input validation
+  if (!content?.trim()) {
+    return res.status(400).json({
+      status: "failed",
+      message: "Answer content is required"
+    });
+  }
+
+  if (!mongoose.Types.ObjectId.isValid(questionId)) {
+    return res.status(400).json({
+      status: "failed",
+      message: "Invalid question ID"
+    });
+  }
+
+  // Check if question exists and is not solved
+  const question = await Question.findById(questionId);
+  if (!question) {
+    return res.status(404).json({
+      status: "failed",
+      message: "Question not found"
+    });
+  }
+
+  if (question.isSolved) {
+    return res.status(403).json({
+      status: "failed",
+      message: "Cannot add answers to a solved question"
+    });
+  }
+
+  // Check if user already answered this question
+  const existingAnswer = await Answer.findOne({
+    question: questionId,
+    author: authorId
+  });
+
+  if (existingAnswer) {
+    return res.status(409).json({
+      status: "failed",
+      message: "You have already answered this question"
+    });
+  }
+
+  // Create answer in transaction to ensure data consistency
+  const session = await mongoose.startSession();
+  session.startTransaction();
+
   try {
-    // 1. Authorization Check
-    if (res.locals.role !== "student") {
-      return res.status(403).json({ 
-        status: "failed", 
-        message: "Only students can post answers and create a questions" 
-      });
-    }
-
-    // 2. Input Validation
-    const { content } = req.body;
-    const { questionId } = req.params;
-
-    if (!content?.trim()) {
-      return res.status(400).json({
-        status: "failed",
-        message: "Answer content cannot be empty"
-      });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(questionId)) {
-      return res.status(400).json({
-        status: "failed",
-        message: "Invalid question ID format"
-      });
-    }
-
-    // 3. Verify Question Exists
-    const question = await Question.findById(questionId)
-      .select('_id answers isSolved')
-      .lean();
-
-    if (!question) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Question not found"
-      });
-    }
-
-    if (question.isSolved) {
-      return res.status(403).json({
-        status: "failed",
-        message: "Cannot add answers to solved questions"
-      });
-    }
-
-    // 4. Create Answer (Transaction recommended)
-    const answer = await Answer.create({
+    const answer = await Answer.create([{
       content: content.trim(),
       question: questionId,
-      author: res.locals.id,
+      author: authorId,
       upvotes: [],
       downvotes: []
-    });
+    }], { session });
 
-    // 5. Update Question
     await Question.findByIdAndUpdate(
       questionId,
-      { $push: { answers: answer._id } },
-      { new: true }
+      { $push: { answers: answer[0]._id } },
+      { session }
     );
 
-    // 6. Optimized Response
+    await session.commitTransaction();
+    session.endSession();
+
+    // Populate author info for response
+    const populatedAnswer = await Answer.findById(answer[0]._id)
+      .populate("author", "firstName lastName email");
+
     res.status(201).json({
       status: "success",
       data: {
-        id: answer._id,
-        content: answer.content,
-        questionId: answer.question,
-        author: {
-          id: res.locals.id,
-          role: res.locals.role
-        },
-        stats: {
-          upvotes: answer.upvotes.length,
-          downvotes: answer.downvotes.length
-        },
-        createdAt: answer.createdAt
+        ...populatedAnswer.toObject(),
+        upvotes: 0,
+        downvotes: 0
       }
     });
 
   } catch (error) {
-    console.error("Answer Creation Error:", error);
+    await session.abortTransaction();
+    session.endSession();
     
-    // Handle duplicate answers
-    if (error.code === 11000 && error.keyPattern?.content) {
-      return res.status(409).json({
-        status: "failed",
-        message: "Similar answer already exists"
-      });
-    }
-
+    console.error("Answer creation error:", error);
     res.status(500).json({
       status: "error",
-      message: process.env.NODE_ENV === "development" 
-        ? error.message 
-        : "Internal server error"
+      message: "Internal server error"
     });
   }
 });
-
 // @desc    Update an answer
 // @route   PATCH /api/community/answers/:id
 // @access  Private (answer author or admin)

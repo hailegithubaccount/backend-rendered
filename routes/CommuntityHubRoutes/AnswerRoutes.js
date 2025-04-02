@@ -9,19 +9,19 @@ const { protect,checkRole, checkUserExists} = require('../../middleware/auth');
 
 
 // Public routes
-router.get('/:questionId', answerController.getAnswersForQuestion);
+router.post('/:questionId/answers',
+  protect,
+  checkRole("student"), 
+  checkUserExists,
+  answerController.createAnswer
+);
 
-// Protected routes
-
-
-// Student-only routes
-router.post('/questions/:questionId/answers',
-    protect,
-    checkRole("student"), 
-    checkUserExists,
-    // Add this
-    answerController.createAnswer
-  );
+router.get('/:questionId/answers',
+  protect,
+  checkRole("student"),
+  checkUserExists,
+  answerController.getAnswersForQuestion
+);
 // Author or Admin routes
 // router.patch('/:id', answerController.updateAnswer);
 router.delete('/:id', answerController.deleteAnswer);
