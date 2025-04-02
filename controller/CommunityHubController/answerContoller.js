@@ -29,7 +29,7 @@ const createAnswer = asyncHandler(async (req, res) => {
   console.log('=== STARTING ANSWER CREATION ===');
   console.log('Params:', req.params);
   console.log('Body:', req.body);
-  console.log('User ID:', res.locals.userId);
+  console.log('User ID:', res.locals.id);
   console.log('User Role:', res.locals.role);
   try {
     // 1. Authorization Check
@@ -81,7 +81,7 @@ const createAnswer = asyncHandler(async (req, res) => {
     const answer = await Answer.create({
       content: content.trim(),
       question: questionId,
-      author: res.locals.userId,
+      author: res.locals.id,
       upvotes: [],
       downvotes: []
     });
@@ -101,7 +101,7 @@ const createAnswer = asyncHandler(async (req, res) => {
         content: answer.content,
         questionId: answer.question,
         author: {
-          id: res.locals.userId,
+          id: res.locals.id,
           role: res.locals.role
         },
         stats: {
