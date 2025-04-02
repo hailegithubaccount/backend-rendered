@@ -9,7 +9,7 @@ const { protect,checkRole, checkUserExists} = require('../../middleware/auth');
 
 
 // Public routes
-router.get('/',protect,checkRole("student"), checkUserExists, answerController.getAnswersForQuestion);
+router.get('/',protect,answerController.getAnswersForQuestion);
 
 // Protected routes
 
