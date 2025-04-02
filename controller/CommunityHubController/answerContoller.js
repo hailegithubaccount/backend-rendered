@@ -36,7 +36,7 @@ const createAnswer = asyncHandler(async (req, res) => {
     if (res.locals.role !== "student") {
       return res.status(403).json({ 
         status: "failed", 
-        message: "Only students can post answers" 
+        message: "Only students can post answers and create a questions" 
       });
     }
 
