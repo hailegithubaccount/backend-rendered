@@ -53,26 +53,44 @@ const getQuestion = asyncHandler(async (req, res) => {
 // @route   POST /api/community/questions
 // @access  Private (students only)
 const createQuestion = asyncHandler(async (req, res) => {
-  if (res.locals.role !== "student") {
-    return res.status(403).json({ 
-      status: "failed", 
-      message: "Only students can post questions" 
+  try {
+    if (res.locals.role !== "student") {
+      return res.status(403).json({ 
+        status: "failed", 
+        message: "Only students can post questions" 
+      });
+    }
+
+    const { title, content } = req.body;
+
+    // Validate required fields
+    if (!title || !content) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Title and content are required",
+      });
+    }
+
+    // Create the question
+    const question = await Question.create({
+      title,
+      content,
+      author: res.locals.id,
+    });
+
+    // Return success response
+    res.status(201).json({
+      status: "success",
+      data: question,
+    });
+  } catch (error) {
+    console.error("Error creating question:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+      error: error.message,
     });
   }
-
-  const { title, content } = req.body;
-
-  const question = await Question.create({
-    title,
-    content,
-    
-    author: res.locals.id
-  });
-
-  res.status(201).json({
-    status: "success",
-    data: question
-  });
 });
 
 // @desc    Update a question
