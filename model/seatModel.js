@@ -24,7 +24,7 @@ const seatSchema = new mongoose.Schema({
   },
   reservedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: "users",
     default: null,
   },
   reservedAt: {
@@ -37,7 +37,7 @@ const seatSchema = new mongoose.Schema({
   },
   managedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
+    ref: "users",
     required: true,
   },
   reservationDuration: {
