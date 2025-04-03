@@ -124,7 +124,7 @@ const deleteQuestion = asyncHandler(async (req, res) => {
   }
 
   // Check if user is the author or admin
-  if (question.author.toString() !== res.locals.userId && res.locals.role !== "admin") {
+  if (question.author.toString() !== res.locals.id && res.locals.role !== "student") {
     return res.status(403).json({ 
       status: "failed", 
       message: "Not authorized to delete this question" 

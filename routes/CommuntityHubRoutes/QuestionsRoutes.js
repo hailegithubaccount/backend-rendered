@@ -23,6 +23,8 @@ router.get('/:id',protect,checkRole("student"), checkUserExists, questionControl
 
 // Author or Admin routes
 router.patch('/:id',protect,checkRole("student"), checkUserExists, questionController.updateQuestion);
+
+
 router.delete('/:id',protect,checkRole("student"), checkUserExists, questionController.deleteQuestion);
 
 // Voting routes (authenticated users)
