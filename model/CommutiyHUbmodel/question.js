@@ -14,16 +14,8 @@ const questionSchema = new mongoose.Schema(
       required: [true, "Content is required"],
       minlength: [20, "Content must be at least 20 characters"],
     },
-    tags: {
-      type: [String],
-      required: [true, "At least one tag is required"],
-      validate: {
-        validator: function(tags) {
-          return tags.length <= 5;
-        },
-        message: "Cannot add more than 5 tags"
-      }
-    },
+   
+  
     author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "users",

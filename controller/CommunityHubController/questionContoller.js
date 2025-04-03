@@ -60,12 +60,12 @@ const createQuestion = asyncHandler(async (req, res) => {
     });
   }
 
-  const { title, content, tags } = req.body;
+  const { title, content } = req.body;
 
   const question = await Question.create({
     title,
     content,
-    tags,
+    
     author: res.locals.id
   });
 
