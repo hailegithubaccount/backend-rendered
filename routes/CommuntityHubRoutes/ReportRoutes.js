@@ -8,6 +8,6 @@ router.post('/report/:entityType/:entityId', protect, reportController.createRep
 
 // Resolve report - unchanged
 router.patch('/:reportId', protect, checkRole("library-staff"), checkUserExists, reportController.resolveReport);
-router.get('/', protect, checkRole("library-staff"), checkUserExists, reportController.resolveReport);
+router.get('/', protect, checkRole("library-staff"), checkUserExists, reportController.getAllReports);
 
 module.exports = router;
