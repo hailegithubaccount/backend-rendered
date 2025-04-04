@@ -61,24 +61,15 @@ const createReport = asyncHandler(async (req, res) => {
 });
 
 
-const getAllReports = asyncHandler(async (req, res) => {
-  // Check if the user is library staff
-  if (res.locals.role !== 'library-staff') {
-    return res.status(403).json({
-      status: 'failed',
-      message: 'Only library staff can view reports',
-    });
-  }
-
+const getAllReports= asyncHandler(async (req, res) => {
   const reports = await Report.find()
-    .sort({ createdAt: -1 }) // Newest first
-    .populate('reporter', 'firstName lastName email') // Populate reporter info
-    .populate('resolvedBy', 'firstName lastName'); // Populate resolver info
+    .populate('reporter', 'firstName lastName')
+    .populate('author', 'firstName lastName')
+    .sort({ createdAt: -1 });
 
   res.status(200).json({
-    status: 'success',
-    count: reports.length,
-    data: reports,
+    status: "success",
+    data: reports
   });
 });
 

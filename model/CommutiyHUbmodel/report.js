@@ -1,5 +1,3 @@
-const mongoose = require("mongoose");
-
 const reportSchema = new mongoose.Schema(
   {
     reporter: {
@@ -7,25 +5,24 @@ const reportSchema = new mongoose.Schema(
       ref: "users",
       required: true,
     },
-      question: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "questions",
-          required: true,
-        },
     entityType: {
       type: String,
       enum: ["question", "answer"],
       required: true,
     },
-    answers: {
-          type: mongoose.Schema.Types.ObjectId,
-          ref: "answers",
-    
-          
-        },
     entityId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,
+    },
+    // Add these new fields
+    content: { // Stores the actual text content
+      type: String,
+      required: true
+    },
+    author: { // Stores info about who created the content
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "users",
+      required: true
     },
     reason: {
       type: String,
@@ -55,7 +52,3 @@ const reportSchema = new mongoose.Schema(
     },
   }
 );
-
-const Report = mongoose.model("reports", reportSchema);
-
-module.exports = Report;
