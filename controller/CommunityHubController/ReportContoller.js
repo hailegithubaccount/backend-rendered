@@ -63,6 +63,30 @@ const createReport = asyncHandler(async (req, res) => {
   });
 });
 
+
+
+const getAllReports = asyncHandler(async (req, res) => {
+  // Check if the user is library staff
+  if (res.locals.role !== 'library-staff') {
+    return res.status(403).json({
+      status: 'failed',
+      message: 'Only library staff can view reports',
+    });
+  }
+
+  const reports = await Report.find()
+    .sort({ createdAt: -1 }) // Newest first
+    .populate('reporter', 'firstName lastName email') // Populate reporter info
+    .populate('resolvedBy', 'firstName lastName'); // Populate resolver info
+
+  res.status(200).json({
+    status: 'success',
+    count: reports.length,
+    data: reports,
+  });
+});
+
+
 // @desc    Resolve or delete a report
 // @route   PATCH /api/reports/:reportId
 // @access  Private (library-staff only)
@@ -142,4 +166,5 @@ const resolveReport = asyncHandler(async (req, res) => {
 module.exports = {
   createReport,
   resolveReport,
+  getAllReports,
 };
