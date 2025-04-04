@@ -11,21 +11,27 @@ const mongoose = require('mongoose');
 // @access  Private (students only)
 const getAnswersForQuestion = asyncHandler(async (req, res) => {
   const { questionId } = req.params;
+  console.log('Received questionId:', questionId); // Add logging
 
   // Validate question ID
   if (!mongoose.Types.ObjectId.isValid(questionId)) {
+    console.log('Invalid ID format:', questionId);
     return res.status(400).json({ 
       status: "failed", 
       message: "Invalid question ID format" 
     });
   }
 
-  // Check if question exists
+  // Check if question exists with more detailed logging
+  console.log('Checking question existence for ID:', questionId);
   const questionExists = await Question.exists({ _id: questionId });
+  console.log('Question exists result:', questionExists);
+  
   if (!questionExists) {
     return res.status(404).json({ 
       status: "failed", 
-      message: "Question not found" 
+      message: "Question not found",
+      receivedId: questionId // Send back the ID for debugging
     });
   }
 
