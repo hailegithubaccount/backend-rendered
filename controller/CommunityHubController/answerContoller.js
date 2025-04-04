@@ -9,61 +9,54 @@ const mongoose = require('mongoose');
 // @desc    Get all answers for a question
 // @route   GET /api/community/questions/:questionId/answers
 // @access  Private (students only)
-const getAnswersForQuestion = asyncHandler(async (req, res) => {
+const getAnswersByQuestion = asyncHandler(async (req, res) => {
   const { questionId } = req.params;
-  console.log('Received questionId:', questionId); // Add logging
-
+  
   // Validate question ID
   if (!mongoose.Types.ObjectId.isValid(questionId)) {
-    console.log('Invalid ID format:', questionId);
-    return res.status(400).json({ 
-      status: "failed", 
-      message: "Invalid question ID format" 
+    return res.status(400).json({
+      status: "failed",
+      message: "Invalid question ID"
     });
   }
 
-  // Check if question exists with more detailed logging
-  console.log('Checking question existence for ID:', questionId);
-  const questionExists = await Question.exists({ _id: questionId });
-  console.log('Question exists result:', questionExists);
-  
-  if (!questionExists) {
-    return res.status(404).json({ 
-      status: "failed", 
-      message: "Question not found",
-      receivedId: questionId // Send back the ID for debugging
-    });
-  }
+  try {
+    // Check if question exists
+    const questionExists = await Question.exists({ _id: questionId });
+    if (!questionExists) {
+      return res.status(404).json({
+        status: "failed",
+        message: "Question not found"
+      });
+    }
 
-  // Get answers with pagination
-  const page = parseInt(req.query.page) || 1;
-  const limit = parseInt(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
-
-  const [answers, total] = await Promise.all([
-    Answer.find({ question: questionId })
+    // Get answers with author information and vote counts
+    const answers = await Answer.find({ question: questionId })
       .populate("author", "firstName lastName email")
-      .sort("-createdAt")
-      .skip(skip)
-      .limit(limit)
-      .lean(),
-    Answer.countDocuments({ question: questionId })
-  ]);
+      .lean(); // Convert to plain JavaScript object
 
-  res.status(200).json({
-    status: "success",
-    pagination: {
-      total,
-      page,
-      pages: Math.ceil(total / limit),
-      limit
-    },
-    data: answers.map(answer => ({
+    // Transform the data to include vote counts
+    const transformedAnswers = answers.map(answer => ({
       ...answer,
-      upvotes: answer.upvotes.length,
-      downvotes: answer.downvotes.length
-    }))
-  });
+      upvotes: answer.upvotes ? answer.upvotes.length : 0,
+      downvotes: answer.downvotes ? answer.downvotes.length : 0,
+      // Remove the upvotes and downvotes arrays if you don't want to expose who voted
+      upvotes: undefined,
+      downvotes: undefined
+    }));
+
+    res.status(200).json({
+      status: "success",
+      data: transformedAnswers
+    });
+
+  } catch (error) {
+    console.error("Error fetching answers:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error"
+    });
+  }
 });
 
 // @desc    Create an answer
