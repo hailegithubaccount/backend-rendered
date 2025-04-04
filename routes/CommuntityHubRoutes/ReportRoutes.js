@@ -1,14 +1,12 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const reportController = require("../../controller/CommunityHubController/ReportContoller")
-const { protect,checkRole, checkUserExists} = require('../../middleware/auth'); 
+const reportController = require('../controllers/reportController');
+const { protect, checkRole, checkUserExists } = require('../middleware/authMiddleware');
 
+// Create report - using URL parameters
+router.post('/report/:entityType/:entityId', protect, reportController.createReport);
 
-
-router.post("/",protect,checkRole("student"),checkUserExists,reportController.createReport);
-
-router.patch("/:reportId", protect, checkRole("library-staff"),checkUserExists,reportController.resolveReport);
-
-
+// Resolve report - unchanged
+router.patch('/:reportId', protect, checkRole("library-staff"), checkUserExists, reportController.resolveReport);
 
 module.exports = router;

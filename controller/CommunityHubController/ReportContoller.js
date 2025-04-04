@@ -4,9 +4,12 @@ const Report = require("../../model/CommutiyHUbmodel/report");
 const asyncHandler = require("express-async-handler");
 const mongoose = require('mongoose');
 
-
+// @desc    Create a report
+// @route   POST /api/report/:entityType/:entityId
+// @access  Private
 const createReport = asyncHandler(async (req, res) => {
-  const { entityType, entityId, reason } = req.body;
+  const { entityType, entityId } = req.params;
+  const { reason } = req.body;
   const reporterId = res.locals.id;
 
   // Validate input
