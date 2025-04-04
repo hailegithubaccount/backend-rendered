@@ -234,6 +234,61 @@ const downvoteQuestion = asyncHandler(async (req, res) => {
 });
 
 
+
+/// for the searching  get the questions and the answer 
+
+// controllers/questionController.js
+
+
+// @desc    Search community questions by title or content
+// @route   GET /api/community/questions/search?query=...
+// @access  Public
+const searchQuestions = asyncHandler(async (req, res) => {
+  try {
+    const { query } = req.query;
+
+    // Check if the query exists
+    if (!query || query.trim() === '') {
+      return res.status(400).json({
+        status: "failed",
+        message: "Search query is required",
+      });
+    }
+
+    // Create case-insensitive regex to match query anywhere in title or content
+    const regex = new RegExp(query, 'i');
+
+    // Search the database
+    const results = await Question.find({
+      $or: [
+        { title: { $regex: regex } },
+        { content: { $regex: regex } }
+      ]
+    })
+    .populate("author", "firstName lastName email");
+
+    // Send response
+    res.status(200).json({
+      status: "success",
+      count: results.length,
+      data: results,
+    });
+
+  } catch (error) {
+    console.error("Search error:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error",
+      error: error.message,
+    });
+  }
+});
+
+
+
+
+
+
  module.exports = {
    
     downvoteQuestion,
@@ -243,6 +298,7 @@ const downvoteQuestion = asyncHandler(async (req, res) => {
     createQuestion,
     getQuestion,
     getAllQuestions,
+    searchQuestions, 
     
 
     

@@ -13,6 +13,7 @@ router.post('/',protect,checkRole("student"), checkUserExists, questionControlle
 
 router.get('/',protect,checkRole("student"), checkUserExists, questionController.getAllQuestions);
 router.get('/:id',protect,checkRole("student"), checkUserExists, questionController.getQuestion);
+router.get('/search',protect,checkRole("student"), checkUserExists, questionController.searchQuestions);
 // Student-only routes
 
 
