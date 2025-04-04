@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const reportController = require('../controllers/reportController');
+const reportController = require('../../controller/CommunityHubController/ReportContoller');
 const { protect, checkRole, checkUserExists } = require('../middleware/authMiddleware');
 
 // Create report - using URL parameters
