@@ -359,7 +359,7 @@ const downvoteAnswer = asyncHandler(async (req, res) => {
     acceptAnswer ,
     deleteAnswer,
   
-    getAnswersForQuestion,
+    getAnswersByQuestion,
     createAnswer
 
     

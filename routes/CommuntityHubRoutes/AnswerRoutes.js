@@ -20,7 +20,7 @@ router.get('/:questionId/answers',
   protect,
   checkRole("student"),
   checkUserExists,
-  answerController.getAnswersForQuestion
+  answerController.getAnswersByQuestion
 );
 // Author or Admin routes
 // router.patch('/:id', answerController.updateAnswer);
