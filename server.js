@@ -50,12 +50,14 @@ const bookSeatRoutes=require("./routes/bookSeatRoute");
 
 const questionroutes =require("./routes/CommuntityHubRoutes/QuestionsRoutes")
 const answerroutes=require("./routes/CommuntityHubRoutes/AnswerRoutes")
+const ReportRoutes= require("./routes/CommuntityHubRoutes/ReportRoutes")
 
 
 
 
 app.use('/api/questions',questionroutes);
 app.use('/api/answer',answerroutes);
+app.use('/api/report',ReportRoutes);
 
 
 
