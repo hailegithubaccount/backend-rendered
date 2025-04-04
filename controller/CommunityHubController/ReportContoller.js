@@ -34,12 +34,20 @@ const createReport = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if the entity exists
+  // Check if the entity exists and get its content
   let entity;
+  let content = '';
+  
   if (entityType === "question") {
     entity = await Question.findById(entityId);
+    if (entity) {
+      content = entity.title + '\n' + entity.content;
+    }
   } else if (entityType === "answer") {
     entity = await Answer.findById(entityId);
+    if (entity) {
+      content = entity.content;
+    }
   }
 
   if (!entity) {
@@ -55,14 +63,17 @@ const createReport = asyncHandler(async (req, res) => {
     entityType,
     entityId,
     reason: reason.trim(),
+    entityContent: content // Store the content with the report
   });
 
   res.status(201).json({
     status: "success",
-    data: report,
+    data: {
+      ...report.toObject(),
+      entityContent: content // Also include in response
+    }
   });
 });
-
 
 
 const getAllReports = asyncHandler(async (req, res) => {
