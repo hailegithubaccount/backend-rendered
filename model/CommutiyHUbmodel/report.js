@@ -7,11 +7,22 @@ const reportSchema = new mongoose.Schema(
       ref: "users",
       required: true,
     },
+      question: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "questions",
+          required: true,
+        },
     entityType: {
       type: String,
       enum: ["question", "answer"],
       required: true,
     },
+    answers: {
+          type: mongoose.Schema.Types.ObjectId,
+          ref: "answers",
+    
+          
+        },
     entityId: {
       type: mongoose.Schema.Types.ObjectId,
       required: true,

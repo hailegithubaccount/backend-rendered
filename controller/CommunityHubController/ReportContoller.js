@@ -20,33 +20,20 @@ const createReport = asyncHandler(async (req, res) => {
     });
   }
 
-  if (!mongoose.Types.ObjectId.isValid(entityId)) {
-    return res.status(400).json({
-      status: "failed",
-      message: "Invalid entity ID",
-    });
-  }
-
-  if (!reason || reason.trim().length < 10) {
-    return res.status(400).json({
-      status: "failed",
-      message: "Reason must be at least 10 characters",
-    });
-  }
-
-  // Check if the entity exists and get its content
-  let entity;
-  let content = '';
+  // Check if entity exists and get its content
+  let entity, content, author;
   
   if (entityType === "question") {
-    entity = await Question.findById(entityId);
+    entity = await Question.findById(entityId).populate('author', 'firstName lastName');
     if (entity) {
-      content = entity.title + '\n' + entity.content;
+      content = `${entity.title}\n${entity.content}`;
+      author = entity.author._id;
     }
-  } else if (entityType === "answer") {
-    entity = await Answer.findById(entityId);
+  } else {
+    entity = await Answer.findById(entityId).populate('author', 'firstName lastName');
     if (entity) {
       content = entity.content;
+      author = entity.author._id;
     }
   }
 
@@ -57,21 +44,19 @@ const createReport = asyncHandler(async (req, res) => {
     });
   }
 
-  // Create the report
+  // Create the report with content
   const report = await Report.create({
     reporter: reporterId,
     entityType,
     entityId,
-    reason: reason.trim(),
-    entityContent: content // Store the content with the report
+    content, // Store the actual content
+    author,  // Store the content author
+    reason: reason.trim()
   });
 
   res.status(201).json({
     status: "success",
-    data: {
-      ...report.toObject(),
-      entityContent: content // Also include in response
-    }
+    data: report
   });
 });
 
