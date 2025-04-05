@@ -2,9 +2,10 @@ const express = require("express");
 const router = express.Router();
 const StudentController= require("../controller/StudentController");
 const { protect,checkRole, checkUserExists} = require('../middleware/auth'); 
+const upload = multer({ dest: 'uploads/' }); 
 
 
-router.post('/register', StudentController.registerStudent);
+router.post('/register',upload.single('photo'), StudentController.registerStudent);
 router.get("/admin/student",
   protect,
   checkRole("admin"), 

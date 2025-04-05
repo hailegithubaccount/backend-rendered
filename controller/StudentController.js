@@ -5,35 +5,44 @@ const jwt = require("jsonwebtoken"); // For generating JWT tokens
 const bcrypt = require("bcrypt"); // For password comparison
 require("dotenv").config(); 
 
-const registerStudent=async (req,res,next)=>{
+const multer = require('multer');
+const upload = multer({ dest: 'uploads/' }); // Configure storage as needed
+
+const registerStudent = async (req, res, next) => {
     try {
-        // firstname ,lastname ,email,password from req.body
-        const {firstName ,lastName ,email,password} =req.body
-        // creaNeuser
-       
+        // Handle file upload if exists
+        const photo = req.file ? req.file.path : 'default.jpg';
+        
+        const { firstName, lastName, email, password } = req.body;
+        
         const newUser = await userModel.create({
-                        firstName,
-                        lastName,
-                        email,
-                        password,
-                        role: "student", 
-                        photo, // Default role for staff
-                    });
-        // create token
-        const token = utils.signToken({id:newUser.id,role:newUser.role})
-        // send response
+            firstName,
+            lastName,
+            email,
+            password,
+            role: "student",
+            photo
+        });
+
+        const token = utils.signToken({ id: newUser.id, role: newUser.role });
         
         res.status(201).json({
             token,
-            status:'succes',
-            message:'student register successfully',
+            status: 'success',
+            message: 'student register successfully',
             newUser
-        })
-     
+        });
     } catch (error) {
-        console.log(error)
+        console.error('Registration error:', error);
+        res.status(500).json({
+            status: 'error',
+            message: error.message
+        });
     }
-}
+};
+
+// In your routes file:
+
 
 const getAllStudent = async (req, res, next) => {
     try {
