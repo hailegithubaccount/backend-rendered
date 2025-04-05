@@ -5,8 +5,7 @@ const jwt = require("jsonwebtoken"); // For generating JWT tokens
 const bcrypt = require("bcrypt"); // For password comparison
 require("dotenv").config(); 
 
-const multer = require('multer');
-const upload = multer({ dest: 'uploads/' }); // Configure storage as needed
+// Configure storage as needed
 
 const registerStudent = async (req, res, next) => {
     try {

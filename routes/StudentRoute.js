@@ -2,6 +2,7 @@ const express = require("express");
 const router = express.Router();
 const StudentController= require("../controller/StudentController");
 const { protect,checkRole, checkUserExists} = require('../middleware/auth'); 
+const multer = require('multer');
 const upload = multer({ dest: 'uploads/' }); 
 
 
