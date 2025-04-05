@@ -77,20 +77,21 @@ const getAllReports= asyncHandler(async (req, res) => {
 // @desc    Resolve or delete a report
 // @route   PATCH /api/reports/:reportId
 // @access  Private (library-staff only)
-const resolveReport = asyncHandler(async (req, res) => {
+// @desc    Resolve or delete a report
+// @route   PATCH /api/reports/:reportId
+// @access  Private (library-staff only)
+const handleReportAction = asyncHandler(async (req, res) => {
   const { reportId } = req.params;
-  const action = req.body.action; // "resolve" or "delete"
-  const resolvedById = res.locals.id;
+  const { action } = req.body;
+  const staffId = res.locals.id;
 
-  // Validate report ID
-  if (!mongoose.Types.ObjectId.isValid(reportId)) {
+  if (!["resolve", "delete"].includes(action)) {
     return res.status(400).json({
       status: "failed",
-      message: "Invalid report ID",
+      message: "Invalid action. Must be 'resolve' or 'delete'",
     });
   }
 
-  // Find the report
   const report = await Report.findById(reportId);
   if (!report) {
     return res.status(404).json({
@@ -99,59 +100,30 @@ const resolveReport = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if the user is library staff
-  if (res.locals.role !== "library-staff") {
-    return res.status(403).json({
-      status: "failed",
-      message: "Only library staff can resolve reports",
-    });
-  }
-
-  // Resolve the report
   if (action === "resolve") {
     report.isResolved = true;
-    report.resolvedBy = resolvedById;
+    report.resolvedBy = staffId;
     report.resolvedAt = Date.now();
     await report.save();
-
-    return res.status(200).json({
-      status: "success",
-      message: "Report marked as resolved",
-      data: report,
-    });
-  }
-
-  // Delete the reported entity
-  if (action === "delete") {
-    const { entityType, entityId } = report;
-
-    if (entityType === "question") {
-      await Question.findByIdAndDelete(entityId);
-    } else if (entityType === "answer") {
-      await Answer.findByIdAndDelete(entityId);
+  } else if (action === "delete") {
+    // Delete the reported content
+    if (report.entityType === "question") {
+      await Question.findByIdAndDelete(report.entityId);
+    } else {
+      await Answer.findByIdAndDelete(report.entityId);
     }
-
-    // Mark the report as resolved
-    report.isResolved = true;
-    report.resolvedBy = resolvedById;
-    report.resolvedAt = Date.now();
-    await report.save();
-
-    return res.status(200).json({
-      status: "success",
-      message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} deleted successfully`,
-    });
+    // Also delete the report itself
+    await Report.findByIdAndDelete(reportId);
   }
 
-  // Invalid action
-  return res.status(400).json({
-    status: "failed",
-    message: "Invalid action. Must be 'resolve' or 'delete'",
+  res.status(200).json({
+    status: "success",
+    data: report
   });
 });
 
 module.exports = {
   createReport,
-  resolveReport,
   getAllReports,
+  handleReportAction,
 };

@@ -7,7 +7,7 @@ const { protect,checkRole, checkUserExists} = require('../../middleware/auth');
 router.post('/report/:entityType/:entityId', protect, reportController.createReport);
 
 // Resolve report - unchanged
-router.patch('/:reportId', protect, checkRole("library-staff"), checkUserExists, reportController.resolveReport);
+router.patch('/:reportId', protect, checkRole("library-staff"), checkUserExists, reportController.handleReportAction);
 router.get('/', protect, checkRole("library-staff"), checkUserExists, reportController.getAllReports);
 
 module.exports = router;
