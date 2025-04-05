@@ -1,4 +1,5 @@
 const mongoose = require("mongoose");
+
 const reportSchema = new mongoose.Schema(
   {
     reporter: {
@@ -15,12 +16,11 @@ const reportSchema = new mongoose.Schema(
       type: mongoose.Schema.Types.ObjectId,
       required: true,
     },
-    // Add these new fields
-    content: { // Stores the actual text content
+    content: {
       type: String,
       required: true
     },
-    author: { // Stores info about who created the content
+    author: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "users",
       required: true
@@ -53,3 +53,7 @@ const reportSchema = new mongoose.Schema(
     },
   }
 );
+
+// Create and export the model
+const Report = mongoose.model("Reports", reportSchema);
+module.exports = Report;
