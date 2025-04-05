@@ -351,8 +351,9 @@ const deleteAnswer = asyncHandler(async (req, res) => {
    
   
     deleteAnswer,
-  
     getAnswersByQuestion,
-    createAnswer
+    createAnswer,
+
+
     
   };
