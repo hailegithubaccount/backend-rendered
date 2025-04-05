@@ -44,28 +44,38 @@ const registerStudent = async (req, res, next) => {
 
 
 const getAllStudent = async (req, res, next) => {
-    try {
+  try {
+      // Check if the user is an admin
       if (res.locals.role !== "admin") {
-        return res.status(403).json({
-          status: "failed",
-          message: "Only admins can view students",
-        });
+          return res.status(403).json({
+              status: "failed",
+              message: "Only admins can view students",
+          });
       }
-  
+
+      // Fetch all students from the database
       const studentList = await userModel.find({ role: "student" });
+
+      // Construct the full photo URL for each student
+      const studentsWithPhotoUrl = studentList.map(student => ({
+          ...student.toObject(),
+          photoUrl: student.photo ? `${req.protocol}://${req.get('host')}/${student.photo}` : null
+      }));
+
+      // Send success response
       res.status(200).json({
-        status: "success",
-        message: "student fetched successfully",
-        staff: studentList,
+          status: "success",
+          message: "Students fetched successfully",
+          students: studentsWithPhotoUrl,
       });
-    } catch (error) {
+  } catch (error) {
       console.error(error);
       res.status(500).json({
-        status: "failed",
-        message: "Server error, unable to fetch library staff",
+          status: "failed",
+          message: "Server error, unable to fetch students",
       });
-    }
-  };
+  }
+};
   const deleteStudent = async (req, res, next) => {
     try {
       if (res.locals.role !== "admin") {
