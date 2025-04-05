@@ -33,6 +33,10 @@ const userSchema = new mongoose.Schema(
       select: false,
       required: [true, "password is required"]
     },
+    photo: {
+      type: String,
+      default: "default.jpg" // Default profile picture
+    },
     role: {
       type: String,
      

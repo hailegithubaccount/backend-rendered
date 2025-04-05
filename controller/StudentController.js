@@ -16,7 +16,8 @@ const registerStudent=async (req,res,next)=>{
                         lastName,
                         email,
                         password,
-                        role: "student",  // Default role for staff
+                        role: "student", 
+                        photo, // Default role for staff
                     });
         // create token
         const token = utils.signToken({id:newUser.id,role:newUser.role})
