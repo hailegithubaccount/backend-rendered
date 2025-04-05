@@ -349,17 +349,10 @@ const deleteAnswer = asyncHandler(async (req, res) => {
 
  module.exports = {
    
-    downvoteAnswer,
-    upvoteAnswer,
-    acceptAnswer ,
+  
     deleteAnswer,
   
     getAnswersByQuestion,
     createAnswer
-
-    
-
-    
-
     
   };
