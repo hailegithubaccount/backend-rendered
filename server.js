@@ -5,7 +5,7 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
 
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 const app = express();
 
 // Middleware
