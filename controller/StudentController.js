@@ -5,77 +5,84 @@ const jwt = require("jsonwebtoken"); // For generating JWT tokens
 const bcrypt = require("bcrypt"); // For password comparison
 require("dotenv").config(); 
 
-// Configure storage as needed
-
-const registerStudent = async (req, res, next) => {
-    try {
-        // Handle file upload if exists
-        const photo = req.file ? req.file.path : 'default.jpg';
-        
-        const { firstName, lastName, email, password } = req.body;
-        
-        const newUser = await userModel.create({
-            firstName,
-            lastName,
-            email,
-            password,
-            role: "student",
-            photo
-        });
-
-        const token = utils.signToken({ id: newUser.id, role: newUser.role });
-        
-        res.status(201).json({
-            token,
-            status: 'success',
-            message: 'student register successfully',
-            newUser
-        });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({
-            status: 'error',
-            message: error.message
-        });
-    }
-};
-
-// In your routes file:
 
 
-const getAllStudent = async (req, res, next) => {
+
+exports.registerStudent = async (req, res) => {
   try {
-      // Check if the user is an admin
-      if (res.locals.role !== "admin") {
-          return res.status(403).json({
-              status: "failed",
-              message: "Only admins can view students",
-          });
+    const { firstName, lastName, email, password } = req.body;
+    const photo = req.file ? req.file.filename : 'default.jpg';
+
+    const newUser = await userModel.create({
+      firstName,
+      lastName,
+      email,
+      password,
+      role: "student",
+      photo
+    });
+
+    const token = utils.signToken({ id: newUser._id, role: newUser.role });
+
+    res.status(201).json({
+      token,
+      status: 'success',
+      data: {
+        user: {
+          ...newUser.toObject(),
+          photoUrl: req.file 
+            ? `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`
+            : null
+        }
       }
-
-      // Fetch all students from the database
-      const studentList = await userModel.find({ role: "student" });
-
-      // Construct the full photo URL for each student
-      const studentsWithPhotoUrl = studentList.map(student => ({
-          ...student.toObject(),
-          photoUrl: student.photo ? `${req.protocol}://${req.get('host')}/${student.photo}` : null
-      }));
-
-      // Send success response
-      res.status(200).json({
-          status: "success",
-          message: "Students fetched successfully",
-          students: studentsWithPhotoUrl,
-      });
-  } catch (error) {
-      console.error(error);
-      res.status(500).json({
-          status: "failed",
-          message: "Server error, unable to fetch students",
-      });
+    });
+  } catch (err) {
+    res.status(400).json({
+      status: 'error',
+      message: err.message
+    });
   }
 };
+
+exports.getAllStudents = async (req, res) => {
+  try {
+    if (res.locals.role !== "admin") {
+      return res.status(403).json({
+        status: "fail",
+        message: "Access denied: Admins only"
+      });
+    }
+
+    const students = await userModel.find({ role: "student" });
+
+    const processedStudents = students.map(student => ({
+      ...student.toObject(),
+      photoUrl: student.photo !== 'default.jpg'
+        ? `${req.protocol}://${req.get('host')}/uploads/${student.photo}`
+        : null
+    }));
+
+    res.status(200).json({
+      status: "success",
+      results: students.length,
+      data: { students: processedStudents }
+    });
+  } catch (err) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch students"
+    });
+  }
+};
+
+
+
+
+
+
+
+
+
   const deleteStudent = async (req, res, next) => {
     try {
       if (res.locals.role !== "admin") {
