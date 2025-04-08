@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const StudentController = require('../controllers/studentController');
+const StudentController = require('../controller/StudentController');
 const { protect, checkRole } = require('../middleware/auth');
 const upload = require('../cong/multer.config');
 
