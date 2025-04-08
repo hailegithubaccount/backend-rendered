@@ -119,7 +119,7 @@ const getAllStudents = async (req, res) => {
 
 module.exports = {
     registerStudent,
-    getAllStudent,
+    getAllStudents,
     deleteStudent,
    
   };
