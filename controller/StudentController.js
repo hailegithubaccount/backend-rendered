@@ -8,7 +8,7 @@ require("dotenv").config();
 
 
 
-exports.registerStudent = async (req, res) => {
+const registerStudent = async (req, res) => {
   try {
     const { firstName, lastName, email, password } = req.body;
     const photo = req.file ? req.file.filename : 'default.jpg';
@@ -44,7 +44,9 @@ exports.registerStudent = async (req, res) => {
   }
 };
 
-exports.getAllStudents = async (req, res) => {
+
+
+const getAllStudents = async (req, res) => {
   try {
     if (res.locals.role !== "admin") {
       return res.status(403).json({
@@ -74,10 +76,6 @@ exports.getAllStudents = async (req, res) => {
     });
   }
 };
-
-
-
-
 
 
 
