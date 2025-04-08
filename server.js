@@ -67,7 +67,7 @@ app.use('/api/report',ReportRoutes);
 
 
 // Static files (MUST come before routes)
-app.use(express.static(path.join(__dirname, 'uploads'), {
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
   setHeaders: (res) => {
     res.set('Cross-Origin-Resource-Policy', 'cross-origin');
   }

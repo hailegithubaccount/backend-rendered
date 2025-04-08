@@ -19,7 +19,8 @@ const registerStudent = async (req, res) => {
       email,
       password,
       role: "student",
-      photo
+      photo: req.file.filename, // only the filename
+      photoUrl: `${req.protocol}://${req.get('host')}/uploads/${req.file.filename}`
     });
 
     const token = utils.signToken({ id: newUser._id, role: newUser.role });

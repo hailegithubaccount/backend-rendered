@@ -1,10 +1,13 @@
 const express = require('express');
 const router = express.Router();
+const path = require('path');
+const fs = require('fs');
+
 const StudentController = require('../controller/StudentController');
-const { protect, checkRole,checkUserExists } = require('../middleware/auth');
+const { protect, checkRole, checkUserExists } = require('../middleware/auth');
 const upload = require('../cong/multer.config');
 
-// Image serving endpoint
+// Serve uploaded image by filename
 router.get('/image/:filename', (req, res) => {
   const filePath = path.join(__dirname, '../uploads', req.params.filename);
   
@@ -20,19 +23,9 @@ router.get('/image/:filename', (req, res) => {
   });
 });
 
-// Existing routes
+// Routes
 router.post('/register', upload.single('photo'), StudentController.registerStudent);
-router.get('/admin/student', protect, checkRole('admin'), checkUserExists ,StudentController.getAllStudents);
-
-
-
-  router.delete(
-    "/admin/student/:id",
-    protect,
-    checkRole("admin"), 
-    checkUserExists,
-    StudentController.deleteStudent
-  );
-
+router.get('/admin/student', protect, checkRole('admin'), checkUserExists, StudentController.getAllStudents);
+router.delete('/admin/student/:id', protect, checkRole('admin'), checkUserExists, StudentController.deleteStudent);
 
 module.exports = router;
