@@ -8,40 +8,42 @@ require("dotenv").config();
 // Configure storage as needed
 
 const registerStudent = async (req, res, next) => {
-    try {
-        // Handle file upload if exists
-        const photo = req.file ? req.file.path : 'default.jpg';
-        
-        const { firstName, lastName, email, password } = req.body;
-        
-        const newUser = await userModel.create({
-            firstName,
-            lastName,
-            email,
-            password,
-            role: "student",
-            photo
-        });
+  try {
+      // Handle file upload if exists
+      const photo = req.file ? req.file.path : 'default.jpg';
 
-        const token = utils.signToken({ id: newUser.id, role: newUser.role });
-        
-        res.status(201).json({
-            token,
-            status: 'success',
-            message: 'student register successfully',
-            newUser
-        });
-    } catch (error) {
-        console.error('Registration error:', error);
-        res.status(500).json({
-            status: 'error',
-            message: error.message
-        });
-    }
+      const { firstName, lastName, email, password } = req.body;
+
+      // Hash the password
+      const hashedPassword = await bcrypt.hash(password, 10);
+
+      // Create a new student in the database
+      const newUser = await userModel.create({
+          firstName,
+          lastName,
+          email,
+          password: hashedPassword,
+          role: "student",
+          photo
+      });
+
+      // Generate JWT token
+      const token = utils.signToken({ id: newUser.id, role: newUser.role });
+
+      res.status(201).json({
+          token,
+          status: 'success',
+          message: 'Student registered successfully',
+          newUser
+      });
+  } catch (error) {
+      console.error('Registration error:', error);
+      res.status(500).json({
+          status: 'error',
+          message: error.message
+      });
+  }
 };
-
-// In your routes file:
-
 
 const getAllStudent = async (req, res, next) => {
   try {
@@ -76,38 +78,39 @@ const getAllStudent = async (req, res, next) => {
       });
   }
 };
-  const deleteStudent = async (req, res, next) => {
-    try {
+
+const deleteStudent = async (req, res, next) => {
+  try {
       if (res.locals.role !== "admin") {
-        return res.status(403).json({
-          status: "failed",
-          message: "Only admins can delete library staff",
-        });
+          return res.status(403).json({
+              status: "failed",
+              message: "Only admins can delete students",
+          });
       }
-  
+
       const studentID = req.params.id;
-      const deletedstudent = await userModel.findByIdAndDelete(studentID);
-  
-      if (!deletedstudent) {
-        return res.status(404).json({
-          status: "failed",
-          message: "student not found",
-        });
+      const deletedStudent = await userModel.findByIdAndDelete(studentID);
+
+      if (!deletedStudent) {
+          return res.status(404).json({
+              status: "failed",
+              message: "Student not found",
+          });
       }
-  
+
       res.status(200).json({
-        status: "success",
-        message: "student deleted successfully",
-        deletedstudent,
+          status: "success",
+          message: "Student deleted successfully",
+          deletedStudent,
       });
-    } catch (error) {
+  } catch (error) {
       console.error(error);
       res.status(500).json({
-        status: "failed",
-        message: "Server error, unable to delete student",
+          status: "failed",
+          message: "Server error, unable to delete student",
       });
-    }
-  };
+  }
+};
 
 
 
