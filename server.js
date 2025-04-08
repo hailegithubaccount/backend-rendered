@@ -5,18 +5,6 @@ const cookieParser = require("cookie-parser");
 const cors = require("cors");
 
 
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-router.get('/uploads/:filename', (req, res) => {
-  const file = path.join(__dirname, '../uploads', req.params.filename);
-  res.sendFile(file, (err) => {
-    if (err) {
-      console.error('File send error:', err);
-      res.status(404).json({ error: 'Image not found' });
-    }
-  });
-});
-
 
 
 
@@ -74,6 +62,15 @@ app.use('/api/questions',questionroutes);
 app.use('/api/answer',answerroutes);
 app.use('/api/report',ReportRoutes);
 
+
+
+
+// Static files (MUST come before routes)
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
+  setHeaders: (res) => {
+    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
+  }
+}))
 
 
 

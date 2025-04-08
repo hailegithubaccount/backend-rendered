@@ -1,48 +1,28 @@
-const express = require("express");
+const express = require('express');
 const router = express.Router();
-const StudentController = require("../controller/StudentController");
-const { protect, checkRole, checkUserExists } = require('../middleware/auth');
-const multer = require('multer');
-const path = require('path');
-const fs = require('fs');
+const StudentController = require('../controllers/studentController');
+const { protect, checkRole } = require('../middleware/auth');
+const upload = require('../cong/multer.config');
 
-// Ensure uploads directory exists
-const uploadDir = path.join(__dirname, '../uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-const storage = multer.diskStorage({
-  destination: (req, file, cb) => {
-    cb(null, uploadDir);
-  },
-  filename: (req, file, cb) => {
-    const ext = path.extname(file.originalname);
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9);
-    cb(null, `student-${uniqueSuffix}${ext}`);
-  }
+// Image serving endpoint
+router.get('/image/:filename', (req, res) => {
+  const filePath = path.join(__dirname, '../uploads', req.params.filename);
+  
+  fs.access(filePath, fs.constants.F_OK, (err) => {
+    if (err) return res.status(404).json({ error: 'Image not found' });
+    
+    const ext = path.extname(filePath).toLowerCase();
+    let contentType = 'image/jpeg';
+    if (ext === '.png') contentType = 'image/png';
+    
+    res.set('Content-Type', contentType);
+    fs.createReadStream(filePath).pipe(res);
+  });
 });
 
-const fileFilter = (req, file, cb) => {
-  const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
-  allowedTypes.includes(file.mimetype) 
-    ? cb(null, true) 
-    : cb(new Error('Only JPEG/JPG/PNG files allowed'), false);
-};
-
-const upload = multer({
-  storage: storage,
-  fileFilter: fileFilter,
-  limits: { fileSize: 5 * 1024 * 1024 } // 5MB
-});
-
-// Your existing routes
+// Existing routes
 router.post('/register', upload.single('photo'), StudentController.registerStudent);
-router.get("/admin/student",
-  protect,
-  checkRole("admin"), 
-  checkUserExists,
-  StudentController.getAllStudent);
+router.get('/admin/student', protect, checkRole('admin'), StudentController.getAllStudents);
 
 
 
