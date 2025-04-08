@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const StudentController = require('../controller/StudentController');
-const { protect, checkRole } = require('../middleware/auth');
+const { protect, checkRole,checkUserExists } = require('../middleware/auth');
 const upload = require('../cong/multer.config');
 
 // Image serving endpoint
@@ -22,7 +22,7 @@ router.get('/image/:filename', (req, res) => {
 
 // Existing routes
 router.post('/register', upload.single('photo'), StudentController.registerStudent);
-router.get('/admin/student', protect, checkRole('admin'), StudentController.getAllStudents);
+router.get('/admin/student', protect, checkRole('admin'), checkUserExists ,StudentController.getAllStudents);
 
 
 
