@@ -3,10 +3,6 @@ const connectDB = require('./config/db');
 require('dotenv').config();
 const cookieParser = require("cookie-parser"); 
 const cors = require("cors");
-const path = require('path');
-
-
-
 
 
 
@@ -63,15 +59,6 @@ app.use('/api/questions',questionroutes);
 app.use('/api/answer',answerroutes);
 app.use('/api/report',ReportRoutes);
 
-
-
-
-// Static files (MUST come before routes)
-app.use('/uploads', express.static(path.join(__dirname, 'uploads'), {
-  setHeaders: (res) => {
-    res.set('Cross-Origin-Resource-Policy', 'cross-origin');
-  }
-}));
 
 
 
