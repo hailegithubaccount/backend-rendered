@@ -37,7 +37,7 @@ const upload = multer({
 });
 
 // Photo Serving Route - Add this new endpoint
-router.get('/photo/:filename', (req, res) => {
+router.get('/uploads/:filename', (req, res) => {
   const filename = req.params.filename;
   const filePath = path.join(__dirname, '../uploads', filename);
   
