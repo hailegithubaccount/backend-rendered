@@ -120,42 +120,58 @@ const getAllStudents = async (req, res) => {
 };
 
 const getStudentPhoto = async (req, res) => {
-  try {
-    // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-      return res.status(400).json({ 
-        status: "error", 
-        message: "Invalid student ID format" 
+    try {
+      // Validate ID format
+      if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        console.log('Invalid ID format:', req.params.id);
+        return res.status(400).json({ 
+          status: "error", 
+          message: "Invalid student ID format" 
+        });
+      }
+  
+      console.log('Fetching photo for student ID:', req.params.id);
+  
+      // Find student with only photo data
+      const student = await User.findById(req.params.id)
+        .select('photo contentType -_id')
+        .lean();
+  
+      if (!student) {
+        console.log('Student not found for ID:', req.params.id);
+        return res.status(404).json({ 
+          status: "error", 
+          message: "Student not found" 
+        });
+      }
+  
+      if (!student.photo || !student.photo.data) {
+        console.log('Photo not found for student:', req.params.id);
+        return res.status(404).json({ 
+          status: "error", 
+          message: "Photo not found for this student" 
+        });
+      }
+  
+      console.log('Photo found, content type:', student.photo.contentType);
+  
+      // Set headers and send image
+      res.set({
+        'Content-Type': student.photo.contentType,
+        'Content-Length': student.photo.data.length,
+        'Cache-Control': 'public, max-age=86400' // Cache for 1 day
+      });
+      
+      return res.send(student.photo.data);
+    } catch (error) {
+      console.error("Error in getStudentPhoto:", error);
+      res.status(500).json({
+        status: "error",
+        message: "Internal server error",
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
-
-    // Find student with only photo data
-    const student = await User.findById(req.params.id)
-      .select('photo -_id');
-
-    if (!student?.photo?.data) {
-      return res.status(404).json({ 
-        status: "error", 
-        message: "Photo not found for this student" 
-      });
-    }
-
-    // Set headers and send image
-    res.set({
-      'Content-Type': student.photo.contentType,
-      'Content-Length': student.photo.data.length,
-      'Cache-Control': 'public, max-age=86400' // Cache for 1 day
-    });
-    
-    return res.send(student.photo.data);
-  } catch (error) {
-    console.error("Error fetching photo:", error);
-    res.status(500).json({
-      status: "error",
-      message: "Internal server error"
-    });
-  }
-};
+  };
 
 
 
