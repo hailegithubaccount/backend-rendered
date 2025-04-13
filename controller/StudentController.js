@@ -93,8 +93,9 @@ const registerStudent = async (req, res) => {
 
 const getStudentProfile = async (req, res) => {
     try {
+        const studentId = res.locals.id;
         // Validate ID format
-        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+        if (!mongoose.Types.ObjectId.isValid(studentId)) {
             return res.status(400).json({
                 status: "error",
                 message: "Invalid student ID format",
