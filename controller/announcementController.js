@@ -76,7 +76,7 @@ const getAllAnnouncements = asyncHandler(async (req, res) => {
     // Return success response with the list of announcements
     res.status(200).json({
       status: "success",
-      message: "All announcements fetched successfully",
+      message: "All status fetched successfully",
       data: announcements,
     });
   } catch (error) {
@@ -115,7 +115,7 @@ const deleteAnnouncement = asyncHandler(async (req, res) => {
     if (!deletedAnnouncement) {
       return res.status(404).json({
         status: "failed",
-        message: "Announcement not found or already deleted",
+        message: "status not found or already deleted",
         details: `No announcement found with ID: ${AnnouncementId}`
       });
     }
