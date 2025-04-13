@@ -89,6 +89,57 @@ const registerStudent = async (req, res) => {
   }
 };
 
+
+
+const getStudentProfile = async (req, res) => {
+    try {
+        // Validate ID format
+        if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+            return res.status(400).json({
+                status: "error",
+                message: "Invalid student ID format",
+            });
+        }
+
+        // Fetch the student with necessary fields
+        const student = await User.findById(req.params.id).select(
+            "firstName lastName email role photo"
+        );
+
+        if (!student) {
+            return res.status(404).json({
+                status: "error",
+                message: "Student not found",
+            });
+        }
+
+        // Add photo URL if photo exists
+        const photoUrl = student.photo
+            ? `${req.protocol}://${req.get("host")}/api/students/${student.id}/photo`
+            : null;
+
+        // Return the student's profile
+        res.status(200).json({
+            status: "success",
+            data: {
+                id: student.id,
+                firstName: student.firstName,
+                lastName: student.lastName,
+                email: student.email,
+                role: student.role,
+                photoUrl: photoUrl,
+            },
+        });
+    } catch (error) {
+        console.error("Error fetching student profile:", error);
+        res.status(500).json({
+            status: "error",
+            message: "Internal server error",
+        });
+    }
+};
+
+
 const getAllStudents = async (req, res) => {
   try {
     // Fetch students with only necessary fields
@@ -168,6 +219,7 @@ const getStudentPhoto = async (req, res) => {
 
 
 
+
 const deleteStudent = async (req, res, next) => {
   try {
       if (res.locals.role !== "admin") {
@@ -209,5 +261,6 @@ module.exports = {
     getAllStudents,
     deleteStudent,
     getStudentPhoto,
+    getStudentProfile,
    
   };
