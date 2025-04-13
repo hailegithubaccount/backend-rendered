@@ -123,52 +123,45 @@ const getStudentPhoto = async (req, res) => {
     try {
       // Validate ID format
       if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
-        console.log('Invalid ID format:', req.params.id);
         return res.status(400).json({ 
           status: "error", 
           message: "Invalid student ID format" 
         });
       }
   
-      console.log('Fetching photo for student ID:', req.params.id);
-  
       // Find student with only photo data
       const student = await User.findById(req.params.id)
-        .select('photo contentType -_id')
-        .lean();
+        .select('photo -_id');
   
-      if (!student) {
-        console.log('Student not found for ID:', req.params.id);
-        return res.status(404).json({ 
-          status: "error", 
-          message: "Student not found" 
-        });
-      }
-  
-      if (!student.photo || !student.photo.data) {
-        console.log('Photo not found for student:', req.params.id);
+      if (!student?.photo?.data) {
         return res.status(404).json({ 
           status: "error", 
           message: "Photo not found for this student" 
         });
       }
   
-      console.log('Photo found, content type:', student.photo.contentType);
+      // Convert data to Buffer if it isn't already
+      const photoData = Buffer.isBuffer(student.photo.data) 
+        ? student.photo.data 
+        : Buffer.from(student.photo.data);
+      
+      // Ensure content type is set
+      const contentType = student.photo.contentType || 'image/jpeg';
   
-      // Set headers and send image
+      // Set headers safely
       res.set({
-        'Content-Type': student.photo.contentType,
-        'Content-Length': student.photo.data.length,
-        'Cache-Control': 'public, max-age=86400' // Cache for 1 day
+        'Content-Type': contentType,
+        'Content-Length': photoData.length.toString(), // Explicitly convert to string
+        'Cache-Control': 'public, max-age=86400'
       });
       
-      return res.send(student.photo.data);
+      return res.send(photoData);
     } catch (error) {
-      console.error("Error in getStudentPhoto:", error);
+      console.error("Error fetching photo:", error);
       res.status(500).json({
         status: "error",
         message: "Internal server error",
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined
+        error: process.env.NODE_ENV === 'development' ? error.message : undefined
       });
     }
   };
