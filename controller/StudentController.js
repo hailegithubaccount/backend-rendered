@@ -4,7 +4,7 @@ const User= require("../model/userModel"); // Import your user model
 const jwt = require("jsonwebtoken"); // For generating JWT tokens
 const bcrypt = require("bcrypt"); // For password comparison
 require("dotenv").config(); 
-
+const mongoose = require("mongoose");
 // Configure storage as needed
 
 
