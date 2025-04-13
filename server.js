@@ -7,13 +7,16 @@ const path = require('path');
 
 
 
+
+
+
 const app = express();
 
 // Middleware
 app.use(express.json());
 app.use(cors());
 app.use(cookieParser());
-
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Connect to Database
 connectDB();
@@ -66,7 +69,7 @@ app.use('/api/report',ReportRoutes);
 
 
 
-app.use('/uploads/photos', express.static(path.join(__dirname, 'uploads/photos')));
+
 
 
 
