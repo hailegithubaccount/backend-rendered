@@ -37,7 +37,7 @@ const seatNotfy = require("./routes/notificationSeatRoute")
 const real=require("./routes/routeM")
 
 
-const AnnouncementRoutes=require("./routes/AnnouncementRoutes");
+// const AnnouncementRoutes=require("./routes/AnnouncementRoutes");
 
 
 const IndependatSeatResevationRoutes=require("./routes/IndependatSeatResevationRoutes")
@@ -102,7 +102,7 @@ app.use('/api/requests', requestBook);
 app.use('/api/notfiystudent',notfy);
 app.use('/api/the',wishlistRoutes);
 app.use('/api/notfiyseat',seatNotfy);
-app.use('/api/Announc',AnnouncementRoutes);
+// app.use('/api/Announc',AnnouncementRoutes);
 
 
 // indepedate resevation seat routes
