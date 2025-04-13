@@ -10,7 +10,7 @@ require("dotenv").config();
 const registerStudent = async (req, res, next) => {
     try {
         const { firstName, lastName, email, password } = req.body;
-  
+
         // Check if file was uploaded
         if (!req.file) {
             return res.status(400).json({
@@ -18,7 +18,7 @@ const registerStudent = async (req, res, next) => {
                 message: 'Profile photo is required'
             });
         }
-  
+
         // Validate file type
         const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
         if (!allowedTypes.includes(req.file.mimetype)) {
@@ -27,7 +27,7 @@ const registerStudent = async (req, res, next) => {
                 message: 'Only JPEG, PNG, and GIF images are allowed'
             });
         }
-  
+
         // Validate file size (max 5MB)
         if (req.file.size > 5 * 1024 * 1024) {
             return res.status(400).json({
@@ -35,10 +35,10 @@ const registerStudent = async (req, res, next) => {
                 message: 'Image size exceeds 5MB limit'
             });
         }
-  
+
         // Hash the password
         const hashedPassword = await bcrypt.hash(password, 10);
-  
+
         // Create a new student with image buffer
         const newUser = await userModel.create({
             firstName,
@@ -51,10 +51,13 @@ const registerStudent = async (req, res, next) => {
                 contentType: req.file.mimetype
             }
         });
-  
+
+        // Debug log to verify saved photo
+        console.log('Saved student photo:', newUser.photo);
+
         // Generate JWT token
         const token = utils.signToken({ id: newUser.id, role: newUser.role });
-  
+
         res.status(201).json({
             token,
             status: 'success',
@@ -77,62 +80,66 @@ const registerStudent = async (req, res, next) => {
             message: error.message
         });
     }
-  };
+};
   
-  const getAllStudent = async (req, res, next) => {
+const getAllStudents = async (req, res) => {
     try {
-        // Check if the user is an admin
+        // Verify admin role
         if (res.locals.role !== "admin") {
             return res.status(403).json({
                 status: "failed",
                 message: "Only admins can view students",
             });
         }
-  
-        // Fetch all students from the database
-        const studentList = await userModel.find({ role: "student" });
-  
-        // Construct response with photo URLs
-        const studentsWithPhotoUrl = studentList.map(student => ({
+
+        // Fetch students excluding sensitive data
+        const students = await userModel.find({ role: "student" })
+            .select('-password -__v');
+
+        // Add photoUrl to each student
+        const studentsWithPhotoUrl = students.map(student => ({
             ...student.toObject(),
             photoUrl: `${req.protocol}://${req.get('host')}/api/students/${student._id}/photo`
         }));
-  
+
         res.status(200).json({
             status: "success",
-            message: "Students fetched successfully",
             data: studentsWithPhotoUrl
         });
     } catch (error) {
-        console.error(error);
+        console.error("Error fetching students:", error);
         res.status(500).json({
-            status: "failed",
-            message: "Server error, unable to fetch students",
+            status: "error",
+            message: "Internal server error"
         });
     }
-  };
+};
   
-  // Add this new endpoint to serve student photos
-  const getStudentPhoto = async (req, res, next) => {
+const getStudentPhoto = async (req, res) => {
     try {
         const student = await userModel.findById(req.params.id);
-        if (!student || !student.photo.data) {
+
+        // Debug log to verify found student
+        console.log('Found student:', student);
+
+        if (!student || !student.photo || !student.photo.data) {
             return res.status(404).json({
-                status: 'failed',
-                message: 'Photo not found'
+                status: "failed",
+                message: "Student or photo not found"
             });
         }
-  
+
+        // Set Content-Type header and send photo data
         res.set('Content-Type', student.photo.contentType);
-        res.send(student.photo.data);
+        return res.send(student.photo.data);
     } catch (error) {
-        console.error(error);
+        console.error("Error fetching photo:", error);
         res.status(500).json({
-            status: "failed",
-            message: "Error retrieving photo",
+            status: "error",
+            message: "Internal server error"
         });
     }
-  };
+};
 
 const deleteStudent = async (req, res, next) => {
   try {
@@ -172,7 +179,7 @@ const deleteStudent = async (req, res, next) => {
 
 module.exports = {
     registerStudent,
-    getAllStudent,
+    getAllStudents,
     deleteStudent,
     getStudentPhoto,
    

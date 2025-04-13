@@ -8,10 +8,10 @@ const upload = multer();// Import the multer configuration
 
 // Register a student with photo
 // Register student with photo upload
-router.post('/register', upload.single('photo'),StudentController.registerStudent);
+router.post('/register', upload.single('photo'), StudentController.registerStudent);
 
 // Get all students (admin only)
-router.get('/admin/student', protect, checkRole('admin'),StudentController.getAllStudent);
+router.get('/admin/student', protect, checkRole('admin'), StudentController.getAllStudents);
 
 // Get student photo
 router.get('/:id/photo', StudentController.getStudentPhoto);
