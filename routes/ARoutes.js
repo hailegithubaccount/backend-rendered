@@ -1,7 +1,7 @@
 const express = require("express");
 const router = express.Router();
-const AnnouncementController =require("../controller/AnnouncementController")
-const { protect,checkRole, checkUserExists} = require('../middleware/auth');
+const AnnouncementController =require("../controller/AController.js")
+const { protect,checkRole, checkUserExists} = require('../middleware/auth.js');
 
 console.log(AnnouncementController);// Ensure these are imported correctly
 

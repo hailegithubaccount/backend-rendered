@@ -1,5 +1,5 @@
 const asyncHandler = require("express-async-handler");
-const Announcement = require("../model/announcements");
+const Announcement = require("../model/Annuocment");
 const mongoose = require('mongoose');
 
 // Create an announcement

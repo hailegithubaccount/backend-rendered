@@ -37,7 +37,7 @@ const seatNotfy = require("./routes/notificationSeatRoute")
 const real=require("./routes/routeM")
 
 
-const AnnouncementRoutes=require("./routes/AnnouncementRoutes");
+const AnnouncementRoutes=require("./routes/ARoutes");
 
 
 const IndependatSeatResevationRoutes=require("./routes/IndependatSeatResevationRoutes")
