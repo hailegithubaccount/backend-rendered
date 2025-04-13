@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const studentController = require('../controller/StudentController');
+const { protect,checkRole, checkUserExists} = require('../middleware/auth'); 
 const multer = require('multer');
 const upload = multer();
 
@@ -17,7 +18,7 @@ router.get('/:id/photo', studentController.getStudentPhoto);
 
   router.delete(
     "/admin/student/:id",
-   
+    protect, checkRole('admin'), checkUserExists,
     studentController.deleteStudent
   );
 
