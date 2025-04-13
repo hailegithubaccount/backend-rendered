@@ -16,7 +16,7 @@ const app = express();
 app.use(express.json());
 app.use(cors());
 app.use(cookieParser());
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
 
 // Connect to Database
 connectDB();
@@ -92,7 +92,7 @@ app.use('/api/report',ReportRoutes);
 
 
 // Use Routes
-app.use('/api/users', studentRoute);
+app.use('/api/students', studentRoute);
 app.use('/api/users', userRoutes);
 app.use('/api/admins', adminRoutes);
 app.use('/api/books', bookRoutes); 
