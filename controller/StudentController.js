@@ -95,7 +95,7 @@ const registerStudent = async (req, res, next) => {
         // Construct response with photo URLs
         const studentsWithPhotoUrl = studentList.map(student => ({
             ...student.toObject(),
-            photoUrl: `${req.protocol}://${req.get('host')}api/users/admin/student/${student._id}/photo`
+            photoUrl: `${req.protocol}://${req.get('host')}/api/students/${student._id}/photo`
         }));
   
         res.status(200).json({
