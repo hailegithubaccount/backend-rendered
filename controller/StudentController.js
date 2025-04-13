@@ -103,7 +103,7 @@ const getStudentProfile = async (req, res) => {
         }
 
         // Fetch the student with necessary fields
-        const student = await User.findById(req.params.id).select(
+        const student = await User.findById(studentId).select(
             "firstName lastName email role photo"
         );
 
