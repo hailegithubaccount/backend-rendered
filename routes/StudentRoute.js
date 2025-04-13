@@ -17,10 +17,8 @@ router.get('/:id/photo', studentController.getStudentPhoto);
 
   router.delete(
     "/admin/student/:id",
-    protect,
-    checkRole("admin"), 
-    checkUserExists,
-    StudentController.deleteStudent
+   
+    studentController.deleteStudent
   );
 
 
