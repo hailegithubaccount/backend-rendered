@@ -16,6 +16,7 @@ router.get("/read",bookController.getBooks);
 router.get("/read/catgoryfetch",bookController.catgoryfetch);
 
 router.get("/read/namefetch",bookController.namefetch);
+router.get("/read/count",bookController.getBooksCount);
 
 
 // Update a book

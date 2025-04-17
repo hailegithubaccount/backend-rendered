@@ -224,6 +224,29 @@ const deleteBook = asyncHandler(async (req, res) => {
 });
 
 
+// @desc    Get total count of books
+// @route   GET /api/books/count
+// @access  Private (library-staff)
+const getBooksCount = asyncHandler(async (req, res) => {
+  try {
+    const count = await bookModel.countDocuments();
+    
+    res.status(200).json({
+      status: "success",
+      data: {
+        count
+      }
+    });
+  } catch (error) {
+    res.status(500).json({ 
+      status: "error", 
+      message: "Something went wrong", 
+      error: error.message 
+    });
+  }
+});
+
+
 
 module.exports = {
   createBook,
@@ -232,4 +255,5 @@ module.exports = {
   deleteBook,
   catgoryfetch,
   namefetch,
+  getBooksCount,
 };
