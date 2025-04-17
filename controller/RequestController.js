@@ -399,7 +399,7 @@ const getAllBookRequests = asyncHandler(async (req, res) => {
 
 
 const requestModel = require("../models/requestModel");
-const asyncHandler = require("express-async-handler");
+
 
 // @desc    Get counts of all requested, taken, and returned books
 // @route   GET /api/requests/counts
@@ -407,7 +407,7 @@ const asyncHandler = require("express-async-handler");
 const getRequestCounts = asyncHandler(async (req, res) => {
   try {
     // Count all requests grouped by status
-    const counts = await requestModel.aggregate([
+    const counts = await BookRequest.aggregate([
       {
         $group: {
           _id: "$status",
@@ -460,7 +460,7 @@ const getRequestCounts = asyncHandler(async (req, res) => {
 const getDetailedRequestCounts = asyncHandler(async (req, res) => {
   try {
     // Get counts by status
-    const statusCounts = await requestModel.aggregate([
+    const statusCounts = await BookRequest.aggregate([
       {
         $group: {
           _id: "$status",
@@ -470,7 +470,7 @@ const getDetailedRequestCounts = asyncHandler(async (req, res) => {
     ]);
 
     // Get most requested books
-    const popularBooks = await requestModel.aggregate([
+    const popularBooks = await BookRequest.aggregate([
       {
         $match: { book: { $ne: null } }
       },
@@ -501,7 +501,7 @@ const getDetailedRequestCounts = asyncHandler(async (req, res) => {
     ]);
 
     // Get recent activity
-    const recentActivity = await requestModel.find()
+    const recentActivity = await BookRequest.find()
       .sort({ updatedAt: -1 })
       .limit(5)
       .populate("student", "firstName lastName email")
@@ -563,7 +563,7 @@ module.exports = {
 
 
   getRequestCounts,
-  getDetailedRequestCounts
+  getDetailedRequestCounts,
 };
 
 
