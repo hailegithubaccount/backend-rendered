@@ -15,13 +15,13 @@ const upload = multer({
 // All routes are protected
 
 router.post(
-    "/createbyStaff",
-    upload.single('photo'),  // File upload middleware first
+    '/createbyStaff',
+    upload.single('photo'),
     protect,
-    checkRole("library-staff"), 
+    checkRole('library-staff'),
     checkUserExists,
-    AnncomPromotContoller.createAnnouncement
-  )
+    createAnnouncement
+  );
 
 router.get('/SeeAnncoBystudent',protect,checkRole("student"), checkUserExists,AnncomPromotContoller.getAnnouncements);
  
