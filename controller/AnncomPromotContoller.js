@@ -1,4 +1,4 @@
-const Announcement = require('../models/announcPromt');
+const Announcement = require('../model/AnncuProm');
 const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 
