@@ -19,7 +19,7 @@ const announcPromtSchema = new mongoose.Schema({
   },
   postedBy: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User',
+    ref: 'users',
     required: true
   },
   priority: {
@@ -44,7 +44,7 @@ const announcPromtSchema = new mongoose.Schema({
 
 // Virtual populate
 announcPromtSchema.virtual('postedByDetails', {
-  ref: 'User',
+  ref: 'users',
   localField: 'postedBy',
   foreignField: '_id',
   justOne: true,
