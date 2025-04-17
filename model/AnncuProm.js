@@ -51,6 +51,6 @@ announcPromtSchema.virtual('postedByDetails', {
   options: { select: 'firstName lastName email role photo' }
 });
 
-const announcPromt = mongoose.model('announcPromt', announcPromtSchema);
+const Announcement = mongoose.model('announcPromt', announcPromtSchema);
 
-module.exports = announcPromt;
+module.exports = Announcement;

@@ -1,10 +1,7 @@
-const Announcement = require('../model/AnncuProm');
+const Announcement = require('../models/announcPromt');
 const asyncHandler = require('express-async-handler');
 const mongoose = require('mongoose');
 
-// @desc    Create announcement with photo
-// @route   POST /api/announcements
-// @access  Private (library-staff)
 const createAnnouncement = asyncHandler(async (req, res) => {
   try {
     const { title, message, priority, targetRoles } = req.body;
@@ -86,6 +83,8 @@ const createAnnouncement = asyncHandler(async (req, res) => {
     });
   }
 });
+
+
 
 // @desc    Get all announcements (filtered by role)
 // @route   GET /api/announcements
