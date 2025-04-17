@@ -91,25 +91,34 @@ const createAnnouncement = asyncHandler(async (req, res) => {
 // @access  Private
 const getAnnouncements = asyncHandler(async (req, res) => {
   try {
-    // For library staff, get all announcements
-    // For others, get only announcements targeted to their role or 'all'
-    const filter = res.locals.role === 'library-staff' 
-      ? {} 
-      : { 
-          $or: [
-            { targetRoles: 'all' },
-            { targetRoles: req.user.role }
-          ],
-          isActive: true
-        };
+    // Debug: Check user information
+    console.log('User role:', res.locals.role);
+    console.log('User ID:', res.locals.id);
+
+    // Build filter based on user role
+    const filter = { isActive: true }; // Start with base filter
+    
+    if (res.locals.role !== 'library-staff') {
+      filter.$or = [
+        { targetRoles: 'all' },
+        { targetRoles: res.locals.role }
+      ];
+    }
+
+    // Debug: Check the constructed filter
+    console.log('Database filter:', filter);
 
     const announcements = await Announcement.find(filter)
-      .populate('postedByDetails')
-      .sort({ priority: -1, createdAt: -1 });
+      .populate({
+        path: 'postedByDetails',
+        select: 'firstName lastName email role'
+      })
+      .sort({ priority: -1, createdAt: -1 })
+      .lean(); // Using lean() for better performance
 
     // Add photo URL to each announcement
     const announcementsWithPhotoUrl = announcements.map(announcement => ({
-      ...announcement.toObject(),
+      ...announcement,
       photoUrl: announcement.photo
         ? `${req.protocol}://${req.get('host')}/api/announcements/${announcement._id}/photo`
         : null
@@ -120,11 +129,14 @@ const getAnnouncements = asyncHandler(async (req, res) => {
       results: announcements.length,
       data: announcementsWithPhotoUrl
     });
+
   } catch (error) {
-    console.error('Get announcements error:', error);
+    console.error('Get announcements error:', error.stack); // More detailed error logging
     res.status(500).json({
       status: 'error',
-      message: 'Internal server error'
+      message: process.env.NODE_ENV === 'development' 
+        ? error.message 
+        : 'Internal server error'
     });
   }
 });
