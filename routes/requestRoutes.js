@@ -16,6 +16,10 @@ router.patch(
   );
 router.delete("/delete/:requestId",protect, checkRole("library-staff"), checkUserExists, RequestController.deleteBookRequest);  
 
+
+//
+router.get("/count",protect,checkRole("library-staff"), checkUserExists,RequestController.getDetailedRequestCounts); 
+
  
 
 

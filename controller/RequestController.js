@@ -391,12 +391,179 @@ const getAllBookRequests = asyncHandler(async (req, res) => {
   res.status(200).json({ status: "success", data: requests });
 });
 
+
+
+
+
+///  THIS IS FOR THE DASHBORAD ONLY TO DISPLAY THE REQUESTED COUNT IN THE 
+
+
+const requestModel = require("../models/requestModel");
+const asyncHandler = require("express-async-handler");
+
+// @desc    Get counts of all requested, taken, and returned books
+// @route   GET /api/requests/counts
+// @access  Private (library-staff)
+const getRequestCounts = asyncHandler(async (req, res) => {
+  try {
+    // Count all requests grouped by status
+    const counts = await requestModel.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Convert array to object for easier access
+    const result = {
+      requested: 0,
+      taken: 0,
+      returned: 0
+    };
+
+    counts.forEach(item => {
+      switch(item._id) {
+        case 'pending':
+          result.requested = item.count;
+          break;
+        case 'taken':
+          result.taken = item.count;
+          break;
+        case 'returned':
+          result.returned = item.count;
+          break;
+      }
+    });
+
+    // Count all books (sum of all statuses)
+    result.total = result.requested + result.taken + result.returned;
+
+    res.status(200).json({
+      status: "success",
+      data: result
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to get request counts",
+      error: error.message
+    });
+  }
+});
+
+// @desc    Get detailed counts with book information
+// @route   GET /api/requests/counts/detailed
+// @access  Private (library-staff)
+const getDetailedRequestCounts = asyncHandler(async (req, res) => {
+  try {
+    // Get counts by status
+    const statusCounts = await requestModel.aggregate([
+      {
+        $group: {
+          _id: "$status",
+          count: { $sum: 1 }
+        }
+      }
+    ]);
+
+    // Get most requested books
+    const popularBooks = await requestModel.aggregate([
+      {
+        $match: { book: { $ne: null } }
+      },
+      {
+        $group: {
+          _id: "$book",
+          count: { $sum: 1 }
+        }
+      },
+      { $sort: { count: -1 } },
+      { $limit: 5 },
+      {
+        $lookup: {
+          from: "books",
+          localField: "_id",
+          foreignField: "_id",
+          as: "bookDetails"
+        }
+      },
+      { $unwind: "$bookDetails" },
+      {
+        $project: {
+          bookName: "$bookDetails.name",
+          category: "$bookDetails.category",
+          count: 1
+        }
+      }
+    ]);
+
+    // Get recent activity
+    const recentActivity = await requestModel.find()
+      .sort({ updatedAt: -1 })
+      .limit(5)
+      .populate("student", "firstName lastName email")
+      .populate("book", "name category author");
+
+    const result = {
+      counts: {
+        requested: 0,
+        taken: 0,
+        returned: 0,
+        total: 0
+      },
+      popularBooks,
+      recentActivity
+    };
+
+    // Fill in the counts
+    statusCounts.forEach(item => {
+      switch(item._id) {
+        case 'pending':
+          result.counts.requested = item.count;
+          break;
+        case 'taken':
+          result.counts.taken = item.count;
+          break;
+        case 'returned':
+          result.counts.returned = item.count;
+          break;
+      }
+    });
+
+    result.counts.total = result.counts.requested + result.counts.taken + result.counts.returned;
+
+    res.status(200).json({
+      status: "success",
+      data: result
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to get detailed request counts",
+      error: error.message
+    });
+  }
+});
+
+
+
+
+
 module.exports = {
   requestBook,
   approveBookRequest,
   returnBook,
   deleteBookRequest, // ✅ New delete function added
   getAllBookRequests,
+
+
+
+  getRequestCounts,
+  getDetailedRequestCounts
 };
 
 
