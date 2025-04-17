@@ -14,7 +14,7 @@ const upload = multer({
 
 // All routes are protected
 
-router.post("/createbyStaff",upload.single('photo'),AnncomPromotContoller.createAnnouncement)
+router.post("/createbyStaff",upload.single('photo'),protect,checkRole("library-staff"), checkUserExists,AnncomPromotContoller.createAnnouncement)
 
 router.get('/SeeAnncoBystudent',protect,checkRole("student"), checkUserExists,AnncomPromotContoller.getAnnouncements);
  
