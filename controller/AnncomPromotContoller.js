@@ -4,13 +4,13 @@ const mongoose = require('mongoose');
 
 const createAnnouncement = asyncHandler(async (req, res) => {
   try {
-    const { title, message, priority, targetRoles } = req.body;
+    const { message } = req.body;
 
-    // Validate required fields
-    if (!title || !message) {
+    // Validate required field
+    if (!message) {
       return res.status(400).json({
         status: 'error',
-        message: 'Title and message are required'
+        message: 'Message is required'
       });
     }
 
@@ -42,19 +42,12 @@ const createAnnouncement = asyncHandler(async (req, res) => {
 
     // Create announcement
     const announcement = await Announcement.create({
-      title,
       message,
       photo: req.file ? {
         data: req.file.buffer,
         contentType: req.file.mimetype
-      } : undefined,
-      priority: priority || 'medium',
-      targetRoles: targetRoles || ['all'],
-      postedBy: res.locals.id
+      } : undefined
     });
-
-    // Populate the postedBy details
-    await announcement.populate('postedByDetails');
 
     // Generate photo URL if photo exists
     const photoUrl = announcement.photo
@@ -71,12 +64,6 @@ const createAnnouncement = asyncHandler(async (req, res) => {
     });
   } catch (error) {
     console.error('Create announcement error:', error);
-    if (error.code === 11000) {
-      return res.status(400).json({
-        status: 'error',
-        message: 'Duplicate announcement title'
-      });
-    }
     res.status(500).json({
       status: 'error',
       message: 'Internal server error'
@@ -84,37 +71,14 @@ const createAnnouncement = asyncHandler(async (req, res) => {
   }
 });
 
-
-
-// @desc    Get all announcements (filtered by role)
+// @desc    Get all announcements
 // @route   GET /api/announcements
 // @access  Private
 const getAnnouncements = asyncHandler(async (req, res) => {
   try {
-    // Debug: Check user information
-    console.log('role:', res.locals.role);
-    console.log('ID:', res.locals.id);
-
-    // Build filter based on user role
-    const filter = { isActive: true }; // Start with base filter
-    
-    if (res.locals.role !== 'library-staff') {
-      filter.$or = [
-        { targetRoles: 'all' },
-        { targetRoles: res.locals.role }
-      ];
-    }
-
-    // Debug: Check the constructed filter
-    console.log('Database filter:', filter);
-
-    const announcements = await Announcement.find(filter)
-      .populate({
-        path: 'postedByDetails',
-        select: 'firstName lastName email role'
-      })
-      .sort({ priority: -1, createdAt: -1 })
-      .lean(); // Using lean() for better performance
+    const announcements = await Announcement.find({ isActive: true })
+      .sort({ createdAt: -1 })
+      .lean();
 
     // Add photo URL to each announcement
     const announcementsWithPhotoUrl = announcements.map(announcement => ({
@@ -131,7 +95,7 @@ const getAnnouncements = asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Get announcements error:', error.stack); // More detailed error logging
+    console.error('Get announcements error:', error.stack);
     res.status(500).json({
       status: 'error',
       message: process.env.NODE_ENV === 'development' 
