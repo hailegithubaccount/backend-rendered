@@ -18,7 +18,7 @@ const createAnnouncement = asyncHandler(async (req, res) => {
     }
 
     // Only library-staff can create announcements
-    if (req.user.role !== 'library-staff') {
+    if (res.locals.role !== 'library-staff') {
       return res.status(403).json({
         status: 'error',
         message: 'Only library staff can create announcements'
@@ -53,7 +53,7 @@ const createAnnouncement = asyncHandler(async (req, res) => {
       } : undefined,
       priority: priority || 'medium',
       targetRoles: targetRoles || ['all'],
-      postedBy: req.user._id
+      postedBy: res.locals.id
     });
 
     // Populate the postedBy details
@@ -94,7 +94,7 @@ const getAnnouncements = asyncHandler(async (req, res) => {
   try {
     // For library staff, get all announcements
     // For others, get only announcements targeted to their role or 'all'
-    const filter = req.user.role === 'library-staff' 
+    const filter = res.locals.role === 'library-staff' 
       ? {} 
       : { 
           $or: [
