@@ -51,7 +51,7 @@ const createAnnouncement = asyncHandler(async (req, res) => {
 
     // Generate photo URL if photo exists
     const photoUrl = announcement.photo
-      ? `${req.protocol}://${req.get('host')}/api/announcements/${announcement._id}/photo`
+      ? `${req.protocol}://${req.get('host')}/api/anncuprom/${announcement._id}/photo`
       : null;
 
     res.status(201).json({
