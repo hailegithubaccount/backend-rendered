@@ -71,40 +71,7 @@ const deleteNotification = asyncHandler(async (req, res) => {
 });
 
 // Get overdue notifications for staff
-const getStaffOverdueNotifications = asyncHandler(async (req, res) => {
-  const staffId = res.locals.id;
 
-  // Verify user is staff
-  const staff = await User.findById(staffId);
-  if (!staff || staff.role !== "library-staff") {
-    return res.status(403).json({ 
-      status: "failed", 
-      message: "Only library staff can access these notifications" 
-    });
-  }
-
-  const overdueNotifications = await NotifcactionForseat.find({
-    $or: [
-      { user: staffId, type: 'return_overdue' },
-      { type: 'general_alert' } // Include general alerts
-    ]
-  })
-  .populate({
-    path: 'book',
-    select: 'name coverImage'
-  })
-  .populate({
-    path: 'user',
-    match: { role: 'student' },
-    select: 'name email'
-  })
-  .sort({ createdAt: -1 });
-
-  res.status(200).json({
-    status: "success",
-    data: overdueNotifications.filter(notif => notif.user !== null) // Filter out null users
-  });
-});
 
 
 
@@ -122,7 +89,7 @@ const getStaffOverdueNotifications = asyncHandler(async (req, res) => {
 module.exports = { 
   getNotifications,
   deleteNotification, 
-  getStaffOverdueNotifications,
+ 
 
 
 };
