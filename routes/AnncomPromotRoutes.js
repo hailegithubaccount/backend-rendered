@@ -20,7 +20,7 @@ router.post(
     protect,
     checkRole('library-staff'),
     checkUserExists,
-    createAnnouncement
+    AnncomPromotContoller.createAnnouncement
   );
 
 router.get('/SeeAnncoBystudent',protect,checkRole("student"), checkUserExists,AnncomPromotContoller.getAnnouncements);
