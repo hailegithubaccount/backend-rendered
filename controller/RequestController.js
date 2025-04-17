@@ -194,7 +194,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
       await NotifcactionForseat.create({
         user: staffId,
         message: `Student ${request.student} has overdue book "${book.name}" at seat ${availableSeat.seatNumber}`,
-        notificationType: 'general'
+        type: 'return_overdue'
       });
     }
   }, 2 * 60 * 1000);
