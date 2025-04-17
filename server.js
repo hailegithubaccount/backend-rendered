@@ -18,6 +18,11 @@ app.use(cors());
 app.use(cookieParser());
 
 
+
+
+
+
+
 // Connect to Database
 connectDB();
 
@@ -38,12 +43,11 @@ const real=require("./routes/routeM")
 
 
 const AnnouncementRoutes=require("./routes/ARoutes");
-
-
-const IndependatSeatResevationRoutes=require("./routes/IndependatSeatResevationRoutes")
-
-
+const IndependatSeatResevationRoutes=require("./routes/IndependatSeatResevationRoutes");
 const bookSeatRoutes=require("./routes/bookSeatRoute");
+
+const AnncomPromotRoutes=require("./routes/AnncomPromotRoutes");
+
 
 
 
@@ -56,9 +60,6 @@ const questionroutes =require("./routes/CommuntityHubRoutes/QuestionsRoutes")
 const answerroutes=require("./routes/CommuntityHubRoutes/AnswerRoutes")
 const ReportRoutes= require("./routes/CommuntityHubRoutes/ReportRoutes")
 
-
-
-
 app.use('/api/questions',questionroutes);
 app.use('/api/answer',answerroutes);
 app.use('/api/report',ReportRoutes);
@@ -68,6 +69,7 @@ app.use('/api/report',ReportRoutes);
 
 
 
+app.use('/api/anncuprom',AnncomPromotRoutes);
 
 
 
