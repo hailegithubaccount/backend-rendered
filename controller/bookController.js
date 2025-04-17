@@ -229,7 +229,20 @@ const deleteBook = asyncHandler(async (req, res) => {
 // @access  Private (library-staff)
 const getBooksCount = asyncHandler(async (req, res) => {
   try {
-    const count = await bookModel.countDocuments();
+    const { category, available } = req.query;
+    let query = {};
+    
+    if (category) {
+      query.category = category;
+    }
+    
+    if (available === 'true') {
+      query.availableCopies = { $gt: 0 };
+    } else if (available === 'false') {
+      query.availableCopies = 0;
+    }
+    
+    const count = await bookModel.countDocuments(query);
     
     res.status(200).json({
       status: "success",
