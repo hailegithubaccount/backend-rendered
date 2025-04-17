@@ -92,8 +92,8 @@ const createAnnouncement = asyncHandler(async (req, res) => {
 const getAnnouncements = asyncHandler(async (req, res) => {
   try {
     // Debug: Check user information
-    console.log('User role:', res.locals.role);
-    console.log('User ID:', res.locals.id);
+    console.log('role:', res.locals.role);
+    console.log('ID:', res.locals.id);
 
     // Build filter based on user role
     const filter = { isActive: true }; // Start with base filter
