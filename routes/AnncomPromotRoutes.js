@@ -16,7 +16,7 @@ const upload = multer({
 
 router.post("/createbyStaff",upload.single('photo'),AnncomPromotContoller.createAnnouncement)
 
-router.get('/SeeAnuc',protect,checkRole("student"), checkUserExists,AnncomPromotContoller.getAnnouncements);
+router.get('/SeeAnncoBystudent',protect,checkRole("student"), checkUserExists,AnncomPromotContoller.getAnnouncements);
  
 router.get('/:id/photo',AnncomPromotContoller.getAnnouncementPhoto);
 
