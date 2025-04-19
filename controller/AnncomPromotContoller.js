@@ -76,34 +76,52 @@ const createAnnouncement = asyncHandler(async (req, res) => {
 // @access  Private
 const getAnnouncements = asyncHandler(async (req, res) => {
   try {
-    const announcements = await Announcement.find({ isActive: true })
+    // Add query filters if needed (e.g., active announcements)
+    const filter = { isActive: true };
+    
+    // Add pagination if needed
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination info
+    const total = await Announcement.countDocuments(filter);
+
+    const announcements = await Announcement.find(filter)
       .sort({ createdAt: -1 })
-      .lean();
+      .skip(skip)
+      .limit(limit)
+      .lean({ virtuals: true }); 
+      const announcementsWithPhotoUrl = announcements.map(announcement => {
+        const announcementObj = announcement.toObject ? announcement.toObject() : announcement;
+        return {
+          ...announcementObj,
+          photoUrl: announcement.photo
+            ? `${req.protocol}://${req.get('host')}/api/anncuprom/${announcement._id}/photo`
+            : null
+        };
+      });
+  
+      res.status(200).json({
+        status: 'success',
+        results: announcements.length,
+        total,
+        page,
+        pages: Math.ceil(total / limit),
+        data: announcementsWithPhotoUrl
+      });
+    } catch (error) {
+      console.error('Get announcements error:', error.stack);
+      res.status(500).json({
+        status: 'error',
+        message: process.env.NODE_ENV === 'development' 
+          ? error.message 
+          : 'Internal server error',
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+      });
+    }
+  });// Use lean with virtuals
 
-    // Add photo URL to each announcement
-    const announcementsWithPhotoUrl = announcements.map(announcement => ({
-      ...announcement,
-      photoUrl: announcement.photo
-        ? `${req.protocol}://${req.get('host')}/api/anncuprom/${announcement._id}/photo`
-        : null
-    }));
-
-    res.status(200).json({
-      status: 'success',
-      results: announcements.length,
-      data: announcementsWithPhotoUrl
-    });
-
-  } catch (error) {
-    console.error('Get announcements error:', error.stack);
-    res.status(500).json({
-      status: 'error',
-      message: process.env.NODE_ENV === 'development' 
-        ? error.message 
-        : 'Internal server error'
-    });
-  }
-});
 
 // @desc    Get announcement photo
 // @route   GET /api/announcements/:id/photo
