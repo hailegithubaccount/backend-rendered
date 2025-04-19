@@ -46,7 +46,8 @@ const createAnnouncement = asyncHandler(async (req, res) => {
       photo: req.file ? {
         data: req.file.buffer,
         contentType: req.file.mimetype
-      } : undefined
+      } : undefined,
+      createdBy: req.user._id // Assuming you have user info in req.user
     });
 
     // Generate photo URL if photo exists
@@ -58,7 +59,7 @@ const createAnnouncement = asyncHandler(async (req, res) => {
       status: 'success',
       message: 'Announcement created successfully',
       data: {
-        ...announcement.toObject(),
+        ...announcement.toObject({ virtuals: true }),
         photoUrl
       }
     });
@@ -76,21 +77,40 @@ const createAnnouncement = asyncHandler(async (req, res) => {
 // @access  Private
 const getAnnouncements = asyncHandler(async (req, res) => {
   try {
-    const announcements = await Announcement.find({ isActive: true })
+    // Add query filters if needed (e.g., active announcements)
+    const filter = { isActive: true };
+    
+    // Add pagination if needed
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    // Get total count for pagination info
+    const total = await Announcement.countDocuments(filter);
+
+    const announcements = await Announcement.find(filter)
       .sort({ createdAt: -1 })
-      .lean();
+      .skip(skip)
+      .limit(limit)
+      .lean({ virtuals: true }); // Use lean with virtuals
 
     // Add photo URL to each announcement
-    const announcementsWithPhotoUrl = announcements.map(announcement => ({
-      ...announcement,
-      photoUrl: announcement.photo
-        ? `${req.protocol}://${req.get('host')}/api/anncuprom/${announcement._id}/photo`
-        : null
-    }));
+    const announcementsWithPhotoUrl = announcements.map(announcement => {
+      const announcementObj = announcement.toObject ? announcement.toObject() : announcement;
+      return {
+        ...announcementObj,
+        photoUrl: announcement.photo
+          ? `${req.protocol}://${req.get('host')}/api/anncuprom/${announcement._id}/photo`
+          : null
+      };
+    });
 
     res.status(200).json({
       status: 'success',
       results: announcements.length,
+      total,
+      page,
+      pages: Math.ceil(total / limit),
       data: announcementsWithPhotoUrl
     });
 
@@ -100,7 +120,8 @@ const getAnnouncements = asyncHandler(async (req, res) => {
       status: 'error',
       message: process.env.NODE_ENV === 'development' 
         ? error.message 
-        : 'Internal server error'
+        : 'Internal server error',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -120,9 +141,9 @@ const getAnnouncementPhoto = asyncHandler(async (req, res) => {
 
     // Find announcement with only photo data
     const announcement = await Announcement.findById(req.params.id)
-      .select('photo -_id');
+      .select('photo contentType -_id');
 
-    if (!announcement?.photo?.data) {
+    if (!announcement || !announcement.photo || !announcement.photo.data) {
       return res.status(404).json({ 
         status: "error", 
         message: "Photo not found for this announcement" 
@@ -132,7 +153,7 @@ const getAnnouncementPhoto = asyncHandler(async (req, res) => {
     // Convert data to Buffer if it isn't already
     const photoData = Buffer.isBuffer(announcement.photo.data) 
       ? announcement.photo.data 
-      : Buffer.from(announcement.photo.data);
+      : Buffer.from(announcement.photo.data, 'base64'); // Handle base64 encoded data
     
     // Ensure content type is set
     const contentType = announcement.photo.contentType || 'image/jpeg';
@@ -149,7 +170,8 @@ const getAnnouncementPhoto = asyncHandler(async (req, res) => {
     console.error("Error fetching announcement photo:", error);
     res.status(500).json({
       status: "error",
-      message: "Internal server error"
+      message: "Internal server error",
+      ...(process.env.NODE_ENV === 'development' && { stack: error.stack })
     });
   }
 });
