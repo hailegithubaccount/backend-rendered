@@ -84,7 +84,7 @@ const getAnnouncements = asyncHandler(async (req, res) => {
     const announcementsWithPhotoUrl = announcements.map(announcement => ({
       ...announcement,
       photoUrl: announcement.photo
-        ? `${req.protocol}://${req.get('host')}/api/announcements/${announcement._id}/photo`
+        ? `${req.protocol}://${req.get('host')}/api/anncuprom/${announcement._id}/photo`
         : null
     }));
 
