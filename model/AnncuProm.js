@@ -13,6 +13,6 @@ const announcementSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-const Announcement = mongoose.model('Announcement', announcementSchema);
+const Announcement = mongoose.model('announcpromts', announcementSchema);
 
 module.exports = Announcement;
