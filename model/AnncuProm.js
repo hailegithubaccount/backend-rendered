@@ -1,6 +1,6 @@
 const mongoose = require('mongoose');
 
-const announcementSchema = new mongoose.Schema({
+const announcpromtsSchema = new mongoose.Schema({
   message: {
     type: String,
     required: [true, 'Message is required'],
@@ -13,6 +13,6 @@ const announcementSchema = new mongoose.Schema({
   }
 }, { timestamps: true });
 
-const Announcement = mongoose.model('announcpromts', announcementSchema);
+const announcpromts = mongoose.model('announcpromts', announcpromtsSchema);
 
-module.exports = Announcement;
+module.exports = announcpromts;
