@@ -76,51 +76,50 @@ const createAnnouncement = asyncHandler(async (req, res) => {
 // @access  Private
 const getAnnouncements = asyncHandler(async (req, res) => {
   try {
-    // Add query filters if needed (e.g., active announcements)
-    const filter = { isActive: true };
+    // Remove the isActive filter or ensure it matches your documents
+    const filter = {}; // Try without any filter first
     
-    // Add pagination if needed
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
-    const skip = (page - 1) * limit;
-
-    // Get total count for pagination info
-    const total = await Announcement.countDocuments(filter);
-
     const announcements = await Announcement.find(filter)
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit)
-      .lean({ virtuals: true }); 
-      const announcementsWithPhotoUrl = announcements.map(announcement => {
-        const announcementObj = announcement.toObject ? announcement.toObject() : announcement;
-        return {
-          ...announcementObj,
-          photoUrl: announcement.photo
-            ? `${req.protocol}://${req.get('host')}/api/anncuprom/${announcement._id}/photo`
-            : null
-        };
-      });
-  
-      res.status(200).json({
-        status: 'success',
-        results: announcements.length,
-        total,
-        page,
-        pages: Math.ceil(total / limit),
-        data: announcementsWithPhotoUrl
-      });
-    } catch (error) {
-      console.error('Get announcements error:', error.stack);
-      res.status(500).json({
-        status: 'error',
-        message: process.env.NODE_ENV === 'development' 
-          ? error.message 
-          : 'Internal server error',
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
-      });
-    }
-  });// Use lean with virtuals
+      .lean();
+
+    // Debug: Log what we're getting from the database
+    console.log('Raw announcements from DB:', announcements);
+
+    // Add photo URL to each announcement
+    const announcementsWithPhotoUrl = announcements.map(announcement => {
+      // Debug each announcement
+      console.log('Processing announcement:', announcement._id);
+      console.log('Has photo data:', !!announcement.photo);
+      
+      return {
+        ...announcement,
+        photoUrl: announcement.photo
+          ? `${req.protocol}://${req.get('host')}/api/anncuprom/${announcement._id}/photo`
+          : null
+      };
+    });
+
+    // Debug final output
+    console.log('Final response data:', announcementsWithPhotoUrl);
+
+    res.status(200).json({
+      status: 'success',
+      results: announcements.length,
+      data: announcementsWithPhotoUrl
+    });
+
+  } catch (error) {
+    console.error('Get announcements error:', error.stack);
+    res.status(500).json({
+      status: 'error',
+      message: process.env.NODE_ENV === 'development' 
+        ? error.message 
+        : 'Internal server error',
+      stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+    });
+  }
+});// Use lean with virtuals
 
 
 // @desc    Get announcement photo
