@@ -84,30 +84,67 @@ const deleteNotification = asyncHandler(async (req, res) => {
 });
 
 // Get all notifications for library staff
+// Get all notifications for library staff with full details
 const getStaffNotifications = asyncHandler(async (req, res) => {
-  const staffId = res.locals.id; // Extract staff ID from the token
+  const staffId = res.locals.id;
 
   // Validate if the user is authorized as library staff
   const staff = await User.findById(staffId);
-  if (!staff || staff.role !=="library-staff") {
-    return res.status(403).json({ status: "failed", message: "Only library staff can access notifications" });
+  if (!staff || staff.role !== "library-staff") {
+    return res.status(403).json({ 
+      status: "failed", 
+      message: "Only library staff can access notifications" 
+    });
   }
 
-  // Fetch notifications for the library staff
-  const notifications = await NotificationSeat.find(
-    { user: staffId, type: 'return_overdue' }, // Filter by staff ID and overdue type
-    { message: 1 } // Only include the `message` field in the result
-  ).sort({ createdAt: -1 }); // Sort by most recent first
+  // Fetch notifications with populated data
+  const notifications = await NotificationSeat.find({
+    user: staffId, 
+    type: 'return_overdue'
+  })
+  .sort({ createdAt: -1 })
+  .populate({
+    path: 'student',
+    select: 'name email studentId' // Include relevant student fields
+  })
+  .populate({
+    path: 'book',
+    select: 'name author ' // Include relevant book fields
+  });
 
-  // Extract only the `message` field from each notification
-  const messages = notifications.map(notification => notification.message);
+  // Format the response with complete information
+  const formattedNotifications = notifications.map(notification => ({
+    id: notification._id,
+    message: notification.message || generateDefaultMessage(notification),
+    student: {
+      id: notification.student?._id,
+      name: notification.student?.name,
+      email: notification.student?.email,
+      studentId: notification.student?.studentId
+    },
+    book: {
+      id: notification.book?._id,
+      title: notification.book?.name,
+      author: notification.book?.author,
+      isbn: notification.book?.isbn
+    },
+    seat: notification.seat,
+    createdAt: notification.createdAt,
+    deadline: notification.deadline
+  }));
 
   res.status(200).json({
     status: "success",
-    results: messages.length,
-    data: messages, // Return only the messages
+    results: formattedNotifications.length,
+    data: formattedNotifications
   });
 });
+
+// Helper function to generate message if none exists
+function generateDefaultMessage(notification) {
+  return `Student ${notification.student?.name || notification.student?._id} has overdue ` +
+         `book "${notification.book?.name || 'Unknown'}" at seat ${notification.seat || 'Unknown'}`;
+}
 
 
 
