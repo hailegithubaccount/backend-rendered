@@ -97,15 +97,30 @@ const getStaffNotifications = asyncHandler(async (req, res) => {
   }
 
   // Fetch notifications specifically for this staff member
-  const notifications = await NotificationSeat.find({ user: staffId })
+  const notifications = await NotifcactionForseat.find({ user: staffId })
     .sort({ createdAt: -1 })
     .populate("book", "name")
-    .populate("student", "name"); // If you store student reference
+    .populate("student", "name") // Populate student details
+    .populate("user", "name"); // Populate staff user details if needed
+
+  // Format the notifications for better readability
+  const formattedNotifications = notifications.map(notification => {
+    // For overdue notifications, ensure the message is properly constructed
+    if (notification.type === 'return_overdue') {
+      return {
+        ...notification.toObject(),
+        message: notification.message || 
+          `Student ${notification.student?.name || 'Unknown'} has overdue book ` +
+          `"${notification.book?.name || 'Unknown'}" at seat ${notification.seat || 'Unknown'}`
+      };
+    }
+    return notification;
+  });
 
   res.status(200).json({
     status: "success",
-    results: notifications.length,
-    data: notifications,
+    results: formattedNotifications.length,
+    data: formattedNotifications,
   });
 });
 
