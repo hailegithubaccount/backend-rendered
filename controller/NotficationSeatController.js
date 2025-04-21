@@ -89,7 +89,7 @@ const getStaffNotifications = asyncHandler(async (req, res) => {
 
   // Validate if the user is authorized as library staff
   const staff = await User.findById(staffId);
-  if (!staff || staff.role !== "library-staff") {
+  if (!staff || staff.role !=="library-staff") {
     return res.status(403).json({ status: "failed", message: "Only library staff can access notifications" });
   }
 
