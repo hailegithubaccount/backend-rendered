@@ -12,6 +12,11 @@ const seatNotificationSchema = new mongoose.Schema(
       ref: "books",
       required: true,
     },
+    student: {  // Add this new field
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "users",
+      required: true
+    },
     seat: {
       type: String,
       required: true,

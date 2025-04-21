@@ -84,11 +84,10 @@ const deleteNotification = asyncHandler(async (req, res) => {
 });
 
 // Get all notifications for library staff
-// Get all notifications for library staff with full details
 const getStaffNotifications = asyncHandler(async (req, res) => {
   const staffId = res.locals.id;
 
-  // Validate if the user is authorized as library staff
+  // Validate authorization
   const staff = await User.findById(staffId);
   if (!staff || staff.role !== "library-staff") {
     return res.status(403).json({ 
@@ -97,55 +96,59 @@ const getStaffNotifications = asyncHandler(async (req, res) => {
     });
   }
 
-  // Fetch notifications with populated data
-  const notifications = await NotificationSeat.find({
-    user: staffId, 
-    type: 'return_overdue'
-  })
-  .sort({ createdAt: -1 })
-  .populate({
-    path: 'student',
-    select: 'name email studentId' // Include relevant student fields
-  })
-  .populate({
-    path: 'book',
-    select: 'name author ' // Include relevant book fields
-  });
+  try {
+    // First fetch the basic notifications
+    const notifications = await NotificationSeat.find({
+      user: staffId, 
+      type: 'return_overdue'
+    })
+    .sort({ createdAt: -1 })
+    .populate('book', 'name author isbn') // Only populate book
+    .lean(); // Convert to plain JS objects
 
-  // Format the response with complete information
-  const formattedNotifications = notifications.map(notification => ({
-    id: notification._id,
-    message: notification.message || generateDefaultMessage(notification),
-    student: {
-      id: notification.student?._id,
-      name: notification.student?.name,
-      email: notification.student?.email,
-      studentId: notification.student?.studentId
-    },
-    book: {
-      id: notification.book?._id,
-      title: notification.book?.name,
-      author: notification.book?.author,
-      isbn: notification.book?.isbn
-    },
-    seat: notification.seat,
-    createdAt: notification.createdAt,
-    deadline: notification.deadline
-  }));
+    // Enhance notifications with student data from the original request
+    const enhancedNotifications = await Promise.all(
+      notifications.map(async (notification) => {
+        // Extract student ID from the message (fallback approach)
+        const studentIdMatch = notification.message.match(/Student (\w+)/);
+        const studentId = studentIdMatch ? studentIdMatch[1] : null;
+        
+        let student = null;
+        if (studentId) {
+          student = await User.findById(studentId)
+            .select('name email studentId')
+            .lean();
+        }
 
-  res.status(200).json({
-    status: "success",
-    results: formattedNotifications.length,
-    data: formattedNotifications
-  });
+        return {
+          ...notification,
+          student: student || { 
+            _id: studentId || 'unknown',
+            name: 'Unknown Student',
+            email: '',
+            studentId: ''
+          },
+          // Parse additional data from message if needed
+          seat: notification.seat || notification.message.match(/seat (\w+)/)?.[1] || 'unknown'
+        };
+      })
+    );
+
+    res.status(200).json({
+      status: "success",
+      results: enhancedNotifications.length,
+      data: enhancedNotifications
+    });
+
+  } catch (error) {
+    console.error('Error fetching notifications:', error);
+    res.status(500).json({
+      status: "error",
+      message: "Failed to fetch notifications",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 });
-
-// Helper function to generate message if none exists
-function generateDefaultMessage(notification) {
-  return `Student ${notification.student?.name || notification.student?._id} has overdue ` +
-         `book "${notification.book?.name || 'Unknown'}" at seat ${notification.seat || 'Unknown'}`;
-}
-
 
 
 
