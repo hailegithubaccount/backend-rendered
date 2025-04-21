@@ -50,6 +50,10 @@ const AnncomPromotRoutes=require("./routes/AnncomPromotRoutes");
 
 
 
+const supportRoutes =require("./routes/supportRoutes")
+
+
+
 
 
 
@@ -73,7 +77,7 @@ app.use('/api/anncuprom',AnncomPromotRoutes);
 
 
 
-
+app.use('/api/support',supportRoutes);
 
 
 
