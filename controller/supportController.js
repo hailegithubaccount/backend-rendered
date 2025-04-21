@@ -4,11 +4,34 @@ const asyncHandler = require('express-async-handler');
 // @desc    Create new support request
 // @route   POST /api/support
 // @access  Private (Students)
-const createSupportRequest = asyncHandler(async (req, res) => {
-  const { message, requestType, priority } = req.body;
+const mongoose = require('mongoose');
 
+const SupportRequest = require('../models/SupportRequest');
+const asyncHandler = require('express-async-handler');
+
+const createSupportRequest = asyncHandler(async (req, res) => {
+  const { message, requestType = 'other', priority = 'medium' } = req.body;
+
+  // ===== 1. VALIDATION CHECKS =====
+  // Required field check
+  if (!message) {
+    return res.status(400).json({ 
+      success: false,
+      error: 'Message is required' 
+    });
+  }
+
+  // RequestType enum validation
+  const validTypes = ['book-issue', 'facility-problem', 'equipment-failure', 'other'];
+  if (!validTypes.includes(requestType)) {
+    return res.status(400).json({
+      success: false,
+      error: `Invalid requestType. Allowed values: ${validTypes.join(', ')}`
+    });
+  }
+
+  // File validation (if uploaded)
   if (req.file) {
-    // Check file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
     if (!allowedTypes.includes(req.file.mimetype)) {
       return res.status(400).json({
@@ -17,7 +40,6 @@ const createSupportRequest = asyncHandler(async (req, res) => {
       });
     }
 
-    // Check file size (5MB max)
     if (req.file.size > 5 * 1024 * 1024) {
       return res.status(400).json({
         success: false,
@@ -26,16 +48,12 @@ const createSupportRequest = asyncHandler(async (req, res) => {
     }
   }
 
-  // Validation
-  if (!message) {
-    return res.status(400).json({ 
-      success: false,
-      error: 'Message is required' 
-    });
-  }
+  // ===== 2. MONGOOSE OPERATION =====
+  const session = await mongoose.startSession();
+  session.startTransaction();
 
   try {
-    const newRequest = await SupportRequest.create({
+    const newRequest = await SupportRequest.create([{
       user: req.user.id,
       message,
       requestType,
@@ -44,19 +62,51 @@ const createSupportRequest = asyncHandler(async (req, res) => {
         data: req.file.buffer,
         contentType: req.file.mimetype
       } : undefined
-    });
+    }], { session });
+
+    await session.commitTransaction();
+
+    // Convert Mongoose document to plain object and add virtuals
+    const result = newRequest[0].toObject({ virtuals: true });
+    result.photoUrl = result.photo?.data ? 
+      `${req.protocol}://${req.get('host')}/api/support/${result._id}/photo` : 
+      null;
 
     res.status(201).json({
       success: true,
-      data: newRequest
+      data: result
     });
 
   } catch (error) {
-    console.error('Support request error:', error);
+    await session.abortTransaction();
+    
+    console.error('[Support Request Error]', error);
+
+    // Handle Mongoose validation errors
+    if (error.name === 'ValidationError') {
+      const errors = Object.values(error.errors).map(el => el.message);
+      return res.status(400).json({
+        success: false,
+        error: `Validation failed: ${errors.join(', ')}`
+      });
+    }
+
+    // Handle duplicate key errors
+    if (error.code === 11000) {
+      return res.status(400).json({
+        success: false,
+        error: 'Duplicate request detected'
+      });
+    }
+
     res.status(500).json({
       success: false,
-      error: 'Server error'
+      error: process.env.NODE_ENV === 'development' 
+        ? error.message 
+        : 'Server error'
     });
+  } finally {
+    session.endSession();
   }
 });
 
