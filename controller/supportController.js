@@ -113,33 +113,64 @@ const createSupportRequest = asyncHandler(async (req, res) => {
 // @route   GET /api/support
 // @access  Private (Staff/Admin)
 const getSupportRequests = asyncHandler(async (req, res) => {
-  try {
-    // Verify user role
-    if (!['library-staff', 'admin'].includes(res.locals.role)) {
-      return res.status(403).json({
+    try {
+      // 1. Role Verification
+      const userRole = res.locals.role;
+      if (!['library-staff', 'admin'].includes(userRole)) {
+        console.warn(`Unauthorized access attempt by role: ${userRole}`);
+        return res.status(403).json({
+          success: false,
+          error: 'Unauthorized access',
+          details: 'Only library staff and admins can view support requests'
+        });
+      }
+  
+      // 2. Database Query with Additional Filters
+      const requests = await SupportRequest.find({})
+        .populate({
+          path: 'user',
+          select: 'firstName lastName email',
+          match: { status: 'active' } // Only populate active users
+        })
+        .sort({ createdAt: -1 })
+        .lean(); // Convert to plain JS objects
+  
+      // 3. Filter out requests from deactivated users
+      const filteredRequests = requests.filter(request => request.user !== null);
+  
+      // 4. Add photo URLs to each request
+      const requestsWithPhotoUrls = filteredRequests.map(request => ({
+        ...request,
+        photoUrl: request.photo?.data 
+          ? `${req.protocol}://${req.get('host')}/api/support/${request._id}/photo`
+          : null
+      }));
+  
+      res.status(200).json({
+        success: true,
+        count: requestsWithPhotoUrls.length,
+        data: requestsWithPhotoUrls
+      });
+  
+    } catch (error) {
+      console.error('[Get Requests Error]', {
+        message: error.message,
+        stack: error.stack,
+        timestamp: new Date().toISOString()
+      });
+  
+      res.status(500).json({
         success: false,
-        error: 'Unauthorized access'
+        error: 'Failed to retrieve support requests',
+        ...(process.env.NODE_ENV === 'development' && {
+          debug: {
+            error: error.message,
+            type: error.name
+          }
+        })
       });
     }
-
-    const requests = await SupportRequest.find()
-      .populate('user', 'firstName lastName email')
-      .sort({ createdAt: -1 });
-
-    res.status(200).json({
-      success: true,
-      count: requests.length,
-      data: requests
-    });
-
-  } catch (error) {
-    console.error('[Get Requests Error]', error);
-    res.status(500).json({
-      success: false,
-      error: 'Server error'
-    });
-  }
-});
+  });
 
 // @desc    Get request photo
 // @route   GET /api/support/:id/photo
