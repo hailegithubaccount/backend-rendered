@@ -115,31 +115,28 @@ const createSupportRequest = asyncHandler(async (req, res) => {
 const getSupportRequests = asyncHandler(async (req, res) => {
     try {
       // 1. Role Verification
-      const userRole = res.locals.role;
-      if (!['library-staff', 'admin'].includes(userRole)) {
-        console.warn(`Unauthorized access attempt by role: ${userRole}`);
+      if (res.locals.role !== "library-staff") {
         return res.status(403).json({
-          success: false,
-          error: 'Unauthorized access',
-          details: 'Only library staff and admins can view support requests'
+          status: "failed",
+          message: "Only library-staff can view support requests",
         });
       }
   
-      // 2. Database Query with Additional Filters
+      // 2. Database Query - Fixed populate path
       const requests = await SupportRequest.find({})
         .populate({
-          path: 'user',
+          path: 'user',  // Changed from 'users' to 'user'
           select: 'firstName lastName email',
-          match: { status: 'active' } // Only populate active users
+          // match: { status: 'active' }  // Removed temporarily for debugging
         })
         .sort({ createdAt: -1 })
-        .lean(); // Convert to plain JS objects
+        .lean();
   
-      // 3. Filter out requests from deactivated users
-      const filteredRequests = requests.filter(request => request.user !== null);
-  
-      // 4. Add photo URLs to each request
-      const requestsWithPhotoUrls = filteredRequests.map(request => ({
+      // 3. Debug logging
+      console.log('Raw requests from DB:', requests);
+      
+      // 4. Add photo URLs
+      const requestsWithPhotoUrls = requests.map(request => ({
         ...request,
         photoUrl: request.photo?.data 
           ? `${req.protocol}://${req.get('host')}/api/support/${request._id}/photo`
@@ -165,7 +162,8 @@ const getSupportRequests = asyncHandler(async (req, res) => {
         ...(process.env.NODE_ENV === 'development' && {
           debug: {
             error: error.message,
-            type: error.name
+            type: error.name,
+            stack: error.stack
           }
         })
       });
