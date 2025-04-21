@@ -85,70 +85,30 @@ const deleteNotification = asyncHandler(async (req, res) => {
 
 // Get all notifications for library staff
 const getStaffNotifications = asyncHandler(async (req, res) => {
-  const staffId = res.locals.id;
+  const staffId = res.locals.id; // Extract staff ID from the token
 
-  // Validate authorization
+  // Validate if the user is authorized as library staff
   const staff = await User.findById(staffId);
-  if (!staff || staff.role !== "library-staff") {
-    return res.status(403).json({ 
-      status: "failed", 
-      message: "Only library staff can access notifications" 
-    });
+  if (!staff || staff.role !=="library-staff") {
+    return res.status(403).json({ status: "failed", message: "Only library staff can access notifications" });
   }
 
-  try {
-    // First fetch the basic notifications
-    const notifications = await NotificationSeat.find({
-      user: staffId, 
-      type: 'return_overdue'
-    })
-    .sort({ createdAt: -1 })
-    .populate('book', 'name author isbn') // Only populate book
-    .lean(); // Convert to plain JS objects
+  // Fetch notifications for the library staff
+  const notifications = await NotificationSeat.find(
+    { user: staffId, type: 'return_overdue' }, // Filter by staff ID and overdue type
+    { message: 1 } // Only include the `message` field in the result
+  ).sort({ createdAt: -1 }); // Sort by most recent first
 
-    // Enhance notifications with student data from the original request
-    const enhancedNotifications = await Promise.all(
-      notifications.map(async (notification) => {
-        // Extract student ID from the message (fallback approach)
-        const studentIdMatch = notification.message.match(/Student (\w+)/);
-        const studentId = studentIdMatch ? studentIdMatch[1] : null;
-        
-        let student = null;
-        if (studentId) {
-          student = await User.findById(studentId)
-            .select('name email studentId')
-            .lean();
-        }
+  // Extract only the `message` field from each notification
+  const messages = notifications.map(notification => notification.message);
 
-        return {
-          ...notification,
-          student: student || { 
-            _id: studentId || 'unknown',
-            name: 'Unknown Student',
-            email: '',
-            studentId: ''
-          },
-          // Parse additional data from message if needed
-          seat: notification.seat || notification.message.match(/seat (\w+)/)?.[1] || 'unknown'
-        };
-      })
-    );
-
-    res.status(200).json({
-      status: "success",
-      results: enhancedNotifications.length,
-      data: enhancedNotifications
-    });
-
-  } catch (error) {
-    console.error('Error fetching notifications:', error);
-    res.status(500).json({
-      status: "error",
-      message: "Failed to fetch notifications",
-      error: process.env.NODE_ENV === 'development' ? error.message : undefined
-    });
-  }
+  res.status(200).json({
+    status: "success",
+    results: messages.length,
+    data: messages, // Return only the messages
+  });
 });
+
 
 
 
