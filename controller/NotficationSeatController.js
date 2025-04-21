@@ -97,7 +97,7 @@ const getStaffNotifications = asyncHandler(async (req, res) => {
   }
 
   // Fetch notifications specifically for this staff member
-  const notifications = await NotifcactionForseat.find({ user: staffId })
+  const notifications = await NotificationSeat.find({ user: staffId })
     .sort({ createdAt: -1 })
     .populate("book", "name")
     .populate("student", "name"); // If you store student reference
