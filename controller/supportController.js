@@ -1,22 +1,26 @@
 const SupportRequest = require('../model/SupportRequest');
 const asyncHandler = require('express-async-handler');
+const mongoose = require('mongoose');
 
 // @desc    Create new support request
 // @route   POST /api/support
 // @access  Private (Students)
-const mongoose = require('mongoose');
-
-
-
 const createSupportRequest = asyncHandler(async (req, res) => {
   const { message, requestType = 'other', priority = 'medium' } = req.body;
 
   // ===== 1. VALIDATION CHECKS =====
-  // Required field check
   if (!message) {
     return res.status(400).json({ 
       success: false,
       error: 'Message is required' 
+    });
+  }
+
+  // Verify user role
+  if (res.locals.role !== 'student') {
+    return res.status(403).json({
+      success: false,
+      error: 'Only students can submit support requests'
     });
   }
 
@@ -53,7 +57,7 @@ const createSupportRequest = asyncHandler(async (req, res) => {
 
   try {
     const newRequest = await SupportRequest.create([{
-      user: req.user.id,
+      user: res.locals.id, // Using res.locals.id instead of req.user.id
       message,
       requestType,
       priority,
@@ -65,7 +69,6 @@ const createSupportRequest = asyncHandler(async (req, res) => {
 
     await session.commitTransaction();
 
-    // Convert Mongoose document to plain object and add virtuals
     const result = newRequest[0].toObject({ virtuals: true });
     result.photoUrl = result.photo?.data ? 
       `${req.protocol}://${req.get('host')}/api/support/${result._id}/photo` : 
@@ -78,10 +81,8 @@ const createSupportRequest = asyncHandler(async (req, res) => {
 
   } catch (error) {
     await session.abortTransaction();
-    
     console.error('[Support Request Error]', error);
 
-    // Handle Mongoose validation errors
     if (error.name === 'ValidationError') {
       const errors = Object.values(error.errors).map(el => el.message);
       return res.status(400).json({
@@ -90,7 +91,6 @@ const createSupportRequest = asyncHandler(async (req, res) => {
       });
     }
 
-    // Handle duplicate key errors
     if (error.code === 11000) {
       return res.status(400).json({
         success: false,
@@ -114,6 +114,14 @@ const createSupportRequest = asyncHandler(async (req, res) => {
 // @access  Private (Staff/Admin)
 const getSupportRequests = asyncHandler(async (req, res) => {
   try {
+    // Verify user role
+    if (!['library-staff', 'admin'].includes(res.locals.role)) {
+      return res.status(403).json({
+        success: false,
+        error: 'Unauthorized access'
+      });
+    }
+
     const requests = await SupportRequest.find()
       .populate('user', 'firstName lastName email')
       .sort({ createdAt: -1 });
@@ -125,6 +133,7 @@ const getSupportRequests = asyncHandler(async (req, res) => {
     });
 
   } catch (error) {
+    console.error('[Get Requests Error]', error);
     res.status(500).json({
       success: false,
       error: 'Server error'
@@ -137,6 +146,13 @@ const getSupportRequests = asyncHandler(async (req, res) => {
 // @access  Public
 const getSupportPhoto = asyncHandler(async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Invalid request ID'
+      });
+    }
+
     const request = await SupportRequest.findById(req.params.id)
       .select('photo -_id');
 
@@ -151,6 +167,7 @@ const getSupportPhoto = asyncHandler(async (req, res) => {
     res.send(request.photo.data);
 
   } catch (error) {
+    console.error('[Get Photo Error]', error);
     res.status(500).json({
       success: false,
       error: 'Server error'
