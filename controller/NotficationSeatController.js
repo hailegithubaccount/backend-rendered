@@ -85,42 +85,27 @@ const deleteNotification = asyncHandler(async (req, res) => {
 
 // Get all notifications for library staff
 const getStaffNotifications = asyncHandler(async (req, res) => {
-  const staffId = res.locals.id;
-  
-  // Verify the user is actually staff
+  const staffId = res.locals.id; // Extract staff ID from the token
+
+  // Validate if the user is authorized as library staff
   const staff = await User.findById(staffId);
   if (!staff || staff.role !== "library-staff") {
-    return res.status(403).json({ 
-      status: "failed", 
-      message: "Only library staff can access these notifications" 
-    });
+    return res.status(403).json({ status: "failed", message: "Only library staff can access notifications" });
   }
 
-  // Fetch notifications specifically for this staff member
-  const notifications = await NotificationSeat.find({ user: staffId })
-    .sort({ createdAt: -1 })
-    .populate("book", "name")
-    .populate("student", "name") // Populate student details
-    .populate("user", "name"); // Populate staff user details if needed
+  // Fetch notifications for the library staff
+  const notifications = await NotificationSeat.find(
+    { user: staffId, type: 'return_overdue' }, // Filter by staff ID and overdue type
+    { message: 1 } // Only include the `message` field in the result
+  ).sort({ createdAt: -1 }); // Sort by most recent first
 
-  // Format the notifications for better readability
-  const formattedNotifications = notifications.map(notification => {
-    // For overdue notifications, ensure the message is properly constructed
-    if (notification.type === 'return_overdue') {
-      return {
-        ...notification.toObject(),
-        message: notification.message || 
-          `Student ${notification.student?.name || 'Unknown'} has overdue book ` +
-          `"${notification.book?.name || 'Unknown'}" at seat ${notification.seat || 'Unknown'}`
-      };
-    }
-    return notification;
-  });
+  // Extract only the `message` field from each notification
+  const messages = notifications.map(notification => notification.message);
 
   res.status(200).json({
     status: "success",
-    results: formattedNotifications.length,
-    data: formattedNotifications,
+    results: messages.length,
+    data: messages, // Return only the messages
   });
 });
 
