@@ -6,8 +6,7 @@ const asyncHandler = require('express-async-handler');
 // @access  Private (Students)
 const mongoose = require('mongoose');
 
-const SupportRequest = require('../models/SupportRequest');
-const asyncHandler = require('express-async-handler');
+
 
 const createSupportRequest = asyncHandler(async (req, res) => {
   const { message, requestType = 'other', priority = 'medium' } = req.body;
