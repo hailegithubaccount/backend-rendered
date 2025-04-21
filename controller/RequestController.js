@@ -195,7 +195,7 @@ const approveBookRequest = asyncHandler(async (req, res) => {
         user: staffId, // Ensure this is a valid user ID
         book: book._id, // Ensure this is a valid book ID
         seat: availableSeat.seatNumber, // Ensure this is a valid seat number
-        message: `Student ${request.student} has overdue book "${book.name}" at seat ${availableSeat.seatNumber}`,
+        message: `Student ${request.student.name} has overdue book "${book.name}" at seat ${availableSeat.seatNumber}`,
         type: 'return_overdue'
       });
     }
