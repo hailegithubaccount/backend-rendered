@@ -83,11 +83,11 @@ const deleteNotification = asyncHandler(async (req, res) => {
   }
 });
 
-
-const getStaffOverdueNotifications = asyncHandler(async (req, res) => {
+// Get all notifications for library staff
+const getStaffNotifications = asyncHandler(async (req, res) => {
   const staffId = res.locals.id;
-
-  // Verify user is staff
+  
+  // Verify the user is actually staff
   const staff = await User.findById(staffId);
   if (!staff || staff.role !== "library-staff") {
     return res.status(403).json({ 
@@ -96,28 +96,70 @@ const getStaffOverdueNotifications = asyncHandler(async (req, res) => {
     });
   }
 
-  const overdueNotifications = await NotifcactionForseat.find({
-    $or: [
-      { user: staffId, type: 'return_overdue' },
-      { type: 'general_alert' } // Include general alerts
-    ]
-  })
-  .populate({
-    path: 'book',
-    select: 'name coverImage'
-  })
-  .populate({
-    path: 'user',
-    match: { role: 'student' },
-    select: 'name email'
-  })
-  .sort({ createdAt: -1 });
+  // Fetch notifications specifically for this staff member
+  const notifications = await NotifcactionForseat.find({ user: staffId })
+    .sort({ createdAt: -1 })
+    .populate("book", "name")
+    .populate("student", "name"); // If you store student reference
 
   res.status(200).json({
     status: "success",
-    data: overdueNotifications.filter(notif => notif.user !== null) // Filter out null users
+    results: notifications.length,
+    data: notifications,
   });
 });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// const getStaffOverdueNotifications = asyncHandler(async (req, res) => {
+//   const staffId = res.locals.id;
+
+//   // Verify user is staff
+//   const staff = await User.findById(staffId);
+//   if (!staff || staff.role !== "library-staff") {
+//     return res.status(403).json({ 
+//       status: "failed", 
+//       message: "Only library staff can access these notifications" 
+//     });
+//   }
+
+//   const overdueNotifications = await NotifcactionForseat.find({
+//     $or: [
+//       { user: staffId, type: 'return_overdue' },
+//       { type: 'general_alert' } // Include general alerts
+//     ]
+//   })
+//   .populate({
+//     path: 'book',
+//     select: 'name coverImage'
+//   })
+//   .populate({
+//     path: 'user',
+//     match: { role: 'student' },
+//     select: 'name email'
+//   })
+//   .sort({ createdAt: -1 });
+
+//   res.status(200).json({
+//     status: "success",
+//     data: overdueNotifications.filter(notif => notif.user !== null) // Filter out null users
+//   });
+// });
 
 
 
@@ -125,6 +167,6 @@ const getStaffOverdueNotifications = asyncHandler(async (req, res) => {
 module.exports = { 
   getNotifications,
   deleteNotification,
-  getStaffOverdueNotifications,
+  getStaffNotifications,
 };
 
