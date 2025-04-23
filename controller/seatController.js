@@ -82,6 +82,7 @@ const updateSeat = asyncHandler(async (req, res) => {
     }
 
     // Find the seat
+    //fjdfnmmkkkd
     const seat = await Seat.findById(seatId);
     if (!seat) {
       return res.status(404).json({ status: "failed", message: "Seat not found" });
