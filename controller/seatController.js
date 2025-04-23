@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 // @access  Private (library-staff)
 const createSeat = asyncHandler(async (req, res) => {
   try {
-    const { seatNumber, type, location } = req.body;
+    const { seatNumber, type, location, description } = req.body;
 
     // Ensure the logged-in user is library-staff
     if (res.locals.role !== "library-staff") {
@@ -47,6 +47,7 @@ const createSeat = asyncHandler(async (req, res) => {
       seatNumber,
       type,
       location,
+      description: description || "", // Add description if provided
       managedBy: res.locals.id, // Assign the seat to the library-staff
     });
 
@@ -64,10 +65,12 @@ const createSeat = asyncHandler(async (req, res) => {
   }
 });
 
-
+// @desc    Update a seat (Only library-staff)
+// @route   PATCH /api/seats/:id
+// @access  Private (library-staff)
 const updateSeat = asyncHandler(async (req, res) => {
   try {
-    const { seatNumber, type, isAvailable, location } = req.body;
+    const { seatNumber, type, isAvailable, location, description } = req.body;
     const seatId = req.params.id;
 
     // Validate ObjectId
@@ -100,10 +103,19 @@ const updateSeat = asyncHandler(async (req, res) => {
       });
     }
 
+    // Prepare update data
+    const updateData = {
+      ...(seatNumber && { seatNumber }),
+      ...(type && { type }),
+      ...(typeof isAvailable !== 'undefined' && { isAvailable }),
+      ...(location && { location }),
+      ...(description && { description }),
+    };
+
     // Update the seat
     const updatedSeat = await Seat.findByIdAndUpdate(
       seatId,
-      { seatNumber, type, isAvailable, location },
+      updateData,
       { new: true, runValidators: true }
     );
 
@@ -126,8 +138,16 @@ const updateSeat = asyncHandler(async (req, res) => {
 // @access  Private (library-staff)
 const getSeats = asyncHandler(async (req, res) => {
   try {
-    // Fetch all seats and populate the managedBy field
-    const seats = await Seat.find().populate("managedBy", "name email");
+    // Optional filtering by query parameters
+    const { type, location, isAvailable } = req.query;
+    const filter = {};
+    
+    if (type) filter.type = type;
+    if (location) filter.location = { $regex: location, $options: 'i' };
+    if (isAvailable) filter.isAvailable = isAvailable === 'true';
+
+    // Fetch all seats with optional filtering and populate the managedBy field
+    const seats = await Seat.find(filter).populate("managedBy", "name email");
 
     res.status(200).json({
       status: "success",
@@ -143,10 +163,39 @@ const getSeats = asyncHandler(async (req, res) => {
   }
 });
 
-// @desc    Update a seat (Only library-staff)
-// @route   PATCH /api/seats/:id
-// @access  Private (library-staff)
+// @desc    Get a single seat
+// @route   GET /api/seats/:id
+// @access  Private
+const getSeat = asyncHandler(async (req, res) => {
+  try {
+    const seatId = req.params.id;
 
+    // Validate ObjectId
+    if (!mongoose.Types.ObjectId.isValid(seatId)) {
+      return res.status(400).json({
+        status: "failed",
+        message: "Invalid seat ID format",
+      });
+    }
+
+    // Find the seat and populate managedBy
+    const seat = await Seat.findById(seatId).populate("managedBy", "name email");
+    if (!seat) {
+      return res.status(404).json({ status: "failed", message: "Seat not found" });
+    }
+
+    res.status(200).json({
+      status: "success",
+      data: seat,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Something went wrong",
+      error: error.message,
+    });
+  }
+});
 
 // @desc    Delete a seat (Only library-staff)
 // @route   DELETE /api/seats/:id
@@ -164,7 +213,7 @@ const deleteSeat = asyncHandler(async (req, res) => {
     }
 
     // Find the seat
-    const seat = await seatModel.findById(seatId);
+    const seat = await Seat.findById(seatId);
     if (!seat) {
       return res.status(404).json({ status: "failed", message: "Seat not found" });
     }
@@ -178,7 +227,7 @@ const deleteSeat = asyncHandler(async (req, res) => {
     }
 
     // Delete the seat
-    await seatModel.findByIdAndDelete(seatId);
+    await Seat.findByIdAndDelete(seatId);
 
     res.status(200).json({
       status: "success",
@@ -196,6 +245,7 @@ const deleteSeat = asyncHandler(async (req, res) => {
 module.exports = {
   createSeat,
   getSeats,
+  getSeat,
   updateSeat,
   deleteSeat,
 };
