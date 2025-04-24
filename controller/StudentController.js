@@ -134,6 +134,7 @@ const getStudentProfile = async (req, res) => {
               loginCount: student.loginCount,
               studyProgress: student.studyProgress,
               loginActivity:student.loginActivity,
+              
           },
       });
   } catch (error) {
