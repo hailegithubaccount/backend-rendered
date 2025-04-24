@@ -91,57 +91,57 @@ const registerStudent = async (req, res) => {
 
 
 
-const getStudentProfile = async (req, res) => {
-    try {
-        const studentId = res.locals.id;
-        // Validate ID format
-        if (!mongoose.Types.ObjectId.isValid(studentId)) {
-            return res.status(400).json({
-                status: "error",
-                message: "Invalid student ID format",
-            });
-        }
+// controllers/userController.js
+exports.getStudentProfile = async (req, res) => {
+  try {
+      const studentId = res.locals.id;
 
-        // Fetch the student with necessary fields
-        const student = await User.findById(studentId).select(
-            "firstName lastName email role photo"
-        );
+      // Validate ID format
+      if (!mongoose.Types.ObjectId.isValid(studentId)) {
+          return res.status(400).json({
+              status: "error",
+              message: "Invalid student ID format",
+          });
+      }
 
-        if (!student) {
-            return res.status(404).json({
-                status: "error",
-                message: "Student not found",
-            });
-        }
+      // Fetch the student with necessary fields
+      const student = await User.findById(studentId).select(
+          "firstName lastName email role photo loginCount studyProgress"
+      );
 
-        // Add photo URL if photo exists
-        const photoUrl = student.photo
-            ? `${req.protocol}://${req.get("host")}/api/students/${student.id}/photo`
-            : null;
+      if (!student) {
+          return res.status(404).json({
+              status: "error",
+              message: "Student not found",
+          });
+      }
 
-        // Return the student's profile
-        res.status(200).json({
-            status: "success",
-            data: {
-                id: student.id,
-                firstName: student.firstName,
-                lastName: student.lastName,
-                email: student.email,
-                role: student.role,
-                photoUrl: photoUrl,
-                loginCount:student.loginCount,
-                studyProgress:student.studyProgress,
+      // Add photo URL if photo exists
+      const photoUrl = student.photo
+          ? `${req.protocol}://${req.get("host")}/api/students/${student.id}/photo`
+          : null;
 
-
-            },
-        });
-    } catch (error) {
-        console.error("Error fetching student profile:", error);
-        res.status(500).json({
-            status: "error",
-            message: "Internal server error",
-        });
-    }
+      // Return the student's profile
+      res.status(200).json({
+          status: "success",
+          data: {
+              id: student.id,
+              firstName: student.firstName,
+              lastName: student.lastName,
+              email: student.email,
+              role: student.role,
+              photoUrl: photoUrl,
+              loginCount: student.loginCount,
+              studyProgress: student.studyProgress,
+          },
+      });
+  } catch (error) {
+      console.error("Error fetching student profile:", error);
+      res.status(500).json({
+          status: "error",
+          message: "Internal server error",
+      });
+  }
 };
 
 
