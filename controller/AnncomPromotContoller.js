@@ -171,8 +171,81 @@ const getAnnouncementPhoto = asyncHandler(async (req, res) => {
   }
 });
 
+// @desc    Get unread announcement count
+// @route   GET /api/anncuprom/unreadCount
+// @access  Private
+const getUnreadCount = asyncHandler(async (req, res) => {
+  try {
+    const userId = res.locals.id; // Assuming the user ID is stored in `req.user` after authentication
+
+    // Find announcements where the user's ID is not in the `readBy` array
+    const unreadCount = await Announcement.countDocuments({
+      readBy: { $nin: [userId] } // `$nin` means "not in"
+    });
+
+    res.status(200).json({
+      status: 'success',
+      unreadCount
+    });
+  } catch (error) {
+    console.error('Error fetching unread count:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+});
+
+// @desc    Mark announcements as read
+// @route   POST /api/anncuprom/markAsRead
+// @access  Private
+const markAnnouncementsAsRead = asyncHandler(async (req, res) => {
+  try {
+    const userId = res.locals.id; // Assuming the user ID is stored in `req.user`
+
+    // Find all announcements that the user hasn't read yet
+    const announcementsToUpdate = await Announcement.find({
+      readBy: { $nin: [userId] }
+    });
+
+    // Extract the IDs of these announcements
+    const announcementIds = announcementsToUpdate.map(announcement => announcement._id);
+
+    // Add the user's ID to the `readBy` array for these announcements
+    await Announcement.updateMany(
+      { _id: { $in: announcementIds } }, // Match announcements by their IDs
+      { $addToSet: { readBy: userId } } // Add the user's ID to `readBy`
+    );
+
+    res.status(200).json({
+      status: 'success',
+      message: 'Announcements marked as read'
+    });
+  } catch (error) {
+    console.error('Error marking announcements as read:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
 module.exports = {
   createAnnouncement,
   getAnnouncements,
-  getAnnouncementPhoto
+  getAnnouncementPhoto,
+  getUnreadCount,
+  markAnnouncementsAsRead
 };

@@ -1,5 +1,3 @@
-const mongoose = require('mongoose');
-
 const announcpromtsSchema = new mongoose.Schema({
   message: {
     type: String,
@@ -10,7 +8,11 @@ const announcpromtsSchema = new mongoose.Schema({
   photo: {
     data: Buffer,
     contentType: String
-  }
+  },
+  readBy: [{
+    type: mongoose.Schema.Types.ObjectId,
+    ref: 'User' // Reference to the User model (assuming you have one)
+  }]
 }, { timestamps: true });
 
 const announcpromts = mongoose.model('announcpromts', announcpromtsSchema);

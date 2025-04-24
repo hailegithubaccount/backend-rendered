@@ -24,6 +24,7 @@ router.post(
   );
 
 router.get('/SeeAnncoBystudent',protect,checkRole("student"), checkUserExists,AnncomPromotContoller.getAnnouncements);
+router.get('/unreadCount',protect,checkRole("student"), checkUserExists,AnncomPromotContoller.getUnreadCount);
  
 router.get('/:id/photo',AnncomPromotContoller.getAnnouncementPhoto);
 
