@@ -3,7 +3,7 @@ const router = express.Router();
 const messageController = require("../controller/messageN");
 
 // ✅ Staff - Add Message
-r
+
 router.post('/create-motivation-tip', messageController.createMotivationTip);
 
 // ✅ Student - Fetch Latest Message
