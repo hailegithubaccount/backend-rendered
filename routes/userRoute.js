@@ -9,6 +9,9 @@ const router = express.Router();
 router.post('/login', authController.login);
 
 
+router.get("/profile", authController.getUserProfile);
+
+
 
 
 

@@ -157,6 +157,51 @@ require("dotenv").config();
   };
 
 
+ 
+  // Controller function to fetch user profile
+  exports.getUserProfile = async (req, res) => {
+    try {
+      // Extract user ID from the authenticated user (e.g., via token)
+      const userId = req.user.id;
+  
+      // Fetch the user's profile from the database
+      const user = await userModel.findById(userId);
+  
+      if (!user) {
+        return res.status(404).json({
+          status: "fail",
+          message: "User not found.",
+        });
+      }
+  
+      // Send the user's profile data
+      res.status(200).json({
+        status: "success",
+        data: {
+          id: user._id,
+          firstName: user.firstName,
+          lastName: user.lastName,
+          email: user.email,
+          role: user.role,
+          loginCount: user.loginCount,
+          studyProgress: user.studyProgress,
+        },
+      });
+    } catch (error) {
+      console.error("Error fetching user profile:", error);
+      res.status(500).json({
+        status: "error",
+        message: "An error occurred while fetching user profile.",
+      });
+    }
+  };
+
+
+
+
+
+
+
 exports.getAllUser= async(req,res,next)=>{
     console.log(res.locals.id)
     const users = await userModel.find()
