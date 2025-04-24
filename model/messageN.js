@@ -1,14 +1,18 @@
 const mongoose = require("mongoose");
 
-const messageSchema= new mongoose.Schema({
-  seatId: { type: mongoose.Schema.Types.ObjectId, ref: 'Seat', required: true },
-  studentId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-  message: { type: String, required: true },
-  status: { type: String, enum: ['pending', 'confirmed', 'rejected'], default: "pending" },
-  createdAt: { type: Date, default: Date.now },
-  expiresAt: { type: Date, required: true } // Time by which student must respond
+const motivationTipSchema = new mongoose.Schema({
+  tip: { 
+    type: String, 
+    required: true 
+  },
+  expiresAt: { 
+    type: Date, 
+    required: true // Time after which the tip expires 
+  },
+  createdAt: { 
+    type: Date, 
+    default: Date.now // Timestamp when the tip was created 
+  }
 });
 
-
-
-module.exports = mongoose.model("Message", messageSchema);
+module.exports = mongoose.model("MotivationTip", motivationTipSchema);

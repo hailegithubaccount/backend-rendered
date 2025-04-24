@@ -3,12 +3,11 @@ const router = express.Router();
 const messageController = require("../controller/messageN");
 
 // ✅ Staff - Add Message
-router.post("/addMessage", messageController.addMessage);
+r
+router.post('/create-motivation-tip', messageController.createMotivationTip);
 
 // ✅ Student - Fetch Latest Message
-router.get("/getMessage", messageController.getLatestMessage);
 
-// ✅ Student - Respond to Message
-router.post("/respond", messageController.respondToMessage);
+
 
 module.exports = router;

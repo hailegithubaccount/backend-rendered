@@ -1,56 +1,29 @@
+const MotivationTip = require('../model/messageN'); // Adjust path if needed
 
-const Message = require("../model/messageN")
-const mongoose = require("mongoose");
-
-// 🚀 **Insert Message (Staff)**
-const addMessage = async (req, res) => {
+// Controller to insert a new motivation tip
+exports.createMotivationTip = async (req, res) => {
   try {
-    const { text } = req.body;
-    const newMessage = new Message({ text, status: "pending" });
-    await newMessage.save();
-    res.status(201).json({ message: "Message added successfully!" });
-  } catch (error) {
-    res.status(500).json({ error: "Error adding message" });
-  }
-};
+    // Get the data from the request body
+    const { tip, expiresAt } = req.body;
 
-// 🚀 **Fetch Latest Message (Student)**
-const getLatestMessage = async (req, res) => {
-  try {
-    const message = await Message.findOne().sort({ createdAt: -1 });
-    if (!message) {
-      return res.status(404).json({ message: "No message found" });
-    }
-    res.json({ message: message.text });
-  } catch (error) {
-    res.status(500).json({ error: "Error fetching message" });
-  }
-};
-
-// 🚀 **Student Response to Message**
-const respondToMessage = async (req, res) => {
-  try {
-    const { response } = req.body;
-    const latestMessage = await Message.findOne().sort({ createdAt: -1 });
-
-    if (!latestMessage) {
-      return res.status(404).json({ error: "No message found" });
+    // Validate the input data
+    if (!tip || !expiresAt) {
+      return res.status(400).json({ message: 'Tip and expiresAt are required.' });
     }
 
-    latestMessage.status = response;
-    await latestMessage.save();
+    // Create a new motivation tip document
+    const newTip = new MotivationTip({
+      tip,
+      expiresAt
+    });
 
-    res.json({ message: "Response saved successfully!" });
+    // Save the new tip to the database
+    await newTip.save();
+
+    // Respond with success message
+    res.status(201).json({ message: 'Motivation tip created successfully!', data: newTip });
   } catch (error) {
-    res.status(500).json({ error: "Error saving response" });
+    console.error('Error creating motivation tip:', error);
+    res.status(500).json({ message: 'Failed to create motivation tip' });
   }
 };
-
- module.exports = { 
-  addMessage,
-  getLatestMessage,
-  respondToMessage, 
-   
-  
-  
-  };
