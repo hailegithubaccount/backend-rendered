@@ -133,6 +133,7 @@ const getStudentProfile = async (req, res) => {
               photoUrl: photoUrl,
               loginCount: student.loginCount,
               studyProgress: student.studyProgress,
+              loginActivity:student.loginActivity,
           },
       });
   } catch (error) {
