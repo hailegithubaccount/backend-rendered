@@ -88,7 +88,7 @@ require("dotenv").config();
         }
 
         // 4. Compare the provided password with the hashed password in the database
-        const isPasswordValid = await user.comparePassword(password, user.password);
+        const isPasswordValid = await user.comparePassword(password);
 
         if (!isPasswordValid) {
             return res.status(400).json({
@@ -97,24 +97,36 @@ require("dotenv").config();
             });
         }
 
+        // Update login count and study progress (only for students)
+        if (user.role === 'student') {
+            user.loginCount += 1;
+            user.lastLogin = new Date();
+            
+            // Calculate study progress based on login count
+            // Example: 1% progress per login, capped at 100%
+            user.studyProgress = Math.min(100, user.loginCount);
+            
+            await user.save();
+        }
+
         // 5. Generate a JWT token
         const token = jwt.sign(
-            { id: user._id, role: user.role }, // Payload
-            process.env.JWTSECRATE, // Secret key from environment variables
-            { expiresIn: process.env.EXPIRESIN } // Token expiry time
+            { id: user._id, role: user.role },
+            process.env.JWTSECRATE,
+            { expiresIn: process.env.EXPIRESIN }
         );
 
         // 6. Set the token in an httpOnly cookie
         res.cookie("token", token, {
-            httpOnly: true, // Prevents client-side JavaScript from accessing the cookie
-            secure: process.env.NODE_ENV === "production", // Use HTTPS in production
-            sameSite: "lax", // Use "lax" for better cross-browser compatibility
-            maxAge: 24 * 60 * 60 * 1000, // 1 day in milliseconds
-            domain: "localhost", // Set the domain explicitly for local testing
-            path: "/", // Set the path to root
+            httpOnly: true,
+            secure: process.env.NODE_ENV === "production",
+            sameSite: "lax",
+            maxAge: 24 * 60 * 60 * 1000,
+            domain: "localhost",
+            path: "/",
         });
 
-        // 7. Send the response (without the token in the body for security)
+        // 7. Send the response
         res.status(200).json({
             token,
             role: user.role,
@@ -125,14 +137,13 @@ require("dotenv").config();
                 firstName: user.firstName,
                 lastName: user.lastName,
                 email: user.email,
-                password:user.password,
                 role: user.role,
+                loginCount: user.loginCount,
+                studyProgress: user.studyProgress
             },
         });
     } catch (error) {
         console.error("Error in login:", error);
-
-        // Send a generic error response
         res.status(500).json({
             status: "error",
             message: "An error occurred during login.",

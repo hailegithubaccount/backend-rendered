@@ -35,6 +35,19 @@ const userSchema = new mongoose.Schema(
       data: Buffer,
       contentType: String
     },
+    loginCount: {
+      type: Number,
+      default: 0
+    },
+    lastLogin: {
+      type: Date
+    },
+    studyProgress: {
+      type: Number,
+      default: 0,
+      min: 0,
+      max: 100
+    },
     role: {
       type: String,
       enum: ['student', 'admin', "library-staff"],
