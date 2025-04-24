@@ -106,8 +106,8 @@ const getStudentProfile = async (req, res) => {
 
       // Fetch the student with necessary fields
       const student = await User.findById(studentId).select(
-          "firstName lastName email role photo loginCount studyProgress"
-      );
+    "firstName lastName email role photo loginCount studyProgress loginActivity"
+);
 
       if (!student) {
           return res.status(404).json({
