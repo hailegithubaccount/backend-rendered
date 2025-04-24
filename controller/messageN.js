@@ -27,3 +27,20 @@ exports.createMotivationTip = async (req, res) => {
     res.status(500).json({ message: 'Failed to create motivation tip' });
   }
 };
+exports.getRandomMotivationTip = async (req, res) => {
+  try {
+    // Fetch a random motivation tip from the database
+    const count = await MotivationTip.countDocuments();
+    const randomIndex = Math.floor(Math.random() * count);
+    const randomTip = await MotivationTip.findOne().skip(randomIndex); // Skip a random index
+
+    if (!randomTip) {
+      return res.status(404).json({ message: 'No motivation tip found' });
+    }
+
+    res.status(200).json({ message: 'Random motivation tip fetched successfully!', data: randomTip });
+  } catch (error) {
+    console.error('Error fetching random motivation tip:', error);
+    res.status(500).json({ message: 'Failed to fetch random motivation tip' });
+  }
+};
