@@ -129,6 +129,10 @@ const getStudentProfile = async (req, res) => {
                 email: student.email,
                 role: student.role,
                 photoUrl: photoUrl,
+                loginCount:student.loginCount,
+                studyProgress:student.studyProgress,
+
+
             },
         });
     } catch (error) {

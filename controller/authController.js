@@ -4,7 +4,6 @@ const userModel = require("../model/userModel"); // Import your user model
 const jwt = require("jsonwebtoken"); // For generating JWT tokens
 const bcrypt = require("bcrypt"); // For password comparison
 require("dotenv").config(); 
-const mongoose = require("mongoose");
 // exports.register=async (req,res,next)=>{
 //     try {
 //         // firstname ,lastname ,email,password from req.body
@@ -65,134 +64,80 @@ const mongoose = require("mongoose");
 //         });
  // Ensure you import your utils
 
- exports.login = async (req, res, next) => {
-    try {
-      const { email, password } = req.body;
-  
-      // 1. Check if email and password are provided
-      if (!email || !password) {
-        return res.status(400).json({
-          status: "fail",
-          message: "Please provide both email and password.",
-        });
-      }
-  
-      // 2. Find the user by email and include the password field
-      const user = await userModel.findOne({ email }).select("+password");
-  
-      // 3. Check if the user exists
-      if (!user) {
-        return res.status(404).json({
-          status: "fail",
-          message: "User not found.",
-        });
-      }
-  
-      // 4. Compare the provided password with the hashed password in the database
-      const isPasswordValid = await user.comparePassword(password);
-  
-      if (!isPasswordValid) {
-        return res.status(400).json({
-          status: "fail",
-          message: "Incorrect password. Please try again.",
-        });
-      }
-  
-      // Update login count and study progress (only for students)
-      if (user.role === 'student') {
-        user.loginCount += 1;
-        user.lastLogin = new Date();
-  
-        // Add the login activity entry
-        user.loginActivity.push({
-          date: new Date(),
-          sessionDuration: 0, // Default session duration (can be updated later)
-        });
-  
-        // Calculate study progress based on login count
-        user.studyProgress = Math.min(100, user.loginCount);
-  
-        await user.save();
-      }
-  
-      // 5. Generate a JWT token
-      const token = jwt.sign(
-        { id: user._id, role: user.role },
-        process.env.JWTSECRATE,
-        { expiresIn: process.env.EXPIRESIN }
-      );
-  
-      // 6. Set the token in an httpOnly cookie
-      res.cookie("token", token, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "lax",
-        maxAge: 24 * 60 * 60 * 1000,
-        domain: "localhost",
-        path: "/",
-      });
-  
-      // 7. Send the response
-      res.status(200).json({
-        token,
-        role: user.role,
-        status: "success",
-        message: "User logged in successfully.",
-        user: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          loginCount: user.loginCount,
-          studyProgress: user.studyProgress,
-        },
-      });
-    } catch (error) {
-      console.error("Error in login:", error);
-      res.status(500).json({
-        status: "error",
-        message: "An error occurred during login.",
-      });
-    }
-  };
-
-
- 
-  // Controller function to fetch user profile
-  
-
-exports.getUserProfile = async (req, res) => {
+exports.login = async (req, res, next) => {
   try {
-    // Extract user ID from res.locals.id
-    const studentId = res.locals.id;
+    const { email, password } = req.body;
 
-    // Log the studentId for debugging purposes
-    console.log("Student ID from res.locals.id:", studentId);
-
-    // Validate ID format
-    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+    // 1. Check if email and password are provided
+    if (!email || !password) {
       return res.status(400).json({
-        status: "error",
-        message: "Invalid student ID format",
+        status: "fail",
+        message: "Please provide both email and password.",
       });
     }
 
-    // Fetch the user's profile from the database
-    const user = await userModel.findById(studentId);
+    // 2. Find the user by email and include the password field
+    const user = await userModel.findOne({ email }).select("+password");
 
-    // Check if the user exists
+    // 3. Check if the user exists
     if (!user) {
       return res.status(404).json({
         status: "fail",
-        message: `User with ID ${studentId} not found.`,
+        message: "User not found.",
       });
     }
 
-    // Send the user's profile data
+    // 4. Compare the provided password with the hashed password in the database
+    const isPasswordValid = await user.comparePassword(password);
+
+    if (!isPasswordValid) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Incorrect password. Please try again.",
+      });
+    }
+
+    // Update login count and study progress (only for students)
+    if (user.role === 'student') {
+      user.loginCount += 1;
+      user.lastLogin = new Date();
+
+      // Add the login activity entry
+      user.loginActivity.push({
+        date: new Date(),
+        sessionDuration: 0, // Default session duration (can be updated later)
+      });
+
+      // Calculate study progress based on login count
+      user.studyProgress = Math.min(100, user.loginCount);
+
+      await user.save();
+    }
+
+    // 5. Generate a JWT token
+    const token = jwt.sign(
+      { id: user._id, role: user.role },
+      process.env.JWTSECRATE,
+      { expiresIn: process.env.EXPIRESIN }
+    );
+
+    // 6. Set the token in an httpOnly cookie
+    res.cookie("token", token, {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "lax",
+      maxAge: 24 * 60 * 60 * 1000,
+      domain: "localhost",
+      path: "/",
+    });
+
+    // 7. Send the response
     res.status(200).json({
+      token,
+      role: user.role,
       status: "success",
-      data: {
+      message: "User logged in successfully.",
+      user: {
         id: user._id,
         firstName: user.firstName,
         lastName: user.lastName,
@@ -203,18 +148,13 @@ exports.getUserProfile = async (req, res) => {
       },
     });
   } catch (error) {
-    console.error("Error fetching user profile:", error.message);
+    console.error("Error in login:", error);
     res.status(500).json({
       status: "error",
-      message: "An error occurred while fetching user profile.",
+      message: "An error occurred during login.",
     });
   }
 };
-
-
-
-
-
 
 
 exports.getAllUser= async(req,res,next)=>{
