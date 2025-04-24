@@ -165,12 +165,17 @@ require("dotenv").config();
       const userId = res.locals.id;
   
       // Fetch the user's profile from the database
-      const user = await userModel.findById(userId);
-  
-      if (!user) {
+      if (!userId) {
         return res.status(404).json({
           status: "fail",
-          message: "User not found.",
+          message: "User with ID " + res.locals.id + " not found.",
+        });
+      }
+      
+      if (!mongoose.Types.ObjectId.isValid(res.locals.id)) {
+        return res.status(400).json({
+          status: "fail",
+          message: "Invalid user ID.",
         });
       }
   
