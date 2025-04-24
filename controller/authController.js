@@ -145,6 +145,7 @@ exports.login = async (req, res, next) => {
         role: user.role,
         loginCount: user.loginCount,
         studyProgress: user.studyProgress,
+        loginActivity:user.loginActivity,
       },
     });
   } catch (error) {
