@@ -257,11 +257,6 @@ const deleteStudent = async (req, res, next) => {
 
 
 
-
-
-
-
-
 module.exports = {
     registerStudent,
     getAllStudents,

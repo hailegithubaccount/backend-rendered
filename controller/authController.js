@@ -4,6 +4,7 @@ const userModel = require("../model/userModel"); // Import your user model
 const jwt = require("jsonwebtoken"); // For generating JWT tokens
 const bcrypt = require("bcrypt"); // For password comparison
 require("dotenv").config(); 
+const mongoose = require("mongoose");
 // exports.register=async (req,res,next)=>{
 //     try {
 //         // firstname ,lastname ,email,password from req.body
@@ -159,47 +160,56 @@ require("dotenv").config();
 
  
   // Controller function to fetch user profile
-  exports.getUserProfile = async (req, res) => {
-    try {
-      // Extract user ID from the authenticated user (e.g., via token)
-      const userId = res.locals.id;
   
-      // Fetch the user's profile from the database
-      if (!userId) {
-        return res.status(404).json({
-          status: "fail",
-          message: "User with ID " + res.locals.id + " not found.",
-        });
-      }
-      
-      if (!mongoose.Types.ObjectId.isValid(res.locals.id)) {
-        return res.status(400).json({
-          status: "fail",
-          message: "Invalid user ID.",
-        });
-      }
-  
-      // Send the user's profile data
-      res.status(200).json({
-        status: "success",
-        data: {
-          id: user._id,
-          firstName: user.firstName,
-          lastName: user.lastName,
-          email: user.email,
-          role: user.role,
-          loginCount: user.loginCount,
-          studyProgress: user.studyProgress,
-        },
-      });
-    } catch (error) {
-      console.error("Error fetching user profile:", error);
-      res.status(500).json({
+
+exports.getUserProfile = async (req, res) => {
+  try {
+    // Extract user ID from res.locals.id
+    const studentId = res.locals.id;
+
+    // Log the studentId for debugging purposes
+    console.log("Student ID from res.locals.id:", studentId);
+
+    // Validate ID format
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+      return res.status(400).json({
         status: "error",
-        message: "An error occurred while fetching user profile.",
+        message: "Invalid student ID format",
       });
     }
-  };
+
+    // Fetch the user's profile from the database
+    const user = await userModel.findById(studentId);
+
+    // Check if the user exists
+    if (!user) {
+      return res.status(404).json({
+        status: "fail",
+        message: `User with ID ${studentId} not found.`,
+      });
+    }
+
+    // Send the user's profile data
+    res.status(200).json({
+      status: "success",
+      data: {
+        id: user._id,
+        firstName: user.firstName,
+        lastName: user.lastName,
+        email: user.email,
+        role: user.role,
+        loginCount: user.loginCount,
+        studyProgress: user.studyProgress,
+      },
+    });
+  } catch (error) {
+    console.error("Error fetching user profile:", error.message);
+    res.status(500).json({
+      status: "error",
+      message: "An error occurred while fetching user profile.",
+    });
+  }
+};
 
 
 
