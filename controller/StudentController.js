@@ -92,7 +92,7 @@ const registerStudent = async (req, res) => {
 
 
 // controllers/userController.js
-exports.getStudentProfile = async (req, res) => {
+const getStudentProfile = async (req, res) => {
   try {
       const studentId = res.locals.id;
 
