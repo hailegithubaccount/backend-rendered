@@ -55,6 +55,20 @@ const userSchema = new mongoose.Schema(
     },
     passwordResetToken: String,
     passwordResetExpired: Date,
+
+    // Add this field for login activity
+    loginActivity: [
+      {
+        date: {
+          type: Date, // Store the date of each login
+          default: Date.now,
+        },
+        sessionDuration: {
+          type: Number, // Optional: Store session duration in seconds
+          default: 0,
+        },
+      },
+    ],
   },
   {
     timestamps: true,
