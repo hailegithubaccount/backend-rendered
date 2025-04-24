@@ -162,7 +162,7 @@ require("dotenv").config();
   exports.getUserProfile = async (req, res) => {
     try {
       // Extract user ID from the authenticated user (e.g., via token)
-      const userId = req.locals.id;
+      const userId = res.locals.id;
   
       // Fetch the user's profile from the database
       const user = await userModel.findById(userId);
