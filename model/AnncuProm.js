@@ -1,3 +1,5 @@
+const mongoose = require('mongoose');
+
 const announcpromtsSchema = new mongoose.Schema({
   message: {
     type: String,
