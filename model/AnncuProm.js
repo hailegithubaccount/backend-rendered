@@ -13,7 +13,7 @@ const announcpromtsSchema = new mongoose.Schema({
   },
   readBy: [{
     type: mongoose.Schema.Types.ObjectId,
-    ref: 'User' // Reference to the User model (assuming you have one)
+    ref: 'users' // Reference to the User model (assuming you have one)
   }]
 }, { timestamps: true });
 
