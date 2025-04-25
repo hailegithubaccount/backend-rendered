@@ -11,7 +11,7 @@ const mongoose = require("mongoose");
 
 const registerStudent = async (req, res) => {
   try {
-    const { firstName, lastName, email, password } = req.body;
+    const { firstName, lastName, email, password,department,studentId } = req.body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
