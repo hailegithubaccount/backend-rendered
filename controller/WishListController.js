@@ -9,6 +9,7 @@ const addToWishlist = asyncHandler(async (req, res) => {
     const studentId = res.locals.id;
 
     // Validate that both IDs are valid ObjectIds
+    
     if (!mongoose.Types.ObjectId.isValid(studentId)) {
         return res.status(400).json({ status: "failed", message: "Invalid student ID format" });
     }
