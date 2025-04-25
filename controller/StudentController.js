@@ -165,7 +165,10 @@ const getAllStudents = async (req, res) => {
       lastName: student.lastName,
       email: student.email,
       role: student.role,
-      photoUrl: `${req.protocol}://${req.get('host')}/api/students/${student.id}/photo`
+      photoUrl: `${req.protocol}://${req.get('host')}/api/students/${student.id}/photo`,
+      department:student.department,
+      studentId:student.$isValidstudentId
+
     }));
 
     res.status(200).json({
