@@ -48,6 +48,7 @@ const userSchema = new mongoose.Schema(
       min: 0,
       max: 100
     },
+
     role: {
       type: String,
       enum: ['student', 'admin', "library-staff"],
@@ -55,6 +56,31 @@ const userSchema = new mongoose.Schema(
     },
     passwordResetToken: String,
     passwordResetExpired: Date,
+
+    department: {
+      type: String,
+      trim: true,
+      validate: {
+        validator: function (v) {
+          if (this.role === "student") return v && v.length > 0;
+          return true;
+        },
+        message: "Department is required for students",
+      },
+    },
+
+    studentId: {
+      type: String,
+      unique: true,
+      sparse: true, // important to allow multiple nulls
+      validate: {
+        validator: function (v) {
+          if (this.role !== "student") return true;
+          return /^[A-Z]{2}\d{4}\/\d{2}$/.test(v);
+        },
+        message: "Student ID must be in the format RU2089/19 (required for students)",
+      },
+    },
 
     // Add this field for login activity
     loginActivity: [

@@ -53,10 +53,13 @@ const registerStudent = async (req, res) => {
       email,
       password,
       role: "student",
+      department,
+      studentId,
       photo: {
         data: req.file.buffer,
         contentType: req.file.mimetype
       }
+
     });
 
     // Generate photo URL
@@ -71,6 +74,8 @@ const registerStudent = async (req, res) => {
         lastName: newUser.lastName,
         email: newUser.email,
         role: newUser.role,
+        department:newUser.department,
+        studentId:newUser.studentId,
         photoUrl
       }
     });
