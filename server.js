@@ -52,6 +52,10 @@ const AnncomPromotRoutes=require("./routes/AnncomPromotRoutes");
 
 const supportRoutes =require("./routes/supportRoutes")
 
+//the studyprogress part
+
+const studyRoutes =require("./routes/studyRoutes")
+
 
 
 
@@ -72,13 +76,16 @@ app.use('/api/report',ReportRoutes);
 
 
 
-
+// anncument for each new notfication '' masetawekiya
 app.use('/api/anncuprom',AnncomPromotRoutes);
 
 
 
 app.use('/api/support',supportRoutes);
 
+
+
+app.use('/api/studyprogress',studyRoutes);
 
 
 
