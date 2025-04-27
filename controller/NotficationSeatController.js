@@ -89,7 +89,7 @@ const getStaffNotifications = asyncHandler(async (req, res) => {
 
   // Validate if the user is authorized as library staff
   const staff = await User.findById(staffId);
-  if (!staff || staff.role !=="library-staff") {
+  if (!staff || staff.role !== "library-staff") {
     return res.status(403).json({ status: "failed", message: "Only library staff can access notifications" });
   }
 
@@ -108,6 +108,30 @@ const getStaffNotifications = asyncHandler(async (req, res) => {
     data: messages, // Return only the messages
   });
 });
+
+const deletestaffNotification = asyncHandler(async (req, res) => {
+  const { notificationId } = req.params; // Extract notification ID from params
+  const staffId = res.locals.id; // Extract staff ID from the token
+
+  // Validate if the user is authorized as library staff
+  const staff = await User.findById(staffId);
+  if (!staff || staff.role !== "library-staff") {
+    return res.status(403).json({ status: "failed", message: "Only library staff can delete notifications" });
+  }
+
+  // Find and delete the notification by its ID
+  const notification = await NotificationSeat.findByIdAndDelete(notificationId);
+
+  if (!notification) {
+    return res.status(404).json({ status: "failed", message: "Notification not found" });
+  }
+
+  res.status(200).json({
+    status: "success",
+    message: "Notification deleted successfully",
+  });
+});
+
 
 const getOverdueNotificationsCount = asyncHandler(async (req, res) => {
   const staffId = res.locals.id; // Extract staff ID from the token
@@ -203,5 +227,6 @@ module.exports = {
   deleteNotification,
   getStaffNotifications,
   getOverdueNotificationsCount,
+  deletestaffNotification,
 };
 
