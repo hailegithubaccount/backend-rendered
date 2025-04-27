@@ -122,8 +122,27 @@ const handleReportAction = asyncHandler(async (req, res) => {
   });
 });
 
+
+
+const countReports = asyncHandler(async (req, res) => {
+  // Optional: only library-staff can view the count
+  if (res.locals.role !== "library-staff") {
+    return res.status(403).json({
+      status: "failed",
+      message: "Only library-staff can view report counts",
+    });
+  }
+
+  const count = await Report.countDocuments();
+  res.status(200).json({
+    status: "success",
+    count,
+  });
+});
+
 module.exports = {
   createReport,
   getAllReports,
   handleReportAction,
+  countReports,
 };

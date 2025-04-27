@@ -9,5 +9,6 @@ router.post('/report/:entityType/:entityId', protect, reportController.createRep
 // Resolve report - unchanged
 router.patch('/:reportId', protect, checkRole("library-staff"), checkUserExists, reportController.handleReportAction);
 router.get('/', protect, checkRole("library-staff"), checkUserExists, reportController.getAllReports);
+router.get('/count',protect, checkRole("library-staff"), checkUserExists, reportController.countReports);
 
 module.exports = router;
