@@ -92,6 +92,32 @@ const getBookSeats = asyncHandler(async (req, res) => {
 });
 
 
+const getAllReservedBookSeats = asyncHandler(async (req, res) => {
+  // 1. Role check
+  if (res.locals.user?.role !== "library-staff") {
+    return res.status(403).json({
+      status: "failed",
+      message: "Access denied. Only library staff can fetch reserved book seats.",
+    });
+  }
+
+  // 2. Fetch reserved book seats
+  const reservedSeats = await Seat.find({ type: "book", isAvailable: false })
+    .populate("reservedBy", "name email studentId")
+    .lean();
+
+  // 3. If none, return empty array
+  return res.status(200).json({
+    status: "success",
+    message: reservedSeats.length
+      ? "Reserved book seats fetched successfully"
+      : "No reserved book seats found",
+    count: reservedSeats.length,
+    data: reservedSeats,
+  });
+});
+
+
 
 
 // @desc    Release occupied seat (Library Staff only)
@@ -166,6 +192,7 @@ const releaseBookSeatByStaff = asyncHandler(async (req, res) => {
  module.exports = {
     getBookSeats,
     releaseBookSeatByStaff, 
+    getAllReservedBookSeats,
    
     
     

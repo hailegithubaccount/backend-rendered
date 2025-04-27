@@ -6,6 +6,7 @@ const bookController =require('../controller/BookSeatController');
 
 
 router.get("/read",protect,checkRole("library-staff"), checkUserExists,bookController.getBookSeats);
+router.get("/allreservedbook",protect,checkRole("library-staff"), checkUserExists,bookController.getAllReservedBookSeats);
 router.put('/releaseBystaff/:id',protect,checkRole("library-staff"), checkUserExists,bookController.releaseBookSeatByStaff);
 
 
