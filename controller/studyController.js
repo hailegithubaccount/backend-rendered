@@ -1,91 +1,62 @@
 const Chapter = require('../model/studyProgress/Chapter');
 const Page = require('../model/studyProgress/Page');
 const mongoose = require("mongoose");
-
-// Create Chapter and Pages
-
 const Student = require('../model/userModel'); // Make sure you have this model
 
 // Create Chapter and Pages (Fixed Version)
-exports.addChapter = async (req, res) => {
-  try {
-    const { title, totalPages } = req.body;
-    const studentId = res.locals.id;
+const asyncHandler = require('express-async-handler');
 
-    // 1. Validate studentId exists and is valid
-    if (!studentId) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Authentication required: No student ID found" 
-      });
-    }
 
-    if (!mongoose.Types.ObjectId.isValid(studentId)) {
-      return res.status(400).json({ 
-        success: false, 
-        message: "Invalid student ID format" 
-      });
-    }
+exports.addChapter = asyncHandler(async (req, res) => {
+  const { title, totalPages } = req.body;
+  const studentId = res.locals.id;
 
-    // 2. Verify student exists in database
-    const studentExists = await Student.exists({ _id: studentId });
-    if (!studentExists) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Student not found" 
-      });
-    }
-
-    // 3. Create chapter with proper ObjectId reference
-    const chapter = await Chapter.create({ 
-      title, 
-      totalPages, 
-      student: new mongoose.Types.ObjectId(studentId) 
-    });
-
-    // 4. Create pages with proper references
-    const pages = [];
-    for (let i = 1; i <= totalPages; i++) {
-      pages.push({
-        chapter: chapter._id,
-        student: new mongoose.Types.ObjectId(studentId),
-        pageNumber: i,
-        isRead: false // Explicitly set default
-      });
-    }
-
-    await Page.insertMany(pages);
-
-    // 5. Return success response with populated data
-    const createdChapter = await Chapter.findById(chapter._id)
-      .populate('student', 'name email'); // Adjust fields as needed
-
-    res.status(201).json({
-      success: true,
-      message: "Chapter and pages created successfully",
-      chapter: createdChapter,
-      pagesCreated: pages.length
-    });
-
-  } catch (error) {
-    console.error("Error in addChapter:", error);
-    
-    // Handle specific MongoDB errors
-    if (error.name === 'ValidationError') {
-      return res.status(400).json({
-        success: false,
-        message: "Validation failed",
-        errors: error.errors
-      });
-    }
-    
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error",
-      error: error.message 
-    });
+  // 1. Validate studentId exists and is valid
+  if (!studentId) {
+    res.status(401);
+    throw new Error("Authentication required: No student ID found");
   }
-};
+
+  if (!mongoose.Types.ObjectId.isValid(studentId)) {
+    res.status(400);
+    throw new Error("Invalid student ID format");
+  }
+
+  // 2. Verify student exists in database
+  const studentExists = await Student.exists({ _id: studentId });
+  if (!studentExists) {
+    res.status(404);
+    throw new Error("Student not found");
+  }
+
+  // 3. Create chapter with proper ObjectId reference
+  const chapter = await Chapter.create({ 
+    title, 
+    totalPages, 
+    student: new mongoose.Types.ObjectId(studentId) 
+  });
+
+  // 4. Create pages with proper references
+  const pages = Array.from({ length: totalPages }, (_, i) => ({
+    chapter: chapter._id,
+    student: new mongoose.Types.ObjectId(studentId),
+    pageNumber: i + 1,
+    isRead: false
+  }));
+
+  await Page.insertMany(pages);
+
+  // 5. Return success response with populated data
+  const createdChapter = await Chapter.findById(chapter._id)
+    .populate('student', 'name email');
+
+  res.status(201).json({
+    success: true,
+    message: "Chapter and pages created successfully",
+    chapter: createdChapter,
+    pagesCreated: pages.length
+  });
+});
 // Get Pages by Chapter
 exports.getChapterPages = async (req, res) => {
   try {
