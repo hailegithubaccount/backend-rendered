@@ -203,9 +203,46 @@ const getSupportPhoto = asyncHandler(async (req, res) => {
     });
   }
 });
+// @desc    Count all support requests
+// @route   GET /api/support/count
+// @access  Private (Staff/Admin)
+const countSupportRequests = asyncHandler(async (req, res) => {
+  try {
+    // 1. Role Verification
+    if (res.locals.role !== "library-staff") {
+      return res.status(403).json({
+        status: "failed",
+        message: "Only library-staff can count support requests",
+      });
+    }
+
+    // 2. Count requests in the database
+    const count = await SupportRequest.countDocuments();
+
+    res.status(200).json({
+      success: true,
+      count: count
+    });
+  } catch (error) {
+    console.error('[Count Requests Error]', error);
+    res.status(500).json({
+      success: false,
+      error: 'Failed to count support requests',
+      ...(process.env.NODE_ENV === 'development' && {
+        debug: {
+          error: error.message,
+          type: error.name,
+          stack: error.stack
+        }
+      })
+    });
+  }
+});
+
 
 module.exports = {
   createSupportRequest,
   getSupportRequests,
-  getSupportPhoto
+  getSupportPhoto,
+  countSupportRequests,
 };

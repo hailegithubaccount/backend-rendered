@@ -15,11 +15,21 @@ router.post(
   supportController.createSupportRequest
 );
 
+
+
 // Staff routes
 router.get(
   '/',
   protect, checkRole('library-staff'), checkUserExists, 
   supportController.getSupportRequests
+);
+
+
+
+router.get(
+  '/count',
+  protect, checkRole('library-staff'), checkUserExists, 
+  supportController.countSupportRequests
 );
 
 // Photo access
