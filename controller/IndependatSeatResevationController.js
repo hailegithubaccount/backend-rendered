@@ -512,6 +512,24 @@ const getAllReservedSeats = asyncHandler(async (req, res) => {
   }
 });
 
+const countReservedSeats = asyncHandler(async (req, res) => {
+  // only library-staff
+  if (res.locals.role !== "library-staff") {
+    return res.status(403).json({
+      status: "failed",
+      message: "Access denied. Only library staff can view reserved seat count.",
+    });
+  }
+
+  const count = await Seat.countDocuments({ isAvailable: false });
+  res.status(200).json({
+    status: "success",
+    count,
+  });
+});
+
+
+
 
 const releaseSeatByStaff = asyncHandler(async (req, res) => {
   try {
@@ -634,6 +652,7 @@ const releaseSeatByStaff = asyncHandler(async (req, res) => {
     releaseSeatByStaff,
     handleSeatResponse,
     fetchPendingNotifications,
+    countReservedSeats,
     
 
     
