@@ -1,6 +1,6 @@
 const Chapter = require('../model/studyProgress/Chapter');
 const Page = require('../model/studyProgress/Page');
-const Student = require('../model/Student'); // Assuming you have a Student model
+const Student = require('../model/userModel'); // Assuming you have a Student model
 const mongoose = require("mongoose");
 
 // Create Chapter and Pages
