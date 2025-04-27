@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const studyController = require('../controller/studyController');
-const { checkUserExists } = require('../middleware/auth');
+const { protect,checkRole, checkUserExists} = require('../middleware/auth'); 
 
 // You should protect these routes with auth middleware if needed
 
