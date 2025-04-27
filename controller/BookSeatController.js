@@ -119,6 +119,29 @@ const getAllReservedBookSeats = asyncHandler(async (req, res) => {
 
 
 
+const countReservedBookSeats = asyncHandler(async (req, res) => {
+  // 1. Role check
+  if (res.locals.user?.role !== "library-staff") {
+    return res.status(403).json({
+      status: "failed",
+      message: "Access denied. Only library staff can view reserved book seat count.",
+    });
+  }
+
+  // 2. Count reserved book seats
+  const count = await Seat.countDocuments({ type: "book", isAvailable: false });
+
+  // 3. Return the count
+  res.status(200).json({
+    status: "success",
+    count,
+  });
+});
+
+
+
+
+
 
 // @desc    Release occupied seat (Library Staff only)
 // @route   PUT /api/seats/release/:id
@@ -193,6 +216,7 @@ const releaseBookSeatByStaff = asyncHandler(async (req, res) => {
     getBookSeats,
     releaseBookSeatByStaff, 
     getAllReservedBookSeats,
+    countReservedBookSeats,
    
     
     
