@@ -58,6 +58,10 @@ const studyRoutes =require("./routes/studyRoutes")
 
 
 
+const forgotPasswordRoutes =require("./routes/ForgetRoutes");
+
+
+
 
 
 
@@ -71,6 +75,8 @@ const ReportRoutes= require("./routes/CommuntityHubRoutes/ReportRoutes")
 app.use('/api/questions',questionroutes);
 app.use('/api/answer',answerroutes);
 app.use('/api/report',ReportRoutes);
+
+app.use('/api/v1/users',forgotPasswordRoutes);
 
 
 
