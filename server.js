@@ -54,7 +54,7 @@ const supportRoutes =require("./routes/supportRoutes")
 
 //the studyprogress part
 
-const studyRoutes =require("./routes/studyRoutes")
+// const studyRoutes =require("./routes/studyRoutes")
 
 
 
@@ -91,7 +91,7 @@ app.use('/api/support',supportRoutes);
 
 
 
-app.use('/api/studyprogress',studyRoutes);
+// app.use('/api/studyprogress',studyRoutes);
 
 
 
