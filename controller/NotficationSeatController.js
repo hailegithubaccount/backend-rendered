@@ -138,37 +138,31 @@ const deletestaffNotification = asyncHandler(async (req, res) => {
 
 
 const getOverdueNotificationsCount = asyncHandler(async (req, res) => {
-  const staffId = res.locals.id; // Extract staff ID from the token
+  const staffId = res.locals.id;
 
-  // Validate if the user is authorized as library staff
+  // 1. Verify role
   const staff = await User.findById(staffId);
   if (!staff || staff.role !== "library-staff") {
-    return res.status(403).json({ 
-      status: "failed", 
-      message: "Only library staff can access notifications" 
+    return res.status(403).json({
+      status: "failed",
+      message: "Only library-staff can access this endpoint",
     });
   }
 
-  try {
-    // Count only overdue return notifications for this staff member
-    const count = await NotificationSeat.countDocuments({
-      user: staffId,
-      type: 'return_overdue',
-      read: false // Optionally count only unread notifications
-    });
+  // 2. Count overdue notifications (optionally unread only)
+  const filter = {
+    user: staffId,
+    type: "return_overdue"
+    // , read: false   // uncomment if you only want unread
+  };
+  const count = await NotificationSeat.countDocuments(filter);
 
-    res.status(200).json({
-      status: "success",
-      count: count,
-      message: `You have ${count} overdue return notifications`
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: "error",
-      message: "Failed to count notifications",
-      error: error.message
-    });
-  }
+  // 3. Return only the count
+  res.status(200).json({
+    status: "success",
+    count,
+    message: `You have ${count} overdue return notification${count === 1 ? "" : "s"}`,
+  });
 });
 
 
