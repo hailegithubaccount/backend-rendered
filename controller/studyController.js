@@ -3,9 +3,7 @@ const Page = require('../model/studyProgress/Page');
 const mongoose = require("mongoose");
 
 // Create Chapter and Pages
-const Chapter = require('../model/studyProgress/Chapter');
-const Page = require('../model/studyProgress/Page');
-const mongoose = require("mongoose");
+
 const Student = require('../model/userModel'); // Make sure you have this model
 
 // Create Chapter and Pages (Fixed Version)
