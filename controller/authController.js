@@ -5,6 +5,8 @@ const jwt = require("jsonwebtoken"); // For generating JWT tokens
 const bcrypt = require("bcrypt"); // For password comparison
 require("dotenv").config(); 
 const Email = require('../utils/email');
+
+
 // exports.register=async (req,res,next)=>{
 //     try {
 //         // firstname ,lastname ,email,password from req.body
@@ -172,7 +174,7 @@ exports.forgetPassword =async (req, res) => {
   const { email } = req.body;
   
   // Get the user by using the provided email
-  const user = await User.findOne({ email });
+  const user = await userModel.findOne({ email });
   
   if (!user) {
     res.status(404);
@@ -200,7 +202,7 @@ exports.forgetPassword =async (req, res) => {
 exports.otpVerification = async (req, res) => {
   const { email, otp } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await userModel.findOne({ email });
 
   if (!user || user.passwordResetOtp !== otp || user.passwordResetExpires < Date.now()) {
     res.status(400);
@@ -219,7 +221,7 @@ exports.otpVerification = async (req, res) => {
 exports.resetPassword = async (req, res) => {
   const { email, otp, password, passwordConfirm } = req.body;
 
-  const user = await User.findOne({ email });
+  const user = await userModel.findOne({ email });
   
   if (!user || user.passwordResetOtp !== otp) {
     res.status(400);
@@ -253,7 +255,7 @@ exports.updatePassword = async (req, res) => {
   }
 
   // Get user data with password
-  const user = await User.findOne({ email }).select('+password');
+  const user = await userModel.findOne({ email }).select('+password');
 
   // Compare new password with current one
   const isSame = await bcrypt.compare(password, user.password);

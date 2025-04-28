@@ -54,8 +54,8 @@ const userSchema = new mongoose.Schema(
       enum: ['student', 'admin', "library-staff"],
       default: "student",
     },
-    passwordResetToken: String,
-    passwordResetExpired: Date,
+    passwordResetExpires: Date,
+    passwordResetOtp: String,
 
     department: {
       type: String,
