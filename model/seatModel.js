@@ -27,6 +27,10 @@ const seatSchema = new mongoose.Schema({
     ref: "users",
     default: null,
   },
+  Direction :{
+    type: String,
+    required: true,
+  },
   reservedAt: {
     type: Date,
     default: null,

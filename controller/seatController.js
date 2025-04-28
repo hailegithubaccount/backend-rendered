@@ -7,7 +7,7 @@ const mongoose = require("mongoose");
 // @access  Private (library-staff)
 const createSeat = asyncHandler(async (req, res) => {
   try {
-    const { seatNumber, type, location, description } = req.body;
+    const { seatNumber, type, location, description, Direction} = req.body;
 
     // Ensure the logged-in user is library-staff
     if (res.locals.role !== "library-staff") {
@@ -47,6 +47,7 @@ const createSeat = asyncHandler(async (req, res) => {
       seatNumber,
       type,
       location,
+      Direction,
       description: description || "", // Add description if provided
       managedBy: res.locals.id, // Assign the seat to the library-staff
     });
@@ -70,7 +71,7 @@ const createSeat = asyncHandler(async (req, res) => {
 // @access  Private (library-staff)
 const updateSeat = asyncHandler(async (req, res) => {
   try {
-    const { seatNumber, type, isAvailable, location, description } = req.body;
+    const { seatNumber, type, isAvailable, location, description, Direction } = req.body;
     const seatId = req.params.id;
 
     // Validate ObjectId
@@ -110,6 +111,7 @@ const updateSeat = asyncHandler(async (req, res) => {
       ...(type && { type }),
       ...(typeof isAvailable !== 'undefined' && { isAvailable }),
       ...(location && { location }),
+      ...( Direction && { Direction}),
       ...(description && { description }),
     };
 
@@ -140,10 +142,11 @@ const updateSeat = asyncHandler(async (req, res) => {
 const getSeats = asyncHandler(async (req, res) => {
   try {
     // Optional filtering by query parameters
-    const { type, location, isAvailable } = req.query;
+    const { type, location, isAvailable, Direction } = req.query;
     const filter = {};
     
     if (type) filter.type = type;
+    if( Direction) filter.Direction= Direction;
     if (location) filter.location = { $regex: location, $options: 'i' };
     if (isAvailable) filter.isAvailable = isAvailable === 'true';
 
