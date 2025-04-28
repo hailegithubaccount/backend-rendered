@@ -14,9 +14,9 @@ router.get("/readSeat",protect,checkRole("library-staff"), checkUserExists, seat
 
 
 // Update a book
-router.patch("/updateSeat:id",protect,checkRole("library-staff"), checkUserExists, seatController.updateSeat);
+router.patch("/updateSeat/:id",protect,checkRole("library-staff"), checkUserExists, seatController.updateSeat);
 
 // Delete a book
-router.delete("/deleteSeat:id",protect,checkRole("library-staff"), checkUserExists, seatController.deleteSeat );
+router.delete("/deleteSeat/:id",protect,checkRole("library-staff"), checkUserExists, seatController.deleteSeat );
 
 module.exports = router;
