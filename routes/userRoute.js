@@ -7,12 +7,12 @@ const router = express.Router();
 // Public routes
 
 router.post('/login', authController.login);
-userRoute.post("/forgetPassword",protect, authController.forgetPassword);
-userRoute.post("/confirmOtp", authController.otpVerification);
-userRoute.put("/resetPassword", authController.resetPassword);
+router.post("/forgetPassword",protect, authController.forgetPassword);
+router.post("/confirmOtp", authController.otpVerification);
+router.put("/resetPassword", authController.resetPassword);
 
 // routes require login
-userRoute.patch("/updatePassword", authController.updatePassword);
+router.patch("/updatePassword", authController.updatePassword);
 
 
 
