@@ -20,9 +20,28 @@ router.post("/handle-seat-response", protect, checkRole("student"), checkUserExi
 
 router.get("/SeatNotfication",protect,checkRole("student"), checkUserExists, seatIndependatController.fetchPendingNotifications);
 
-router.get('/test-auto-release/:seatId', async (req, res) => {
-    await seatIndependatController.autoReleaseSeat(req.params.seatId);
-    res.send('Auto-release triggered');
+router.get('/test-auto-release/:seatId', staffAuth, async (req, res) => {
+    try {
+      const result = await seatIndependatController.autoReleaseSeat(req.params.seatId);
+      if (result.released) {
+        res.status(200).json({
+          status: "success",
+          message: `Seat ${result.seatNumber} released for student ${result.studentId}`,
+          notificationSent: true
+        });
+      } else {
+        res.status(400).json({
+          status: "failed",
+          message: result.message
+        });
+      }
+    } catch (error) {
+      res.status(500).json({
+        status: "error",
+        message: "Auto-release failed",
+        error: error.message
+      });
+    }
   });
 
 

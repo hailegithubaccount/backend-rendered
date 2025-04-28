@@ -73,51 +73,50 @@ const autoReleaseSeat = async (seatId) => {
     const seat = await Seat.findById(seatId).session(session);
     if (!seat || seat.isAvailable) {
       await session.commitTransaction();
-      return;
+      return { released: false, message: "Seat not found or already available" };
     }
     
-    // Store the student ID before clearing it
+    // Store critical data before modifying
     const studentId = seat.reservedBy;
+    const seatNumber = seat.seatNumber;
     
-    // Check if there's still an active notification
-    const notification = await SeatReservationNotification.findOne({
-      seatId: seatId,
-      requiresAction: true
-    }).session(session);
-    
-    if (notification) {
-      // Automatic release process
-      seat.isAvailable = true;
-      seat.reservedBy = null;
-      seat.reservedAt = null;
-      seat.releasedAt = new Date();
-      await seat.save({ session });
-      
-      // Mark notification as completed
-      notification.requiresAction = false;
-      notification.actionResponse = 'auto-released';
-      notification.message = `Seat ${seat.seatNumber} was automatically released due to no response.`;
-      await notification.save({ session });
-      
-      // Create release notification for user - THIS IS THE CRUCIAL FIX
-      const releaseNotification = new SeatReservationNotification({
-        studentId: studentId, // Use the stored studentId
-        seatId: seat._id,
-        message: `Your seat ${seat.seatNumber} has been automatically released due to no response.`,
-        isRead: false,
-        requiresAction: false,
-        actionResponse: 'auto-released'
-      });
-      
-      await releaseNotification.save({ session });
+    // Release the seat
+    seat.isAvailable = true;
+    seat.reservedBy = null;
+    seat.reservedAt = null;
+    seat.releasedAt = new Date();
+    await seat.save({ session });
 
-      console.log(`Seat ${seat.seatNumber} automatically released for student ${studentId}`);
-    }
+    // Update any pending notifications
+    await SeatReservationNotification.updateMany(
+      { seatId: seatId, requiresAction: true },
+      {
+        requiresAction: false,
+        actionResponse: 'auto-released',
+        message: `Seat ${seatNumber} was automatically released due to inactivity.`
+      }
+    ).session(session);
+
+    // Create new notification for the student
+    const newNotification = new SeatReservationNotification({
+      studentId: studentId,
+      seatId: seat._id,
+      message: `Your seat ${seatNumber} has been automatically released due to no response.`,
+      isRead: false,
+      requiresAction: false,
+      actionResponse: 'auto-released'
+    });
     
+    await newNotification.save({ session });
     await session.commitTransaction();
+
+    console.log(`Successfully auto-released seat ${seatNumber} for student ${studentId}`);
+    return { released: true, seatNumber, studentId };
+
   } catch (error) {
     await session.abortTransaction();
-    console.error('Automatic release error:', error);
+    console.error('Auto-release failed:', error);
+    throw error;
   } finally {
     session.endSession();
   }
