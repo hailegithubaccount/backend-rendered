@@ -4,6 +4,7 @@ const userModel = require("../model/userModel"); // Import your user model
 const jwt = require("jsonwebtoken"); // For generating JWT tokens
 const bcrypt = require("bcrypt"); // For password comparison
 require("dotenv").config(); 
+const Email = require('../utils/email');
 // exports.register=async (req,res,next)=>{
 //     try {
 //         // firstname ,lastname ,email,password from req.body
@@ -158,6 +159,129 @@ exports.login = async (req, res, next) => {
     });
   }
 };
+
+
+
+
+
+
+// @desc    Request password reset OTP
+// @route   POST /api/auth/forgot-password
+// @access  Public
+exports.forgetPassword = asyncHandler(async (req, res) => {
+  const { email } = req.body;
+  
+  // Get the user by using the provided email
+  const user = await User.findOne({ email });
+  
+  if (!user) {
+    res.status(404);
+    throw new Error('No user found with that email address.');
+  }
+
+  // Generate a random OTP
+  const otp = Math.floor(100000 + Math.random() * 900000).toString();
+  user.passwordResetOtp = otp;
+  user.passwordResetExpires = Date.now() + 10 * 60 * 1000; // 10 minutes
+  await user.save({ validateBeforeSave: false });
+
+  // Send OTP via email
+  await Email(user.email, otp);
+  
+  res.status(200).json({
+    status: "success",
+    message: "OTP sent to email!",
+  });
+});
+
+// @desc    Verify OTP for password reset
+// @route   POST /api/auth/verify-otp
+// @access  Public
+exports.otpVerification = asyncHandler(async (req, res) => {
+  const { email, otp } = req.body;
+
+  const user = await User.findOne({ email });
+
+  if (!user || user.passwordResetOtp !== otp || user.passwordResetExpires < Date.now()) {
+    res.status(400);
+    throw new Error('Invalid or expired OTP. Please request a new OTP.');
+  }
+
+  res.status(200).json({
+    success: true,
+    message: "OTP verified successfully.",
+  });
+});
+
+// @desc    Reset password
+// @route   POST /api/auth/reset-password
+// @access  Public
+exports.resetPassword = asyncHandler(async (req, res) => {
+  const { email, otp, password, passwordConfirm } = req.body;
+
+  const user = await User.findOne({ email });
+  
+  if (!user || user.passwordResetOtp !== otp) {
+    res.status(400);
+    throw new Error('Invalid or expired OTP. Please request a new OTP.');
+  }
+
+  // Update user's password
+  user.password = password;
+  user.passwordConfirm = passwordConfirm;
+  user.passwordResetOtp = undefined;
+  user.passwordResetExpires = undefined;
+
+  await user.save();
+
+  res.status(200).json({
+    status: "success",
+    message: "Password reset successfully.",
+  });
+});
+
+// @desc    Update password (for logged in users)
+// @route   PUT /api/auth/update-password
+// @access  Private
+exports.updatePassword = asyncHandler(async (req, res) => {
+  const { id, email, password, passwordConfirm } = req.body;
+
+  // Validate all fields
+  if (!id || !email || !password || !passwordConfirm) {
+    res.status(400);
+    throw new Error('All fields are required');
+  }
+
+  // Get user data with password
+  const user = await User.findOne({ email }).select('+password');
+
+  // Compare new password with current one
+  const isSame = await bcrypt.compare(password, user.password);
+
+  // Check if password was previously used
+  if (isSame) {
+    res.status(400);
+    throw new Error('Password previously used');
+  }
+
+  // Update the password
+  user.password = password;
+  user.passwordConfirm = passwordConfirm;
+  await user.save();
+
+  // Remove password from response
+  user.password = undefined;
+
+  res.status(200).json({
+    status: "success",
+    message: "Password updated successfully",
+  });
+});
+
+
+
+
+
 
 
 exports.getAllUser= async(req,res,next)=>{
