@@ -13,7 +13,6 @@ const SeatReservationNotification = require('../model/SeatReservationNotificatio
 // Utility function to schedule automatic release
 // utils.js or helper inside same file
 
-const SeatReservationNotification = require('../models/seatNotificationModel');
 
 
 // Helper to schedule a notification and a future release
