@@ -11,6 +11,59 @@ const SeatReservationNotification = require('../model/SeatReservationNotificatio
 
 // Utility function to schedule automatic release
 // Utility function to schedule automatic release
+const scheduleReleaseCheck = (seatId, deadline) => {
+  const now = new Date();
+  const timeUntilDeadline = deadline - now;
+  
+  setTimeout(async () => {
+    const session = await mongoose.startSession();
+    session.startTransaction();
+    try {
+      const seat = await Seat.findById(seatId).session(session);
+      if (!seat || seat.isAvailable) {
+        await session.commitTransaction();
+        return;
+      }
+      
+      // Check if there's still an active notification
+      const notification = await SeatReservationNotification.findOne({
+        seatId: seatId,
+        requiresAction: true
+      }).session(session);
+      
+      if (notification) {
+        // Immediate release process
+        seat.isAvailable = true;
+        seat.reservedBy = null;
+        seat.reservedAt = null;
+        seat.releasedAt = new Date();
+        await seat.save({ session });
+        
+        // Mark notification as completed
+        notification.requiresAction = false;
+        notification.actionResponse = 'auto-release';
+        notification.message = `Seat ${seat.seatNumber} was automatically released due to no response.`;
+        await notification.save({ session });
+        
+        // Create release notification for user
+        await SeatReservationNotification.create([{
+          studentId: seat.reservedBy,
+          seatId: seat._id,
+          message: `Your seat ${seat.seatNumber} has been automatically released due to no response.`,
+          isRead: false,
+          requiresAction: false
+        }], { session });
+      }
+      
+      await session.commitTransaction();
+    } catch (error) {
+      await session.abortTransaction();
+      console.error('Automatic release error:', error);
+    } finally {
+      session.endSession();
+    }
+  }, Math.max(0, timeUntilDeadline));
+};
 const autoReleaseSeat = async (seatId) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -607,6 +660,9 @@ const releaseSeatByStaff = asyncHandler(async (req, res) => {
     handleSeatResponse,
     fetchPendingNotifications,
     countReservedSeats,
+    autoReleaseSeat,
+    
+  scheduleReleaseCheck
     
 
     
