@@ -168,7 +168,7 @@ exports.login = async (req, res, next) => {
 // @desc    Request password reset OTP
 // @route   POST /api/auth/forgot-password
 // @access  Public
-exports.forgetPassword = asyncHandler(async (req, res) => {
+exports.forgetPassword =async (req, res) => {
   const { email } = req.body;
   
   // Get the user by using the provided email
@@ -192,12 +192,12 @@ exports.forgetPassword = asyncHandler(async (req, res) => {
     status: "success",
     message: "OTP sent to email!",
   });
-});
+};
 
 // @desc    Verify OTP for password reset
 // @route   POST /api/auth/verify-otp
 // @access  Public
-exports.otpVerification = asyncHandler(async (req, res) => {
+exports.otpVerification = async (req, res) => {
   const { email, otp } = req.body;
 
   const user = await User.findOne({ email });
@@ -211,12 +211,12 @@ exports.otpVerification = asyncHandler(async (req, res) => {
     success: true,
     message: "OTP verified successfully.",
   });
-});
+};
 
 // @desc    Reset password
 // @route   POST /api/auth/reset-password
 // @access  Public
-exports.resetPassword = asyncHandler(async (req, res) => {
+exports.resetPassword = async (req, res) => {
   const { email, otp, password, passwordConfirm } = req.body;
 
   const user = await User.findOne({ email });
@@ -238,12 +238,12 @@ exports.resetPassword = asyncHandler(async (req, res) => {
     status: "success",
     message: "Password reset successfully.",
   });
-});
+};
 
 // @desc    Update password (for logged in users)
 // @route   PUT /api/auth/update-password
 // @access  Private
-exports.updatePassword = asyncHandler(async (req, res) => {
+exports.updatePassword = async (req, res) => {
   const { id, email, password, passwordConfirm } = req.body;
 
   // Validate all fields
@@ -276,7 +276,7 @@ exports.updatePassword = asyncHandler(async (req, res) => {
     status: "success",
     message: "Password updated successfully",
   });
-});
+}
 
 
 
