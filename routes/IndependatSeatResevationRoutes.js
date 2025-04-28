@@ -20,6 +20,11 @@ router.post("/handle-seat-response", protect, checkRole("student"), checkUserExi
 
 router.get("/SeatNotfication",protect,checkRole("student"), checkUserExists, seatIndependatController.fetchPendingNotifications);
 
+router.get('/test-auto-release/:seatId', async (req, res) => {
+    await seatIndependatController.autoReleaseSeat(req.params.seatId);
+    res.send('Auto-release triggered');
+  });
+
 
 
 
