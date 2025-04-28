@@ -19,51 +19,6 @@ router.post("/handle-seat-response", protect, checkRole("student"), checkUserExi
 
 
 router.get("/SeatNotfication",protect,checkRole("student"), checkUserExists, seatIndependatController.fetchPendingNotifications);
-router.post('/schedule-release', protect,checkRole("student"), checkUserExists, async (req, res) => {
-    try {
-      const { seatId, deadline } = req.body;
-      
-      if (!seatId || !deadline) {
-        return res.status(400).json({
-          status: "failed",
-          message: "seatId and deadline are required"
-        });
-      }
-  
-      seatIndependatController.scheduleReleaseCheck(seatId, new Date(deadline));
-      
-      res.status(200).json({
-        status: "success",
-        message: "Release scheduled successfully",
-        data: {
-          seatId,
-          deadline: new Date(deadline)
-        }
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: "error",
-        message: "Failed to schedule release",
-        error: error.message
-      });
-    }
-  });
-
-  router.post('/trigger-release/:seatId', protect,checkRole("student"), checkUserExists, async (req, res) => {
-    try {
-      await seatIndependatController.autoReleaseSeat(req.params.seatId);
-      res.status(200).json({
-        status: "success",
-        message: "Seat released successfully"
-      });
-    } catch (error) {
-      res.status(500).json({
-        status: "error",
-        message: "Failed to release seat",
-        error: error.message
-      });
-    }
-});
 
 
 
