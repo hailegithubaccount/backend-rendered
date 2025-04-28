@@ -76,7 +76,6 @@ const autoReleaseSeat = async (seatId) => {
       return { released: false, message: "Seat not found or already available" };
     }
     
-    // Store critical data before modifying
     const studentId = seat.reservedBy;
     const seatNumber = seat.seatNumber;
     
@@ -87,30 +86,29 @@ const autoReleaseSeat = async (seatId) => {
     seat.releasedAt = new Date();
     await seat.save({ session });
 
-    // Update any pending notifications
+    // Update pending notifications
     await SeatReservationNotification.updateMany(
       { seatId: seatId, requiresAction: true },
       {
         requiresAction: false,
         actionResponse: 'auto-released',
-        message: `Seat ${seatNumber} was automatically released due to inactivity.`
+        message: `Seat ${seatNumber} was automatically released due to inactivity.`,
+        deadline: null // Clear deadline if no longer needed
       }
     ).session(session);
 
-    // Create new notification for the student
-    const newNotification = new SeatReservationNotification({
+    // Create new notification
+    await SeatReservationNotification.create([{
       studentId: studentId,
       seatId: seat._id,
       message: `Your seat ${seatNumber} has been automatically released due to no response.`,
       isRead: false,
       requiresAction: false,
-      actionResponse: 'auto-released'
-    });
-    
-    await newNotification.save({ session });
-    await session.commitTransaction();
+      actionResponse: 'auto-released',
+      deadline: null // Not required for release notifications
+    }], { session });
 
-    console.log(`Successfully auto-released seat ${seatNumber} for student ${studentId}`);
+    await session.commitTransaction();
     return { released: true, seatNumber, studentId };
 
   } catch (error) {
