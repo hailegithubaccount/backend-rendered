@@ -58,7 +58,7 @@ const supportRoutes =require("./routes/supportRoutes")
 
 
 
-const forgotPasswordRoutes =require("./routes/ForgetRoutes");
+// const forgotPasswordRoutes =require("./routes/ForgetRoutes");
 
 
 
@@ -76,7 +76,7 @@ app.use('/api/questions',questionroutes);
 app.use('/api/answer',answerroutes);
 app.use('/api/report',ReportRoutes);
 
-app.use('/api/v1/users',forgotPasswordRoutes);
+// app.use('/api/v1/users',forgotPasswordRoutes);
 
 
 
