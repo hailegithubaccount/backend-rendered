@@ -245,6 +245,7 @@ exports.resetPassword = async (req, res) => {
 // @desc    Update password (for logged in users)
 // @route   PUT /api/auth/update-password
 // @access  Private
+//dd
 exports.updatePassword = async (req, res) => {
   const { email, password, passwordConfirm } = req.body;
 
