@@ -76,7 +76,7 @@ const autoReleaseSeat = async (seatId) => {
       return { released: false, message: "Seat not found or already available" };
     }
     
-    const studentId = seat.reservedBy;
+    const studentId = res.locals.id;
     const seatNumber = seat.seatNumber;
     
     // Release the seat
