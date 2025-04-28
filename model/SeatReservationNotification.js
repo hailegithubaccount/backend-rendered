@@ -28,7 +28,7 @@ const notificationSchema = new mongoose.Schema({
   },
   actionResponse: {
     type: String,
-    enum: ['pending', 'extend', 'release', 'auto-release', 'expired'],
+    enum: ['pending', 'extend', 'release', 'Auto-release', 'expired'],
     default: 'pending'
   },
   deadline: {
@@ -55,11 +55,11 @@ const notificationSchema = new mongoose.Schema({
   timestamps: true // Adds createdAt and updatedAt automatically
 });
 
-// Add compound index for frequent queries
+// Add compound indexes for faster lookups
 notificationSchema.index({ studentId: 1, requiresAction: 1 });
 notificationSchema.index({ seatId: 1, requiresAction: 1 });
 
-// Pre-save hook to update timestamps
+// Pre-save hook to update updatedAt field manually if any modification
 notificationSchema.pre('save', function(next) {
   if (this.isModified()) {
     this.updatedAt = new Date();
@@ -67,7 +67,7 @@ notificationSchema.pre('save', function(next) {
   next();
 });
 
-// Static method to find active notifications for a seat
+// Static method to find active notifications for a specific seat
 notificationSchema.statics.findActiveForSeat = function(seatId) {
   return this.findOne({
     seatId: seatId,
