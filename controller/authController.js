@@ -2,10 +2,9 @@
 const utils = require("../utils/utils")
 const userModel = require("../model/userModel"); // Import your user model
 const jwt = require("jsonwebtoken"); // For generating JWT tokens
-// For password comparison
+const bcrypt = require("bcrypt"); // For password comparison
 require("dotenv").config(); 
 const Email = require('../utils/email');
-const bcrypt = require('bcryptjs');
 
 
 // exports.register=async (req,res,next)=>{
@@ -246,21 +245,13 @@ exports.resetPassword = async (req, res) => {
 // @desc    Update password (for logged in users)
 // @route   PUT /api/auth/update-password
 // @access  Private
-
-
 exports.updatePassword = async (req, res) => {
-  const { currentPassword, newPassword, passwordConfirm } = req.body;
-  const { email } = req.user; // Assuming user is authenticated and email is in req.user
+  const { email, password, passwordConfirm } = req.body;
 
   // Validate all fields
-  if (!currentPassword || !newPassword || !passwordConfirm) {
+  if (!email || !password || !passwordConfirm) {
     res.status(400);
     throw new Error('All fields are required');
-  }
-
-  if (newPassword !== passwordConfirm) {
-    res.status(400);
-    throw new Error('New password and confirmation do not match');
   }
 
   // Get user data with password
@@ -271,22 +262,17 @@ exports.updatePassword = async (req, res) => {
     throw new Error('User not found');
   }
 
-  // Verify current password
-  const isPasswordCorrect = await bcrypt.compare(currentPassword, user.password);
-  if (!isPasswordCorrect) {
-    res.status(401);
-    throw new Error('Current password is incorrect');
-  }
-
   // Compare new password with current one
-  const isSame = await bcrypt.compare(newPassword, user.password);
+  const isSame = await bcrypt.compare(password, user.password);
+
+  // Check if password was previously used
   if (isSame) {
     res.status(400);
-    throw new Error('New password cannot be the same as current password');
+    throw new Error('Password previously used');
   }
 
   // Update the password
-  user.password = newPassword;
+  user.password = password;
   user.passwordConfirm = passwordConfirm;
   await user.save();
 
@@ -298,6 +284,7 @@ exports.updatePassword = async (req, res) => {
     message: "Password updated successfully",
   });
 };
+
 
 
 
