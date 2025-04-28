@@ -65,10 +65,6 @@ const SeatReservationNotification = require('../model/SeatReservationNotificatio
 // };
 
 
-const Seat = require("../model/seatModel");
-const asyncHandler = require("express-async-handler");
-const mongoose = require("mongoose");
-const SeatReservationNotification = require('../model/SeatReservationNotification');
 
 // Utility function to schedule automatic release
 const scheduleReleaseCheck = (seatId, deadline) => {
