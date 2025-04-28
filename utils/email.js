@@ -15,7 +15,7 @@ const Email = async (userEmail, otp) => {
     });
 
     const mailOptions = {
-      from: EMAIL,
+      from:process.env.EMAIL,
       to: userEmail,
       subject: "Password Reset",
       text: `Your password reset otp is|  ${otp}  |. If you did not request this, please ignore it. `,
