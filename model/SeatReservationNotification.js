@@ -33,8 +33,7 @@ const notificationSchema = new mongoose.Schema({
   },
   deadline: {
     type: Date,
-    required: true,
-    index: true // For scheduling queries
+    required: false
   },
   notificationType: {
     type: String,
