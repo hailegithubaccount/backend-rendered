@@ -117,30 +117,48 @@ const getStaffNotifications = asyncHandler(async (req, res) => {
 
 
 
-const deleteNotificationbystaff = asyncHandler(async (req, res) => {
-  const { id } = req.params; // Get the notification ID from the request parameters
+const  deleteNotificationbystaff= asyncHandler(async (req, res) => {
+  const { id } = req.params; // Notification ID from the URL
+  const userId = res.locals.id; // Authenticated user's ID
 
-  // Fetch the notification by ID
-  const notification = await NotificationSeat.findById(id);
-  
-  // Check if the notification exists
-  if (!notification) {
-    return res.status(404).json({ status: "failed", message: "Notification not found" });
+  if (!mongoose.Types.ObjectId.isValid(id)) {
+    return res.status(400).json({ status: "failed", message: "Invalid notification ID format" });
   }
 
-  // Check if the logged-in user is the same as the user associated with the notification
-  const staffId = res.locals.id; // Extract the staff ID from the token (assuming the user is staff)
-  if (notification.user.toString() !== staffId) {
-    return res.status(403).json({ status: "failed", message: "You can only delete your own notifications" });
+  if (!mongoose.Types.ObjectId.isValid(userId)) {
+    return res.status(400).json({ status: "failed", message: "Invalid user ID format" });
   }
 
-  // Delete the notification
-  await notification.remove();
+  try {
+    // Fetch the user based on userId (which should be the staff's ID)
+    const user = await User.findById(userId);
 
-  res.status(200).json({
-    status: "success",
-    message: "Notification deleted successfully",
-  });
+    // Check if the user exists and if the user is a library staff
+    if (!user || user.role !== "library-staff") {
+      return res.status(403).json({ status: "failed", message: "Only library staff can delete notifications" });
+    }
+
+    // Find and delete the notification by ID, ensuring it belongs to the authenticated user
+    const notification = await NotificationSeat.findOneAndDelete({
+      _id: id,
+      user: userId,
+    });
+
+    if (!notification) {
+      return res.status(404).json({ status: "failed", message: "Notification not found or unauthorized" });
+    }
+
+    res.status(200).json({
+      status: "success",
+      message: "Notification deleted successfully",
+    });
+  } catch (error) {
+    console.error("Error deleting notification:", error);
+    res.status(500).json({
+      status: "failed",
+      message: "Server error, unable to delete notification",
+    });
+  }
 });
 
 
