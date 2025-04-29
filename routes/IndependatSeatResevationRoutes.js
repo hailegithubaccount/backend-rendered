@@ -19,6 +19,7 @@ router.post("/handle-seat-response", protect, checkRole("student"), checkUserExi
 
 
 router.get("/SeatNotfication",protect,checkRole("student"), checkUserExists, seatIndependatController.fetchPendingNotifications);
+router.get("/seat/autmatic",protect,checkRole("student"), checkUserExists, seatIndependatController.fetchSeatNotifications);
 
 
 

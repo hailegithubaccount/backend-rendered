@@ -380,7 +380,56 @@ const fetchPendingNotifications = asyncHandler(async (req, res) => {
 // @desc    Release a seat (Only students)
 // @route   POST /api/seats/release/:id
 // @access  Private (student)
+/**
+ * Fetch all seat-related notifications for a student (pending and automatic releases)
+ * @route GET /api/seats/notifications
+ * @access Private (student)
+ */
+const fetchSeatNotifications = asyncHandler(async (req, res) => {
+  const studentId = res.locals.id;
 
+  try {
+    // Fetch all seat notifications for this student, sorted by newest first
+    const notifications = await SeatReservationNotification.find({
+      studentId: studentId
+    })
+    .sort({ createdAt: -1 })
+    .limit(50); // Limit to 50 most recent notifications
+
+    // Categorize notifications
+    const result = {
+      pendingActions: notifications.filter(n => n.requiresAction),
+      recentReleases: notifications.filter(n => 
+        !n.requiresAction && 
+        n.actionResponse === 'auto-release'
+      ),
+      otherNotifications: notifications.filter(n => 
+        !n.requiresAction && 
+        n.actionResponse !== 'auto-release'
+      )
+    };
+
+    return res.status(200).json({
+      status: "success",
+      data: {
+        ...result,
+        // Also include counts for easy UI display
+        counts: {
+          pending: result.pendingActions.length,
+          autoReleases: result.recentReleases.length,
+          others: result.otherNotifications.length
+        }
+      }
+    });
+  } catch (error) {
+    console.error("Error fetching seat notifications:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Failed to fetch seat notifications",
+      error: error.message
+    });
+  }
+});
 
 const getIndependentSeats = asyncHandler(async (req, res) => {
   try {
@@ -654,6 +703,7 @@ const releaseSeatByStaff = asyncHandler(async (req, res) => {
     handleSeatResponse,
     fetchPendingNotifications,
     countReservedSeats,
+    fetchSeatNotifications,
     
 
     
