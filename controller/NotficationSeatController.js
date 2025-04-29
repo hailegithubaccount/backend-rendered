@@ -48,6 +48,11 @@ const getNotifications = asyncHandler(async (req, res) => {
   });
 });
 
+
+
+
+
+
 const deleteNotification = asyncHandler(async (req, res) => {
   const { id } = req.params; // Notification ID from the URL
   const userId = res.locals.id; // Authenticated user's ID
@@ -112,30 +117,31 @@ const getStaffNotifications = asyncHandler(async (req, res) => {
 
 
 
-const deletestaffNotification = asyncHandler(async (req, res) => {
-  const staffId = res.locals.id; // Extract staff ID from the token
+const deleteNotificationbystaff = asyncHandler(async (req, res) => {
+  const staffId = res.locals.id; // Extract staff ID from token
+  const { notificationId } = req.params; // Get the notification ID from the route parameters
 
-  // Validate if the user is authorized as library staff
+  // Validate staff role
   const staff = await User.findById(staffId);
   if (!staff || staff.role !== "library-staff") {
     return res.status(403).json({ status: "failed", message: "Only library staff can delete notifications" });
   }
 
-  // Delete all overdue notifications
-  const result = await NotificationSeat.deleteMany({
-    user: staffId, // Optional: If you want to delete only the notifications for a specific staff
-    type: 'return_overdue' // Optional: If you want to delete only overdue notifications
-  });
-
-  if (result.deletedCount === 0) {
-    return res.status(404).json({ status: "failed", message: "No notifications found to delete" });
+  // Find the notification by ID
+  const notification = await NotificationSeat.findOne({ _id: notificationId, user: staffId });
+  if (!notification) {
+    return res.status(404).json({ status: "failed", message: "Notification not found" });
   }
+
+  // Delete the notification
+  await NotificationSeat.deleteOne({ _id: notificationId });
 
   res.status(200).json({
     status: "success",
-    message: `${result.deletedCount} notification(s) deleted successfully`,
+    message: "Notification deleted successfully"
   });
 });
+
 
 
 
@@ -227,6 +233,6 @@ module.exports = {
   deleteNotification,
   getStaffNotifications,
   getOverdueNotificationsCount,
-  deletestaffNotification,
+  deleteNotificationbystaff
 };
 
