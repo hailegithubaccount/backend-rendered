@@ -118,29 +118,31 @@ const getStaffNotifications = asyncHandler(async (req, res) => {
 
 
 const deleteNotificationbystaff = asyncHandler(async (req, res) => {
-  const staffId = res.locals.id; // Extract staff ID from token
-  const { notificationId } = req.params; // Get the notification ID from the route parameters
+  const { id } = req.params; // Get the notification ID from the request parameters
 
-  // Validate staff role
-  const staff = await User.findById(staffId);
-  if (!staff || staff.role !== "library-staff") {
-    return res.status(403).json({ status: "failed", message: "Only library staff can delete notifications" });
-  }
-
-  // Find the notification by ID
-  const notification = await NotificationSeat.findOne({ _id: notificationId, user: staffId });
+  // Fetch the notification by ID
+  const notification = await NotificationSeat.findById(id);
+  
+  // Check if the notification exists
   if (!notification) {
     return res.status(404).json({ status: "failed", message: "Notification not found" });
   }
 
+  // Check if the logged-in user is the same as the user associated with the notification
+  const staffId = res.locals.id; // Extract the staff ID from the token (assuming the user is staff)
+  if (notification.user.toString() !== staffId) {
+    return res.status(403).json({ status: "failed", message: "You can only delete your own notifications" });
+  }
+
   // Delete the notification
-  await NotificationSeat.deleteOne({ _id: notificationId });
+  await notification.remove();
 
   res.status(200).json({
     status: "success",
-    message: "Notification deleted successfully"
+    message: "Notification deleted successfully",
   });
 });
+
 
 
 
