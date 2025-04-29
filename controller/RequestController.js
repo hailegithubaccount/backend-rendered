@@ -552,6 +552,21 @@ const getDetailedRequestCounts = asyncHandler(async (req, res) => {
 });
 
 
+const getPendingRequests = asyncHandler(async (req, res) => {
+  const studentId = res.locals.id;
+
+  const pendingRequests = await BookRequest.find({
+    student: studentId,
+    status: "pending",
+  }).populate("book"); // Optional: Populate book info
+
+  return res.status(200).json({
+    status: "success",
+    count: pendingRequests.length,
+    data: pendingRequests,
+  });
+});
+
 
 
 
@@ -566,6 +581,7 @@ module.exports = {
 
   getRequestCounts,
   getDetailedRequestCounts,
+  getPendingRequests 
 };
 
 
