@@ -29,7 +29,7 @@ agenda.define('send reservation notification', async (job) => {
       return;
     }
 
-    const deadline = new Date(Date.now() + 60 * 1000); // 30 seconds from now
+    const deadline = new Date(Date.now() + 30 * 1000); // 30 seconds from now
 
     await SeatReservationNotification.create([{
       studentId,
