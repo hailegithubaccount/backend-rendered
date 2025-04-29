@@ -38,7 +38,7 @@ const notificationSchema = new mongoose.Schema({
   },
   notificationType: {
     type: String,
-    enum: ['initial', 'reminder', 'autoRelease'],
+    enum: ['initial', 'reminder', 'AutoRelease'],
     default: 'initial'
   }
 }, { timestamps: true });

@@ -12,7 +12,7 @@ const SeatReservationNotification = require('../model/SeatReservationNotificatio
 // Utility function to schedule automatic release
 
 const Agenda = require('agenda');
-const cron = require('node-cron');
+
 
 // Initialize Agenda
 const agenda = new Agenda({
@@ -21,7 +21,7 @@ const agenda = new Agenda({
 });
 
 // Utility function to schedule automatic release using cron
-const scheduledJobs = {};
+
 
 // Define agenda job types
 agenda.define('send reservation notification', async (job) => {
@@ -88,7 +88,7 @@ agenda.define('auto release seat', async (job) => {
       await seat.save({ session });
 
       notification.requiresAction = false;
-      notification.actionResponse = 'autoRelease';
+      notification.actionResponse = 'AutoRelease';
       notification.message = `Seat ${seat.seatNumber} was automatically released.`;
       await notification.save({ session });
 
@@ -399,11 +399,11 @@ const fetchSeatNotifications = asyncHandler(async (req, res) => {
       pendingActions: notifications.filter(n => n.requiresAction),
       recentReleases: notifications.filter(n => 
         !n.requiresAction && 
-        n.actionResponse === 'autoRelease'
+        n.actionResponse === 'AutoRelease'
       ),
       otherNotifications: notifications.filter(n => 
         !n.requiresAction && 
-        n.actionResponse !== 'autoRelease'
+        n.actionResponse !== 'AutoRelease'
       )
     };
 
