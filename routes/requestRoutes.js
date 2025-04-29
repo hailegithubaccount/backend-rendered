@@ -19,7 +19,7 @@ router.delete("/delete/:requestId",protect, checkRole("library-staff"), checkUse
 
 //
 router.get("/count",protect,checkRole("library-staff"), checkUserExists,RequestController.getDetailedRequestCounts); 
-router.get("//pending-count",protect,checkRole("library-staff"), checkUserExists,RequestController.getPendingRequests );
+router.get("/pending-count",protect,checkRole("library-staff"), checkUserExists,RequestController.getPendingRequests );
 
  
 
