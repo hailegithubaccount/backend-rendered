@@ -38,43 +38,9 @@ const notificationSchema = new mongoose.Schema({
   },
   notificationType: {
     type: String,
-    enum: ['initial', 'reminder', 'release', 'extension'],
+    enum: ['initial', 'reminder', 'auto-release'],
     default: 'initial'
-  },
-  metadata: {
-    previousNotification: {
-      type: mongoose.Schema.Types.ObjectId,
-      ref: 'SeatReservationNotification'
-    },
-    extensionCount: {
-      type: Number,
-      default: 0
-    }
   }
-}, {
-  timestamps: true // Adds createdAt and updatedAt automatically
-});
+}, { timestamps: true });
 
-// Add compound indexes for faster lookups
-notificationSchema.index({ studentId: 1, requiresAction: 1 });
-notificationSchema.index({ seatId: 1, requiresAction: 1 });
-
-// Pre-save hook to update updatedAt field manually if any modification
-notificationSchema.pre('save', function(next) {
-  if (this.isModified()) {
-    this.updatedAt = new Date();
-  }
-  next();
-});
-
-// Static method to find active notifications for a specific seat
-notificationSchema.statics.findActiveForSeat = function(seatId) {
-  return this.findOne({
-    seatId: seatId,
-    requiresAction: true
-  });
-};
-
-const SeatReservationNotification = mongoose.model('SeatReservationNotification', notificationSchema);
-
-module.exports = SeatReservationNotification;
+module.exports = mongoose.model('SeatReservationNotification', notificationSchema);

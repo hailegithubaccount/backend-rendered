@@ -11,20 +11,17 @@ const SeatReservationNotification = require('../model/SeatReservationNotificatio
 
 // Utility function to schedule automatic release
 
-const cron = require('node-cron'); // <-- Add this
-
-
-// In-memory cron jobs map
-const scheduledJobs = {};
-
-// Utility function to schedule automatic release using cron
 const Agenda = require('agenda');
+const cron = require('node-cron');
 
 // Initialize Agenda
 const agenda = new Agenda({
   db: { address: process.env.MONGO_URI, collection: 'agendaJobs' },
   processEvery: '30 seconds'
 });
+
+// Utility function to schedule automatic release using cron
+const scheduledJobs = {};
 
 // Define agenda job types
 agenda.define('send reservation notification', async (job) => {
@@ -40,7 +37,7 @@ agenda.define('send reservation notification', async (job) => {
     }
 
     const deadline = new Date();
-    deadline.setMinutes(deadline.getMinutes() + 1); // 1 minute to respond
+    deadline.setSeconds(deadline.getSeconds() + 30); // 30 seconds for response
 
     await SeatReservationNotification.create([{
       studentId: studentId,
@@ -120,7 +117,7 @@ mongoose.connection.on('connected', () => {
   });
 });
 
-// Reserve seat logic (with notification scheduling)
+// Seat reservation logic
 const reserveSeat = asyncHandler(async (req, res) => {
   const session = await mongoose.startSession();
   session.startTransaction();
@@ -172,9 +169,9 @@ const reserveSeat = asyncHandler(async (req, res) => {
     seat.reservedAt = new Date();
     await seat.save({ session });
 
-    // Calculate notification time (2 minutes from now)
+    // Calculate notification time (30 seconds from now)
     const notificationTime = new Date();
-    notificationTime.setMinutes(notificationTime.getMinutes() + 2);
+    notificationTime.setSeconds(notificationTime.getSeconds() + 30);
 
     // Cancel any existing jobs for this seat
     await agenda.cancel({ 'data.seatId': seat._id });
@@ -210,6 +207,7 @@ const reserveSeat = asyncHandler(async (req, res) => {
     session.endSession();
   }
 });
+
 
 /**
  * Handle seat extension/release response
