@@ -85,29 +85,31 @@ const deleteNotification = asyncHandler(async (req, res) => {
 
 // Get all notifications for library staff
 const getStaffNotifications = asyncHandler(async (req, res) => {
-  const staffId = res.locals.id; // Extract staff ID from the token
+  const staffId = res.locals.id; // Extract staff ID from token
 
-  // Validate if the user is authorized as library staff
+  // Validate staff role
   const staff = await User.findById(staffId);
   if (!staff || staff.role !== "library-staff") {
     return res.status(403).json({ status: "failed", message: "Only library staff can access notifications" });
   }
 
-  // Fetch notifications for the library staff
+  // Fetch all notifications with isRead status
   const notifications = await NotificationSeat.find(
-    { user: staffId, type: 'return_overdue' }, // Filter by staff ID and overdue type
-    { message: 1 } // Only include the `message` field in the result
-  ).sort({ createdAt: -1 }); // Sort by most recent first
+    { user: staffId, type: 'return_overdue' },
+    { message: 1, isRead: 1, createdAt: 1 }
+  ).sort({ createdAt: -1 });
 
-  // Extract only the `message` field from each notification
-  const messages = notifications.map(notification => notification.message);
+  // Count unread notifications
+  const unreadCount = notifications.filter(notification => !notification.isRead).length;
 
   res.status(200).json({
     status: "success",
-    results: messages.length,
-    data: messages, // Return only the messages
+    results: notifications.length,
+    unreadCount, // 👈 Used to show badge
+    data: notifications, // Includes message + isRead
   });
 });
+
 
 
 const deletestaffNotification = asyncHandler(async (req, res) => {
