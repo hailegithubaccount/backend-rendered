@@ -261,6 +261,28 @@ const getBooksCount = asyncHandler(async (req, res) => {
 
 
 
+// to count the book that is avalive in the librarys
+
+const countBooks = asyncHandler(async (req, res) => {
+  try {
+    const totalBooks = await bookModel.countDocuments();
+
+    res.status(200).json({
+      status: "success",
+      message: "Total number of books retrieved successfully",
+      totalBooks,
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to count books",
+      error: error.message,
+    });
+  }
+});
+
+
+
 module.exports = {
   createBook,
   getBooks,
@@ -269,4 +291,5 @@ module.exports = {
   catgoryfetch,
   namefetch,
   getBooksCount,
+  countBooks,
 };

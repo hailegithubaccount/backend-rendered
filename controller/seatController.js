@@ -246,10 +246,69 @@ const deleteSeat = asyncHandler(async (req, res) => {
   }
 });
 
+
+//count all seat whetheat book or independant
+const countAllSeats = asyncHandler(async (req, res) => {
+  try {
+    const count = await Seat.countDocuments();
+    res.status(200).json({
+      status: "success",
+      data: { count },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to count seats",
+      error: error.message,
+    });
+  }
+});
+
+/// count all book seat count 
+
+const countBookSeats = asyncHandler(async (req, res) => {
+  try {
+    const count = await Seat.countDocuments({ type: "book" });
+    res.status(200).json({
+      status: "success",
+      data: { count },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to count book seats",
+      error: error.message,
+    });
+  }
+});
+
+// count all indepnedat seat
+
+const countIndependentSeats = asyncHandler(async (req, res) => {
+  try {
+    const count = await Seat.countDocuments({ type: "independent" });
+    res.status(200).json({
+      status: "success",
+      data: { count },
+    });
+  } catch (error) {
+    res.status(500).json({
+      status: "error",
+      message: "Failed to count independent seats",
+      error: error.message,
+    });
+  }
+});
+
+
+
 module.exports = {
   createSeat,
   getSeats,
   getSeat,
   updateSeat,
   deleteSeat,
+  countIndependentSeats,
+  countBookSeats,
+  countAllSeats, 
 };

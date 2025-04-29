@@ -8,6 +8,9 @@ router.post("/insertSeat",protect,checkRole("library-staff"), checkUserExists, s
 
 //get seat
 router.get("/readSeat",protect,checkRole("library-staff"), checkUserExists, seatController.getSeats);
+router.get("/read/countAllSeat",protect,checkRole("library-staff"),checkUserExists, seatController.countAllSeats);
+router.get("/read/countIndepedatSeat",protect,checkRole("library-staff"),checkUserExists, seatController.countIndependentSeats);
+router.get("/read/countBookSeats",protect,checkRole("library-staff"),checkUserExists, seatController.countBookSeats);
 
 // //get seat by id
 // router.get("/readSeat:id",protect,checkRole("library-staff"), checkUserExists, seatController.getSeatById);
