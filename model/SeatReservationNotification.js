@@ -28,7 +28,7 @@ const notificationSchema = new mongoose.Schema({
   },
   actionResponse: {
     type: String,
-    enum: ['pending', 'extend', 'release', 'Auto-release', 'expired'],
+    enum: ['pending', 'extend', 'release', 'AutoRelease', 'expired'],
     default: 'pending'
   },
   deadline: {
@@ -38,7 +38,7 @@ const notificationSchema = new mongoose.Schema({
   },
   notificationType: {
     type: String,
-    enum: ['initial', 'reminder', 'auto-release'],
+    enum: ['initial', 'reminder', 'autoRelease'],
     default: 'initial'
   }
 }, { timestamps: true });

@@ -88,7 +88,7 @@ agenda.define('auto release seat', async (job) => {
       await seat.save({ session });
 
       notification.requiresAction = false;
-      notification.actionResponse = 'auto-release';
+      notification.actionResponse = 'autoRelease';
       notification.message = `Seat ${seat.seatNumber} was automatically released.`;
       await notification.save({ session });
 
@@ -399,11 +399,11 @@ const fetchSeatNotifications = asyncHandler(async (req, res) => {
       pendingActions: notifications.filter(n => n.requiresAction),
       recentReleases: notifications.filter(n => 
         !n.requiresAction && 
-        n.actionResponse === 'auto-release'
+        n.actionResponse === 'autoRelease'
       ),
       otherNotifications: notifications.filter(n => 
         !n.requiresAction && 
-        n.actionResponse !== 'auto-release'
+        n.actionResponse !== 'autoRelease'
       )
     };
 
