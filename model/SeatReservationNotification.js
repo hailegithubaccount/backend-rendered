@@ -5,7 +5,7 @@ const notificationSchema = new mongoose.Schema({
     type: mongoose.Schema.Types.ObjectId,
     ref: 'users',
     required: true,
-    index: true // For faster queries
+    index: true
   },
   seatId: {
     type: mongoose.Schema.Types.ObjectId,
@@ -23,21 +23,17 @@ const notificationSchema = new mongoose.Schema({
   },
   requiresAction: {
     type: Boolean,
-    default: false,
-    index: true // Important for finding pending notifications
+    default: false
   },
   actionResponse: {
     type: String,
-    enum: ['pending', 'extend', 'release', 'AutoRelease', 'expired'],
+    enum: ['pending', 'extend', 'release', 'autoRelease', 'expired'],
     default: 'pending'
   },
-  deadline: {
-    type: Date,
-    required: false
-  },
+  deadline: Date,
   notificationType: {
     type: String,
-    enum: ['initial', 'reminder', 'AutoRelease'],
+    enum: ['initial', 'reminder', 'autoRelease'],
     default: 'initial'
   }
 }, { timestamps: true });
