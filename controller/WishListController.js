@@ -142,52 +142,33 @@ const getWishlist = async (req, res) => {
 };
 
 // ✅ Delete a Book from Wishlist
-const deleteWishlistItem = asyncHandler(async (req, res) => {
-    const { id } = req.params; // The wishlist item ID (not book ID)
-    const studentId = res.locals.id; // From auth middleware
+const deleteFromWishlist = asyncHandler(async (req, res) => {
+    const { id } = req.params;
+    const studentId = req.user?._id || res.locals.id;
 
-    // Validate IDs
     if (!mongoose.Types.ObjectId.isValid(id)) {
-        return res.status(400).json({ 
-            status: "failed", 
-            message: "Invalid wishlist ID format" 
-        });
-    }
-
-    if (!mongoose.Types.ObjectId.isValid(studentId)) {
-        return res.status(400).json({ 
-            status: "failed", 
-            message: "Invalid student ID format" 
-        });
-    }
-
-    try {
-        // Find and delete only if the item belongs to this student
-        const deletedItem = await Wishlist.findOneAndDelete({
-            _id: new mongoose.Types.ObjectId(id),
-            student: new mongoose.Types.ObjectId(studentId)
-        });
-
-        if (!deletedItem) {
-            return res.status(404).json({
-                status: "failed",
-                message: "Wishlist item not found or doesn't belong to you"
-            });
-        }
-
-        res.status(200).json({
-            status: "success",
-            message: "Item removed from wishlist",
-            data: deletedItem
-        });
-
-    } catch (error) {
-        res.status(500).json({
+        return res.status(400).json({
             status: "failed",
-            message: "Server error during deletion",
-            error: error.message
+            message: "Invalid wishlist ID format"
         });
     }
+
+    const deletedItem = await Wishlist.findOneAndDelete({
+        _id: id,
+        student: studentId
+    });
+
+    if (!deletedItem) {
+        return res.status(404).json({
+            status: "failed",
+            message: "Wishlist item not found"
+        });
+    }
+
+    res.status(200).json({
+        status: "success",
+        data: deletedItem
+    });
 });
 
 
@@ -235,7 +216,7 @@ module.exports = {
     getWishlist,
 
 
-    deleteWishlistItem,
+    deleteFromWishlist,
     getWishlistByStudent, 
     getStudentWishlist // Added this line
 };
