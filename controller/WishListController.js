@@ -142,36 +142,52 @@ const getStudentWishlist = asyncHandler(async (req, res) => {
 // };
 
 // ✅ Delete a Book from Wishlist
-const deleteFromWishlist = asyncHandler(async (req, res) => {
-    const { bookId } = req.params;
-    const studentId = res.locals.id;
+const deleteWishlistItem = asyncHandler(async (req, res) => {
+    const { id } = req.params; // The wishlist item ID (not book ID)
+    const studentId = res.locals.id; // From auth middleware
 
     // Validate IDs
-    if (!mongoose.Types.ObjectId.isValid(studentId) || !mongoose.Types.ObjectId.isValid(bookId)) {
-        return res.status(400).json({ status: "failed", message: "Invalid ID format" });
-    }
-
-    const objectIdStudentId = new mongoose.Types.ObjectId(studentId);
-    const objectIdBookId = new mongoose.Types.ObjectId(bookId);
-
-    // Delete only if the book exists in this student's wishlist
-    const deletedItem = await Wishlist.findOneAndDelete({
-        student: objectIdStudentId,
-        book: objectIdBookId
-    });
-
-    if (!deletedItem) {
-        return res.status(404).json({
-            status: "failed",
-            message: "Book not found in your wishlist"
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+        return res.status(400).json({ 
+            status: "failed", 
+            message: "Invalid wishlist ID format" 
         });
     }
 
-    res.status(200).json({
-        status: "success",
-        message: "Book removed from wishlist",
-        data: deletedItem
-    });
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({ 
+            status: "failed", 
+            message: "Invalid student ID format" 
+        });
+    }
+
+    try {
+        // Find and delete only if the item belongs to this student
+        const deletedItem = await Wishlist.findOneAndDelete({
+            _id: new mongoose.Types.ObjectId(id),
+            student: new mongoose.Types.ObjectId(studentId)
+        });
+
+        if (!deletedItem) {
+            return res.status(404).json({
+                status: "failed",
+                message: "Wishlist item not found or doesn't belong to you"
+            });
+        }
+
+        res.status(200).json({
+            status: "success",
+            message: "Item removed from wishlist",
+            data: deletedItem
+        });
+
+    } catch (error) {
+        res.status(500).json({
+            status: "failed",
+            message: "Server error during deletion",
+            error: error.message
+        });
+    }
 });
 
 
@@ -218,7 +234,7 @@ module.exports = {
     addToWishlist,
     getWishlist,
 
-    
+
     deleteFromWishlist,
     getWishlistByStudent, 
     getStudentWishlist // Added this line

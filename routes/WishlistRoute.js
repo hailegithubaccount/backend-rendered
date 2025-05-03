@@ -12,7 +12,7 @@ router.delete("/wishlist/:wishlistId", protect, checkRole("student"), checkUserE
 router.get("/wishlist", protect, checkRole("student"), checkUserExists, wishlistController.getWishlistByStudent);
 
 router.get("/yourwishlist", protect, checkRole("student"), checkUserExists, wishlistController.getStudentWishlist );
-router.delete('/:bookId', protect, checkRole("student"), checkUserExists, wishlistController.deleteFromWishlist); 
+router.delete('/:Id', protect, checkRole("student"), checkUserExists, wishlistController.deleteFromWishlist); 
 
 
 module.exports = router;
