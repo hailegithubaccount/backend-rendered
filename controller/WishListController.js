@@ -77,7 +77,19 @@ const getStudentWishlist = asyncHandler(async (req, res) => {
 // ✅ Get Wishlist for a Student
 const getWishlist = async (req, res) => {
     try {
-        const wishlistItems = await Wishlist.find().populate("student").populate("book");
+        const { search, field = 'book.title' } = req.query; // Default: search by book title
+
+        // Build the query dynamically
+        let query = {};
+        if (search) {
+            query[field] = { 
+                $regex: new RegExp(search, 'i') // Case-insensitive regex
+            };
+        }
+
+        const wishlistItems = await Wishlist.find(query)
+            .populate("student", 'name email')  // Only include student name/email
+            .populate("book", 'title author coverImage'); // Only include book details
 
         if (!wishlistItems.length) {
             return res.status(404).json({

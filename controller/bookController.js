@@ -87,16 +87,29 @@ const catgoryfetch = asyncHandler(async (req, res) => {
 
 
 const namefetch = asyncHandler(async (req, res) => {
-  const {name } = req.query; // Get category from request query
+  const { name } = req.query; // Get search term from query
 
   let query = {}; // Default query object
 
   if (name) {
-    query.name = name; // Filter books by name if provided
+    // Case-insensitive regex for partial matches
+    query.name = { 
+      $regex: new RegExp(name, 'i') // 'i' flag = case-insensitive
+    };
   }
 
-  // Fetch books based on the query and populate relationships
-  const books = await bookModel.find(query).populate("borrowedBy managedBy");
+  // Fetch books with regex filtering and populate relationships
+  const books = await bookModel.find(query)
+    .populate("borrowedBy managedBy");
+
+  if (books.length === 0) {
+    return res.status(404).json({
+      status: "success",
+      message: "No books found matching your criteria",
+      results: 0,
+      data: []
+    });
+  }
 
   res.status(200).json({
     status: "success",
