@@ -103,43 +103,43 @@ const getStudentWishlist = asyncHandler(async (req, res) => {
 
 
 
-// ✅ Get Wishlist for a Student
-// const getWishlist = async (req, res) => {
-//     try {
-//         const { search, field = 'book.title' } = req.query; // Default: search by book title
 
-//         // Build the query dynamically
-//         let query = {};
-//         if (search) {
-//             query[field] = { 
-//                 $regex: new RegExp(search, 'i') // Case-insensitive regex
-//             };
-//         }
+const getWishlist = async (req, res) => {
+    try {
+        const { search, field = 'book.title' } = req.query; // Default: search by book title
 
-//         const wishlistItems = await Wishlist.find(query)
-//             .populate("student", 'name email')  // Only include student name/email
-//             .populate("book", 'title author coverImage'); // Only include book details
+        // Build the query dynamically
+        let query = {};
+        if (search) {
+            query[field] = { 
+                $regex: new RegExp(search, 'i') // Case-insensitive regex
+            };
+        }
 
-//         if (!wishlistItems.length) {
-//             return res.status(404).json({
-//                 status: "failed",
-//                 message: "No wishlist items found",
-//             });
-//         }
+        const wishlistItems = await Wishlist.find(query)
+            .populate("student", 'name email')  // Only include student name/email
+            .populate("book", 'title author coverImage'); // Only include book details
 
-//         res.status(200).json({
-//             status: "success",
-//             message: "Wishlist fetched successfully",
-//             data: wishlistItems,
-//         });
-//     } catch (error) {
-//         console.error("Error fetching wishlist:", error);
-//         res.status(500).json({
-//             status: "failed",
-//             message: "Server error, unable to fetch wishlist",
-//         });
-//     }
-// };
+        if (!wishlistItems.length) {
+            return res.status(404).json({
+                status: "failed",
+                message: "No wishlist items found",
+            });
+        }
+
+        res.status(200).json({
+            status: "success",
+            message: "Wishlist fetched successfully",
+            data: wishlistItems,
+        });
+    } catch (error) {
+        console.error("Error fetching wishlist:", error);
+        res.status(500).json({
+            status: "failed",
+            message: "Server error, unable to fetch wishlist",
+        });
+    }
+};
 
 // ✅ Delete a Book from Wishlist
 const deleteWishlistItem = asyncHandler(async (req, res) => {
