@@ -56,7 +56,7 @@ const supportRoutes =require("./routes/supportRoutes")
 
 // const studyRoutes =require("./routes/studyRoutes")
 
-
+const bookLoanRoutes=require("./routes/bookLoanRoutes");
 
 // const forgotPasswordRoutes =require("./routes/ForgetRoutes");
 
@@ -97,7 +97,7 @@ app.use('/api/support',supportRoutes);
 
 
 
-
+app.use('/api/bookloan',bookLoanRoutes);
 
 
 
