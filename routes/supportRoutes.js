@@ -20,7 +20,7 @@ router.post(
 // Staff routes
 router.get(
   '/',
-  protect, checkRole('library-staff'), checkUserExists, 
+  
   supportController.getSupportRequests
 );
 
@@ -28,7 +28,7 @@ router.get(
 
 router.get(
   '/count',
-  protect, checkRole('library-staff'), checkUserExists, 
+ 
   supportController.countSupportRequests
 );
 
