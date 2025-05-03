@@ -57,7 +57,7 @@ const getStudentWishlist = asyncHandler(async (req, res) => {
 
     // Fetch wishlist with book details (populate)
     const wishlist = await Wishlist.find({ student: objectIdStudentId })
-        .populate('book', 'title author coverImage available'); // Customize fields as needed
+        .populate('book', 'title author photo available'); // Customize fields as needed
 
     res.status(200).json({ 
         status: "success", 
