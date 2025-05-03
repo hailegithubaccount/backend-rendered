@@ -235,7 +235,7 @@ module.exports = {
     getWishlist,
 
 
-    deleteFromWishlist,
+    deleteWishlistItem,
     getWishlistByStudent, 
     getStudentWishlist // Added this line
 };
