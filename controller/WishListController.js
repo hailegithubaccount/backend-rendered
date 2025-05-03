@@ -74,75 +74,109 @@ const getStudentWishlist = asyncHandler(async (req, res) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // ✅ Get Wishlist for a Student
-const getWishlist = async (req, res) => {
-    try {
-        const { search, field = 'book.title' } = req.query; // Default: search by book title
+// const getWishlist = async (req, res) => {
+//     try {
+//         const { search, field = 'book.title' } = req.query; // Default: search by book title
 
-        // Build the query dynamically
-        let query = {};
-        if (search) {
-            query[field] = { 
-                $regex: new RegExp(search, 'i') // Case-insensitive regex
-            };
-        }
+//         // Build the query dynamically
+//         let query = {};
+//         if (search) {
+//             query[field] = { 
+//                 $regex: new RegExp(search, 'i') // Case-insensitive regex
+//             };
+//         }
 
-        const wishlistItems = await Wishlist.find(query)
-            .populate("student", 'name email')  // Only include student name/email
-            .populate("book", 'title author coverImage'); // Only include book details
+//         const wishlistItems = await Wishlist.find(query)
+//             .populate("student", 'name email')  // Only include student name/email
+//             .populate("book", 'title author coverImage'); // Only include book details
 
-        if (!wishlistItems.length) {
-            return res.status(404).json({
-                status: "failed",
-                message: "No wishlist items found",
-            });
-        }
+//         if (!wishlistItems.length) {
+//             return res.status(404).json({
+//                 status: "failed",
+//                 message: "No wishlist items found",
+//             });
+//         }
 
-        res.status(200).json({
-            status: "success",
-            message: "Wishlist fetched successfully",
-            data: wishlistItems,
-        });
-    } catch (error) {
-        console.error("Error fetching wishlist:", error);
-        res.status(500).json({
-            status: "failed",
-            message: "Server error, unable to fetch wishlist",
-        });
-    }
-};
+//         res.status(200).json({
+//             status: "success",
+//             message: "Wishlist fetched successfully",
+//             data: wishlistItems,
+//         });
+//     } catch (error) {
+//         console.error("Error fetching wishlist:", error);
+//         res.status(500).json({
+//             status: "failed",
+//             message: "Server error, unable to fetch wishlist",
+//         });
+//     }
+// };
 
 // ✅ Delete a Book from Wishlist
 const deleteFromWishlist = asyncHandler(async (req, res) => {
-    const { wishlistId } = req.params;
-    const studentId = res.locals.id; // Get the authenticated student's ID
+    const { bookId } = req.params;
+    const studentId = res.locals.id;
 
-    // Validate wishlistId format
-    if (!mongoose.Types.ObjectId.isValid(wishlistId)) {
-        return res.status(400).json({ status: "failed", message: "Invalid wishlist ID format" });
+    // Validate IDs
+    if (!mongoose.Types.ObjectId.isValid(studentId) || !mongoose.Types.ObjectId.isValid(bookId)) {
+        return res.status(400).json({ status: "failed", message: "Invalid ID format" });
     }
 
-    // Find the wishlist item by ID
-    const wishlistItem = await Wishlist.findById(wishlistId);
+    const objectIdStudentId = new mongoose.Types.ObjectId(studentId);
+    const objectIdBookId = new mongoose.Types.ObjectId(bookId);
 
-    // Check if the wishlist item exists
-    if (!wishlistItem) {
-        return res.status(404).json({ status: "failed", message: "Wishlist item not found" });
-    }
+    // Delete only if the book exists in this student's wishlist
+    const deletedItem = await Wishlist.findOneAndDelete({
+        student: objectIdStudentId,
+        book: objectIdBookId
+    });
 
-    // Ensure the wishlist item belongs to the authenticated student
-    if (wishlistItem.student.toString() !== studentId) {
-        return res.status(403).json({ 
-            status: "failed", 
-            message: "You are not authorized to delete this wishlist item" 
+    if (!deletedItem) {
+        return res.status(404).json({
+            status: "failed",
+            message: "Book not found in your wishlist"
         });
     }
 
-    // Delete the wishlist item
-    await Wishlist.findByIdAndDelete(wishlistId);
-
-    res.status(200).json({ status: "success", message: "Wishlist item deleted successfully" });
+    res.status(200).json({
+        status: "success",
+        message: "Book removed from wishlist",
+        data: deletedItem
+    });
 });
+
+
+
+
 
 const getWishlistByStudent = asyncHandler(async (req, res) => {
     const studentId = res.locals.id; // Authenticated student's ID
@@ -183,6 +217,8 @@ const getWishlistByStudent = asyncHandler(async (req, res) => {
 module.exports = {
     addToWishlist,
     getWishlist,
+
+    
     deleteFromWishlist,
     getWishlistByStudent, 
     getStudentWishlist // Added this line
