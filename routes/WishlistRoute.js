@@ -11,6 +11,8 @@ router.post("/wishlist/:bookId", protect, checkRole("student"), checkUserExists,
 router.delete("/wishlist/:wishlistId", protect, checkRole("student"), checkUserExists, wishlistController.deleteFromWishlist);
 router.get("/wishlist", protect, checkRole("student"), checkUserExists, wishlistController.getWishlistByStudent);
 
+router.get("/yourwishlist", protect, checkRole("student"), checkUserExists, wishlistController.getStudentWishlist );
+router.delete('/:bookId', protect, checkRole("student"), checkUserExists, wishlistController.deleteFromWishlist); 
 
 
 module.exports = router;

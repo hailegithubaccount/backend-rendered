@@ -42,6 +42,38 @@ const addToWishlist = asyncHandler(async (req, res) => {
     res.status(201).json({ status: "success", message: "Book added to wishlist." });
 });
 
+
+
+
+const getStudentWishlist = asyncHandler(async (req, res) => {
+    const studentId = res.locals.id; // From auth middleware
+
+    // Validate student ID
+    if (!mongoose.Types.ObjectId.isValid(studentId)) {
+        return res.status(400).json({ status: "failed", message: "Invalid student ID format" });
+    }
+
+    const objectIdStudentId = new mongoose.Types.ObjectId(studentId);
+
+    // Fetch wishlist with book details (populate)
+    const wishlist = await Wishlist.find({ student: objectIdStudentId })
+        .populate('book', 'title author coverImage available'); // Customize fields as needed
+
+    res.status(200).json({ 
+        status: "success", 
+        data: wishlist 
+    });
+});
+
+
+
+
+
+
+
+
+
+
 // ✅ Get Wishlist for a Student
 const getWishlist = async (req, res) => {
     try {
@@ -140,5 +172,6 @@ module.exports = {
     addToWishlist,
     getWishlist,
     deleteFromWishlist,
-    getWishlistByStudent, // Added this line
+    getWishlistByStudent, 
+    getStudentWishlist // Added this line
 };
