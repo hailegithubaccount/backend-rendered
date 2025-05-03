@@ -15,6 +15,7 @@ router.get('/', studentController.getAllStudents);
 router.get('/:id/photo', studentController.getStudentPhoto);
 
 router.get("/profile",  protect, checkRole('student'), checkUserExists,studentController.getStudentProfile );
+router.get ('/count',studentController.countStudents);
 
 
 

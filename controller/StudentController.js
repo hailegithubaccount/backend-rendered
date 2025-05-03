@@ -269,6 +269,26 @@ const deleteStudent = async (req, res, next) => {
 };
 
 
+const countStudents = async (req, res) => {
+  try {
+    // Count only students (role: "student")
+    const studentCount = await User.countDocuments({ role: "student" });
+
+    res.status(200).json({
+      status: "success",
+      data: {
+        count: studentCount
+      }
+    });
+  } catch (error) {
+    console.error("Error counting students:", error);
+    res.status(500).json({
+      status: "error",
+      message: "Internal server error"
+    });
+  }
+};
+
 
 
 module.exports = {
@@ -277,5 +297,6 @@ module.exports = {
     deleteStudent,
     getStudentPhoto,
     getStudentProfile,
+    countStudents
    
   };
