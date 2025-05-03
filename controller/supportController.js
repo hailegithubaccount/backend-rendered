@@ -115,12 +115,7 @@ const createSupportRequest = asyncHandler(async (req, res) => {
 const getSupportRequests = asyncHandler(async (req, res) => {
     try {
       // 1. Role Verification
-      if (res.locals.role !== "library-staff") {
-        return res.status(403).json({
-          status: "failed",
-          message: "Only library-staff can view support requests",
-        });
-      }
+     
   
       // 2. Database Query - Fixed populate path
       const requests = await SupportRequest.find({})
@@ -209,12 +204,7 @@ const getSupportPhoto = asyncHandler(async (req, res) => {
 const countSupportRequests = asyncHandler(async (req, res) => {
   try {
     // 1. Role Verification
-    if (res.locals.role !== "library-staff") {
-      return res.status(403).json({
-        status: "failed",
-        message: "Only library-staff can count support requests",
-      });
-    }
+ 
 
     // 2. Count requests in the database
     const count = await SupportRequest.countDocuments();
