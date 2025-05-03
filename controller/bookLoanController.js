@@ -1,5 +1,5 @@
 // controllers/bookLoanController.js
-const BookLoan = require("../models/BookLoan");
+const BookLoan = require("../model/BookLoan");
 
 // Staff checks out a book
 exports.createLoan = async (req, res) => {
