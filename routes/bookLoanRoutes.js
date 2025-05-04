@@ -15,7 +15,7 @@ router.post(
 
 router.get(
   '/student',
- protect,checkRole("student"), checkUserExists,
+ 
   bookLoanController.getMessagesForStudent 
 );
 
