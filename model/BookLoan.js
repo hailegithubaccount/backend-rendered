@@ -1,92 +1,34 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
 
-const bookLoanSchema = new mongoose.Schema({
-  // Book Information (embedded, no separate Book model needed)
-  bookTitle: {
-    type: String,
-    required: [true, 'Book title is required'],
-    trim: true
-  },
-  bookAuthor: {
-    type: String,
-    trim: true
-  },
- 
-  
-  // User References by Email
-  studentEmail: {
-    type: String,
-    required: [true, 'Student email is required'],
-    lowercase: true,
-    validate: {
-      validator: async function(email) {
-        const user = await mongoose.model('users').findOne({ email });
-        return user && user.role === 'student';
-      },
-      message: 'Must be a registered student email'
-    }
-  },
-  
-  staffId: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: 'users',
-    required: true
-  },
-
-  // Loan Details
-  checkoutDate: {
-    type: Date,
-    default: Date.now
-  },
-  dueDate: {
-    type: Date,
-    required: [true, 'Due date is required']
-  },
-  returnDate: Date,
-  status: {
-    type: String,
-    enum: ['active', 'returned', 'overdue'],
-    default: 'active'
-  },
-
-  // Notification Tracking
-  notifications: [{
-    type: {
+const messageSchema = new mongoose.Schema(
+  {
+    recipient: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "users",
+      required: true,
+    },
+    recipientEmail: {
       type: String,
-      enum: ['checkout', 'reminder', 'overdue', 'return'],
-      required: true
+      required: true,
+      lowercase: true,
     },
-    message: String,
-    date: {
-      type: Date,
-      default: Date.now
+    recipientStudentId: {
+      type: String,
+      required: true,
     },
-    read: {
-      type: Boolean,
-      default: false
-    }
-  }]
-}, {
-  timestamps: true,
-  toJSON: {
-    transform(doc, ret) {
-      ret.id = ret._id;
-      delete ret._id;
-      delete ret.__v;
-    }
+    text: {
+      type: String,
+      required: [true, "Message text is required"],
+    },
+    sender: {
+      type: String,
+      enum: ["admin", "library-staff", "other"],
+      default: "library-staff",
+    },
+  },
+  {
+    timestamps: true,
   }
-});
+);
 
-// Auto-update status to overdue when due date passes
-bookLoanSchema.pre('save', function(next) {
-  if (this.dueDate < new Date() && this.status === 'active') {
-    this.status = 'overdue';
-    this.notifications.push({
-      type: 'overdue',
-      message: `Your book "${this.bookTitle}" is now overdue`
-    });
-  }
-  next();
-});
-
-module.exports = mongoose.model('BookLoan', bookLoanSchema);
+module.exports = mongoose.model("Message", messageSchema);
