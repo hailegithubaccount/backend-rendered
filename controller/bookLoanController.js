@@ -26,14 +26,12 @@ exports.sendMessage = async (req, res) => {
 };
 
 // Get all messages for a specific student
-exports.getMessagesByStudentEmail = async (req, res) => {
-  try {
-    const { email } = req.params;
-
-    const messages = await Message.find({ recipientEmail: email }).sort({ createdAt: -1 });
-
-    res.status(200).json({ count: messages.length, messages });
-  } catch (error) {
-    res.status(500).json({ message: "Failed to fetch messages", error: error.message });
-  }
-};
+exports.getMessagesForStudent = async (req, res) => {
+    const studentEmail = req.user.email; // coming from the token
+    try {
+      const messages = await Message.find({ email: studentEmail });
+      res.json({ success: true, messages });
+    } catch (error) {
+      res.status(500).json({ success: false, message: "Server error" });
+    }
+  };

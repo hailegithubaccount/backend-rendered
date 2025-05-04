@@ -14,9 +14,9 @@ router.post(
 );
 
 router.get(
-  '/student/:email',
+  '/student',
  protect,checkRole("student"), checkUserExists,
-  bookLoanController.getMessagesByStudentEmail 
+  bookLoanController.getMessagesForStudent 
 );
 
 // router.patch(
