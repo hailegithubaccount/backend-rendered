@@ -32,7 +32,8 @@ exports.protect = async (req, res, next) => {
 
         // Attach user ID and role to res.locals
         res.locals.id = verified.id; // Ensure this matches the payload structure
-        res.locals.role = verified.role; // Ensure this matches the payload structure
+        res.locals.role = verified.role; 
+        res.locals.email = verified.email;// Ensure this matches the payload structure
 
         next();
     } catch (error) {
