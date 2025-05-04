@@ -104,43 +104,105 @@ exports.getMessagesForStudent = async (req, res) => {
 };
 
 
-exports.markMessageAsRead = async (req, res) => {
+exports.getUnreadCount = async (req, res) => {
   try {
-    const { messageId } = req.params;
+    const studentEmail = res.locals.email;
 
-    if (!mongoose.Types.ObjectId.isValid(messageId)) {
-      return res.status(400).json({ 
+    if (!studentEmail) {
+      return res.status(401).json({ 
         success: false, 
-        message: "Invalid message ID" 
+        message: "Unauthorized: email not found." 
       });
     }
 
-    const updated = await Message.findByIdAndUpdate(
-      messageId,
-      { isRead: true },
-      { new: true }
-    );
+    const count = await getUnreadCount(studentEmail);
 
-    if (!updated) {
-      return res.status(404).json({ 
-        success: false, 
-        message: "Message not found" 
-      });
-    }
-
-    res.json({ 
-      success: true, 
-      message: "Message marked as read", 
-      data: updated 
+    res.status(200).json({ 
+      success: true,
+      unreadCount: count
     });
+
   } catch (error) {
     res.status(500).json({ 
       success: false, 
-      message: "Failed to mark as read", 
+      message: "Failed to get unread count", 
       error: error.message 
     });
   }
 };
+
+// Helper function to get unread count (reusable)
+async function getUnreadCount(studentEmail) {
+  const now = new Date();
+  return await Message.countDocuments({
+    recipientEmail: studentEmail,
+    isRead: false,
+    $or: [
+      { returnTime: { $lte: now } },
+      { returnTime: { $exists: false } },
+    ]
+  });
+}
+
+exports.markAsRead = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+    const studentEmail = res.locals.email;
+
+    if (!studentEmail) {
+      return res.status(401).json({ 
+        success: false, 
+        message: "Unauthorized: email not found." 
+      });
+    }
+
+    // Validate messageId format
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+      return res.status(400).json({ 
+        success: false, 
+        message: "Invalid message ID format" 
+      });
+    }
+
+    // Update only if message belongs to the student
+    const updatedMessage = await Message.findOneAndUpdate(
+      {
+        _id: messageId,
+        recipientEmail: studentEmail
+      },
+      { 
+        $set: { isRead: true },
+        $currentDate: { updatedAt: true } 
+      },
+      { new: true }
+    );
+
+    if (!updatedMessage) {
+      return res.status(404).json({ 
+        success: false, 
+        message: "Message not found or doesn't belong to you" 
+      });
+    }
+
+    // Get updated unread count
+    const unreadCount = await getUnreadCount(studentEmail);
+
+    res.status(200).json({ 
+      success: true,
+      message: "Message marked as read",
+      data: updatedMessage,
+      unreadCount
+    });
+
+  } catch (error) {
+    res.status(500).json({ 
+      success: false, 
+      message: "Failed to mark message as read", 
+      error: error.message 
+    });
+  }
+};
+
 
 
 
