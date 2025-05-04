@@ -1,4 +1,4 @@
-const Message = require("../model/BookLoan");
+const Message = require("../model/BookLoan"); // Or rename it to Message.js
 const User = require("../model/userModel");
 
 // Send a message to a student
@@ -27,11 +27,11 @@ exports.sendMessage = async (req, res) => {
 
 // Get all messages for a specific student
 exports.getMessagesForStudent = async (req, res) => {
-    const studentEmail = req.user.email; // coming from the token
-    try {
-      const messages = await Message.find({ email: studentEmail });
-      res.json({ success: true, messages });
-    } catch (error) {
-      res.status(500).json({ success: false, message: "Server error" });
-    }
-  };
+  const studentEmail = req.user.email; // coming from token
+  try {
+    const messages = await Message.find({ recipientEmail: studentEmail });
+    res.json({ success: true, messages });
+  } catch (error) {
+    res.status(500).json({ success: false, message: "Server error", error: error.message });
+  }
+};
