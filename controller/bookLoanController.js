@@ -60,20 +60,21 @@ exports.sendMessage = async (req, res) => {
 };
 
 // Get all messages for a specific student
+// Get all messages for a specific student
 exports.getMessagesForStudent = async (req, res) => {
   try {
     const studentEmail = res.locals.email;
 
     if (!studentEmail) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Unauthorized: email not found." 
+      return res.status(401).json({
+        success: false,
+        message: "Unauthorized: email not found."
       });
     }
 
     const now = new Date();
-    
-    // Get messages for the student that should be displayed now
+
+    // Get messages for the student that should be displayed now (displayAfter <= now)
     const messages = await Message.find({
       recipientEmail: studentEmail,
       $or: [
@@ -82,6 +83,7 @@ exports.getMessagesForStudent = async (req, res) => {
       ]
     }).sort({ createdAt: -1 }).lean();
 
+    // Count unread messages for the student (only those with displayAfter passed)
     const unreadCount = await Message.countDocuments({
       recipientEmail: studentEmail,
       isRead: false,
@@ -91,19 +93,20 @@ exports.getMessagesForStudent = async (req, res) => {
       ]
     });
 
-    res.json({ 
-      success: true, 
-      data: messages, 
-      unreadCount 
+    res.json({
+      success: true,
+      data: messages,
+      unreadCount
     });
   } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: "Server error", 
-      error: error.message 
+    res.status(500).json({
+      success: false,
+      message: "Server error",
+      error: error.message
     });
   }
 };
+
 
 // Update the getUnreadCount helper function as well
 async function getUnreadCount(studentEmail) {
