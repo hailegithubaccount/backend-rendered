@@ -27,7 +27,7 @@ exports.sendMessage = async (req, res) => {
 
 // Get all messages for a specific student
 exports.getMessagesForStudent = async (req, res) => {
-  const studentEmail = res.locals.email;
+  const studentEmail = req.user.email; 
 
   if (!studentEmail) {
     return res.status(401).json({ success: false, message: "Unauthorized: email not found." });
