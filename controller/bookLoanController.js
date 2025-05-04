@@ -1,5 +1,6 @@
 const Message = require("../model/BookLoan"); // Or rename it to Message.js
 const User = require("../model/userModel");
+const mongoose = require("mongoose");
 
 // Send a message to a student
 exports.sendMessage = async (req, res) => {
