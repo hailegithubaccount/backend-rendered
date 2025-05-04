@@ -14,7 +14,7 @@ router.post(
 
 // Student fetches messages sent to them
 router.get(
-  '/student',
+  '/student/messages',
   protect,
   checkRole("student"),
   checkUserExists,
