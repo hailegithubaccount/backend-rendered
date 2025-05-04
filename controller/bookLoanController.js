@@ -68,25 +68,14 @@ exports.getMessagesForStudent = async (req, res) => {
       });
     }
 
-    const now = new Date();
-
+    // Get ALL messages for the student (remove returnTime filter)
     const messages = await Message.find({
-      recipientEmail: studentEmail,
-      $or: [
-        { returnTime: { $lte: now } },
-        { returnTime: { $exists: false } },
-      ]
-    })
-    .sort({ createdAt: -1 })
-    .lean(); // Using lean() for better performance
+      recipientEmail: studentEmail
+    }).sort({ createdAt: -1 }).lean();
 
     const unreadCount = await Message.countDocuments({
       recipientEmail: studentEmail,
-      isRead: false,
-      $or: [
-        { returnTime: { $lte: now } },
-        { returnTime: { $exists: false } },
-      ]
+      isRead: false
     });
 
     res.json({ 
