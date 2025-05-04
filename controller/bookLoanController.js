@@ -16,7 +16,7 @@ exports.sendMessage = async (req, res) => {
       recipientEmail: email,
       recipientStudentId: studentId,
       text,
-      sender: sender || "library-staff",
+      sender:  "library-staff",
       returnTime: returnTime ? new Date(returnTime) : undefined, // parse to Date
     });
 
