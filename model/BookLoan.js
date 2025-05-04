@@ -11,10 +11,7 @@ const bookLoanSchema = new mongoose.Schema({
     type: String,
     trim: true
   },
-  bookIsbn: {
-    type: String,
-    trim: true
-  },
+ 
   
   // User References by Email
   studentEmail: {
