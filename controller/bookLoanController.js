@@ -27,7 +27,7 @@ exports.sendMessage = async (req, res) => {
 
 // Get all messages for a specific student
 exports.getMessagesForStudent = async (req, res) => {
-  const studentEmail = req.user.email; // coming from token
+  const studentEmail = res.locals.email; // coming from token
   try {
     const messages = await Message.find({ recipientEmail: studentEmail });
     res.json({ success: true, messages });
