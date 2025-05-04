@@ -1,6 +1,8 @@
 const express = require('express');
 const router = express.Router();
 const bookLoanController = require('../controller/bookLoanController');
+const { protect,checkRole, checkUserExists} = require('../middleware/auth'); 
+
 
 
 
