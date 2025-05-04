@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 
 // Send a message to a student
 // Send a message to a student
+// Send a message to a student
 exports.sendMessage = async (req, res) => {
   try {
     const { email, studentId, text, sender = "library-staff", returnTime } = req.body;
@@ -24,7 +25,7 @@ exports.sendMessage = async (req, res) => {
       recipientStudentId: studentId,
       text,
       sender,
-      displayAfter: new Date(Date.now() + 2 * 60 * 1000) // 2 minutes from now
+      displayAfter: new Date(Date.now() + 30 * 1000) // 30 seconds from now
     };
 
     if (returnTime) {
@@ -39,7 +40,7 @@ exports.sendMessage = async (req, res) => {
 
     res.status(201).json({ 
       success: true,
-      message: "Message sent successfully (will be visible after 2 minutes)", 
+      message: "Message sent successfully (will be visible after 30 seconds)", 
       data: message 
     });
   } catch (error) {
