@@ -19,6 +19,9 @@ router.get(
   bookLoanController.getMessagesForStudent 
 );
 
+router.patch("/mark-read/:messageId",  protect,checkRole("student"), checkUserExists,
+bookLoanController.markMessageAsRead);
+
 // router.patch(
 //   '/:loanId/return',
 //  protect,checkRole("library-staff"), checkUserExists,
