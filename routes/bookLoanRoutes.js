@@ -23,7 +23,7 @@ router.get(
 // bookLoanController.markMessageAsRead);
 
 
-router.get('/unreadCount',protect,checkRole("student"), checkUserExists,bookLoanController.getUnreadCount);
+// router.get('/unreadCount',protect,checkRole("student"), checkUserExists,bookLoanController.getUnreadCount);
 router.post('/markAsRead',protect,checkRole("student"), checkUserExists,bookLoanController.markAsRead );
 
 // router.patch(

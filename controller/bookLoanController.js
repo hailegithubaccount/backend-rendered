@@ -3,6 +3,7 @@ const User = require("../model/userModel");
 const mongoose = require("mongoose");
 
 // Send a message to a student
+// Send a message to a student
 exports.sendMessage = async (req, res) => {
   try {
     const { email, studentId, text, sender = "library-staff", returnTime } = req.body;
@@ -22,7 +23,8 @@ exports.sendMessage = async (req, res) => {
       recipientEmail: email,
       recipientStudentId: studentId,
       text,
-      sender
+      sender,
+      displayAfter: new Date(Date.now() + 2 * 60 * 1000) // 2 minutes from now
     };
 
     if (returnTime) {
@@ -37,7 +39,7 @@ exports.sendMessage = async (req, res) => {
 
     res.status(201).json({ 
       success: true,
-      message: "Message sent successfully", 
+      message: "Message sent successfully (will be visible after 2 minutes)", 
       data: message 
     });
   } catch (error) {
@@ -56,7 +58,6 @@ exports.sendMessage = async (req, res) => {
   }
 };
 
-
 // Get all messages for a specific student
 exports.getMessagesForStudent = async (req, res) => {
   try {
@@ -69,14 +70,24 @@ exports.getMessagesForStudent = async (req, res) => {
       });
     }
 
-    // Get ALL messages for the student (remove returnTime filter)
+    const now = new Date();
+    
+    // Get messages for the student that should be displayed now
     const messages = await Message.find({
-      recipientEmail: studentEmail
+      recipientEmail: studentEmail,
+      $or: [
+        { displayAfter: { $lte: now } }, // Messages where displayAfter has passed
+        { displayAfter: { $exists: false } } // Or messages without displayAfter
+      ]
     }).sort({ createdAt: -1 }).lean();
 
     const unreadCount = await Message.countDocuments({
       recipientEmail: studentEmail,
-      isRead: false
+      isRead: false,
+      $or: [
+        { displayAfter: { $lte: now } },
+        { displayAfter: { $exists: false } }
+      ]
     });
 
     res.json({ 
@@ -93,46 +104,75 @@ exports.getMessagesForStudent = async (req, res) => {
   }
 };
 
-
-exports.getUnreadCount = async (req, res) => {
-  try {
-    const studentEmail = res.locals.email;
-
-    if (!studentEmail) {
-      return res.status(401).json({ 
-        success: false, 
-        message: "Unauthorized: email not found." 
-      });
-    }
-
-    const count = await getUnreadCount(studentEmail);
-
-    res.status(200).json({ 
-      success: true,
-      unreadCount: count
-    });
-
-  } catch (error) {
-    res.status(500).json({ 
-      success: false, 
-      message: "Failed to get unread count", 
-      error: error.message 
-    });
-  }
-};
-
-// Helper function to get unread count (reusable)
+// Update the getUnreadCount helper function as well
 async function getUnreadCount(studentEmail) {
   const now = new Date();
   return await Message.countDocuments({
     recipientEmail: studentEmail,
     isRead: false,
     $or: [
-      { returnTime: { $lte: now } },
-      { returnTime: { $exists: false } },
+      { 
+        $and: [
+          { returnTime: { $lte: now } },
+          { 
+            $or: [
+              { displayAfter: { $lte: now } },
+              { displayAfter: { $exists: false } }
+            ]
+          }
+        ]
+      },
+      { 
+        returnTime: { $exists: false },
+        $or: [
+          { displayAfter: { $lte: now } },
+          { displayAfter: { $exists: false } }
+        ]
+      },
     ]
   });
 }
+
+
+// exports.getUnreadCount = async (req, res) => {
+//   try {
+//     const studentEmail = res.locals.email;
+
+//     if (!studentEmail) {
+//       return res.status(401).json({ 
+//         success: false, 
+//         message: "Unauthorized: email not found." 
+//       });
+//     }
+
+//     const count = await getUnreadCount(studentEmail);
+
+//     res.status(200).json({ 
+//       success: true,
+//       unreadCount: count
+//     });
+
+//   } catch (error) {
+//     res.status(500).json({ 
+//       success: false, 
+//       message: "Failed to get unread count", 
+//       error: error.message 
+//     });
+//   }
+// };
+
+// Helper function to get unread count (reusable)
+// async function getUnreadCount(studentEmail) {
+//   const now = new Date();
+//   return await Message.countDocuments({
+//     recipientEmail: studentEmail,
+//     isRead: false,
+//     $or: [
+//       { returnTime: { $lte: now } },
+//       { returnTime: { $exists: false } },
+//     ]
+//   });
+// }
 
 exports.markAsRead = async (req, res) => {
   try {
