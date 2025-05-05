@@ -10,10 +10,10 @@ const Email = require('../utils/email');
 // exports.register=async (req,res,next)=>{
 //     try {
 //         // firstname ,lastname ,email,password from req.body
-//         const {firstName ,lastName ,email,password} =req.body
+//         const {firstName ,lastName ,email,password,role} =req.body
 //         // creaNe user
 //         const newUser = await userModel.create({
-//             firstName ,lastName ,email,password
+//             firstName ,lastName ,email,password,role
 //         })
 //         // create token
 //         const token = utils.signToken({id:newUser.id,role:newUser.role})
@@ -30,6 +30,8 @@ const Email = require('../utils/email');
 //         console.log(error)
 //     }
 // }
+
+
 // exports.registerLibraryStaff = async (req, res, next) => {
 //     try {
 //         // Check if the user is an admin
@@ -66,6 +68,57 @@ const Email = require('../utils/email');
 //             message: "Server error, unable to register staff",
 //         });
  // Ensure you import your utils
+
+ exports.registerAdmin = async (req, res, next) => {
+  try {
+    // Check if an admin already exists
+    const existingAdmin = await userModel.findOne({ role: "admin" });
+    
+    if (existingAdmin) {
+      return res.status(400).json({
+        status: "fail",
+        message: "Super admin already exists. Cannot register another admin.",
+      });
+    }
+
+    // Extract admin details from request
+    const { firstName, lastName, email, password } = req.body;
+
+    // Create a new admin user
+    const newAdmin = await userModel.create({
+      firstName,
+      lastName,
+      email,
+      password,
+      role: "admin",  // Super admin role
+    });
+
+    // Generate JWT token for the admin
+    const token = jwt.sign(
+      { id: newAdmin._id, role: newAdmin.role, email: newAdmin.email },
+      process.env.JWTSECRATE,
+      { expiresIn: process.env.EXPIRESIN }
+    );
+
+    // Send the response
+    res.status(201).json({
+      token,
+      status: "success",
+      message: "Super admin registered successfully.",
+      newAdmin,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({
+      status: "error",
+      message: "An error occurred during admin registration.",
+    });
+  }
+};
+
+
+
+
 
 exports.login = async (req, res, next) => {
   try {
