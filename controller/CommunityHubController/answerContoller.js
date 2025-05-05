@@ -63,7 +63,6 @@ const getAnswersByQuestion = asyncHandler(async (req, res) => {
 // @route   POST /api/community/questions/:questionId/answers
 // @access  Private (students only)
 const createAnswer = asyncHandler(async (req, res) => {
-  // Authorization check is already handled by protect and checkRole middleware
   const { content } = req.body;
   const { questionId } = req.params;
   const authorId = res.locals.id;
@@ -96,19 +95,6 @@ const createAnswer = asyncHandler(async (req, res) => {
     return res.status(403).json({
       status: "failed",
       message: "Cannot add answers to a solved question"
-    });
-  }
-
-  // Check if user already answered this question
-  const existingAnswer = await Answer.findOne({
-    question: questionId,
-    author: authorId
-  });
-
-  if (existingAnswer) {
-    return res.status(409).json({
-      status: "failed",
-      message: "You have already answered this question"
     });
   }
 
