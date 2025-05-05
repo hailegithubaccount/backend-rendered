@@ -20,44 +20,67 @@ const createReport = asyncHandler(async (req, res) => {
     });
   }
 
-  // Check if entity exists and get its content
-  let entity, content, author;
-  
-  if (entityType === "question") {
-    entity = await Question.findById(entityId).populate('author', 'firstName lastName');
-    if (entity) {
-      content = `${entity.title}\n${entity.content}`;
-      author = entity.author._id;
-    }
-  } else {
-    entity = await Answer.findById(entityId).populate('author', 'firstName lastName');
-    if (entity) {
-      content = entity.content;
-      author = entity.author._id;
-    }
-  }
-
-  if (!entity) {
-    return res.status(404).json({
+  // Validate entityId format
+  if (!mongoose.Types.ObjectId.isValid(entityId)) {
+    return res.status(400).json({
       status: "failed",
-      message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found`,
+      message: "Invalid ID format",
     });
   }
 
-  // Create the report with content
-  const report = await Report.create({
-    reporter: reporterId,
-    entityType,
-    entityId,
-    content, // Store the actual content
-    author,  // Store the content author
-    reason: reason.trim()
-  });
+  try {
+    // Check if entity exists and get its content
+    let entity, content, author;
+    
+    if (entityType === "question") {
+      entity = await Question.findById(entityId)
+        .populate('author', 'firstName lastName')
+        .lean();
+    } else {
+      entity = await Answer.findById(entityId)
+        .populate('author', 'firstName lastName')
+        .lean();
+    }
 
-  res.status(201).json({
-    status: "success",
-    data: report
-  });
+    if (!entity) {
+      return res.status(404).json({
+        status: "failed",
+        message: `${entityType.charAt(0).toUpperCase() + entityType.slice(1)} not found`,
+      });
+    }
+
+    // Extract content and author safely
+    if (entityType === "question") {
+      content = `${entity.title}\n${entity.content}`;
+      author = entity.author?._id || null;
+    } else {
+      content = entity.content;
+      author = entity.author?._id || null;
+    }
+
+    // Create the report with content
+    const report = await Report.create({
+      reporter: reporterId,
+      entityType,
+      entityId,
+      content: content || "Content not available", // Fallback if content is empty
+      author,  // Store the content author
+      reason: reason?.trim() || "No reason provided" // Fallback if reason is empty
+    });
+
+    return res.status(201).json({
+      status: "success",
+      data: report
+    });
+
+  } catch (error) {
+    console.error("Report creation error:", error);
+    return res.status(500).json({
+      status: "error",
+      message: "Internal server error while creating report",
+      error: process.env.NODE_ENV === 'development' ? error.message : undefined
+    });
+  }
 });
 
 
