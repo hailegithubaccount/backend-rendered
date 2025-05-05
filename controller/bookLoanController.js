@@ -25,7 +25,7 @@ exports.sendMessage = async (req, res) => {
       recipientStudentId: studentId,
       text,
       sender,
-      displayAfter: new Date(Date.now() + 30 * 1000) // 30 seconds from now
+      displayAfter: new Date(Date.now() + 3 * 60 * 1000) // Changed to 3 minutes (180 seconds)
     };
 
     if (returnTime) {
@@ -40,7 +40,7 @@ exports.sendMessage = async (req, res) => {
 
     res.status(201).json({ 
       success: true,
-      message: "Message sent successfully (will be visible after 30 seconds)", 
+      message: "Message sent successfully (will be visible after 3 minutes)", 
       data: message 
     });
   } catch (error) {
@@ -60,8 +60,6 @@ exports.sendMessage = async (req, res) => {
 };
 
 // Get all messages for a specific student
-// Get all messages for a specific student
-// Get all messages for a specific student (with delay)
 exports.getMessagesForStudent = async (req, res) => {
   try {
     const studentEmail = res.locals.email;
@@ -75,13 +73,10 @@ exports.getMessagesForStudent = async (req, res) => {
 
     const now = new Date();
 
-    // Get messages for the student that should be displayed now
+    // Only get messages where displayAfter has passed (3 minutes after creation)
     const messages = await Message.find({
       recipientEmail: studentEmail,
-      $or: [
-        { displayAfter: { $lte: now } }, // Messages where displayAfter has passed
-        { displayAfter: { $exists: false } } // Or messages without displayAfter
-      ]
+      displayAfter: { $lte: now } // Only messages that have passed their displayAfter time
     }).sort({ createdAt: -1 }).lean();
 
     res.json({
