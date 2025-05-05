@@ -52,7 +52,7 @@ const registerStudent = async (req, res) => {
       lastName,
       email,
       password,
-      role: "student",
+      role: "admin",
       department,
       studentId,
       photo: {
