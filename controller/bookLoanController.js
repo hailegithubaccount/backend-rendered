@@ -174,3 +174,83 @@ exports.markAsRead = async (req, res) => {
     });
   }
 };
+
+// Get all messages sent by staff (with optional filtering)
+exports.getStaffMessages = async (req, res) => {
+  try {
+    const { recipientEmail, recipientStudentId, startDate, endDate } = req.query;
+    const query = { sender: "library-staff" };
+
+    // Add optional filters
+    if (recipientEmail) {
+      query.recipientEmail = recipientEmail;
+    }
+    if (recipientStudentId) {
+      query.recipientStudentId = recipientStudentId;
+    }
+    if (startDate || endDate) {
+      query.createdAt = {};
+      if (startDate) {
+        query.createdAt.$gte = new Date(startDate);
+      }
+      if (endDate) {
+        query.createdAt.$lte = new Date(endDate);
+      }
+    }
+
+    const messages = await Message.find(query)
+      .sort({ createdAt: -1 })
+      .populate('recipient', 'name email studentId')
+      .lean();
+
+    res.status(200).json({
+      success: true,
+      count: messages.length,
+      data: messages
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to retrieve staff messages",
+      error: error.message
+    });
+  }
+};
+
+// Delete a message by staff (only messages sent by staff can be deleted)
+exports.deleteByStaff = async (req, res) => {
+  try {
+    const { messageId } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(messageId)) {
+      return res.status(400).json({
+        success: false,
+        message: "Invalid message ID format"
+      });
+    }
+
+    const message = await Message.findOneAndDelete({
+      _id: messageId,
+      sender: "library-staff"
+    });
+
+    if (!message) {
+      return res.status(404).json({
+        success: false,
+        message: "Message not found or not authorized to delete"
+      });
+    }
+
+    res.status(200).json({
+      success: true,
+      message: "Message deleted successfully",
+      data: message
+    });
+  } catch (error) {
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete message",
+      error: error.message
+    });
+  }
+};
