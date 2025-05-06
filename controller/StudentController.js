@@ -136,6 +136,8 @@ const getStudentProfile = async (req, res) => {
               email: student.email,
               role: student.role,
               photoUrl: photoUrl,
+              department:student.department,
+              studentId:student.studentId,
               loginCount: student.loginCount,
               studyProgress: student.studyProgress,
               loginActivity:student.loginActivity,
