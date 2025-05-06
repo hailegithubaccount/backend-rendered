@@ -14,29 +14,43 @@ exports.sendMessage = async (req, res) => {
       return res.status(400).json({ message: "Email, studentId, and text are required" });
     }
 
-    const user = await User.findOne({ email, studentId });
-    if (!user || user.role !== "student") {
-      return res.status(404).json({ message: "Student not found" });
+    // Trim and lowercase email for consistency
+    const normalizedEmail = email.trim().toLowerCase();
+    
+    const user = await User.findOne({ 
+      email: normalizedEmail, 
+      studentId,
+      role: "student" 
+    });
+    
+    if (!user) {
+      return res.status(404).json({ 
+        success: false,
+        message: "Student not found or not a student account" 
+      });
     }
 
     const messageData = {
       recipient: user._id,
-      recipientEmail: email,
+      recipientEmail: normalizedEmail, // Use normalized email
       recipientStudentId: studentId,
       text,
       sender,
-      displayAfter: new Date(Date.now() + 3 * 60 * 1000) // Changed to 3 minutes (180 seconds)
+      displayAfter: new Date(Date.now() + 3 * 60 * 1000) // 3 minutes delay
     };
 
     if (returnTime) {
       messageData.returnTime = new Date(returnTime);
-      // Validate returnTime is in the future
       if (messageData.returnTime <= new Date()) {
-        return res.status(400).json({ message: "Return time must be in the future" });
+        return res.status(400).json({ 
+          success: false,
+          message: "Return time must be in the future" 
+        });
       }
     }
 
     const message = await Message.create(messageData);
+    console.log('Message created:', message); // Log for debugging
 
     res.status(201).json({ 
       success: true,
@@ -44,6 +58,7 @@ exports.sendMessage = async (req, res) => {
       data: message 
     });
   } catch (error) {
+    console.error('Error sending message:', error); // Detailed error logging
     if (error.name === 'ValidationError') {
       return res.status(400).json({ 
         success: false,
@@ -62,7 +77,7 @@ exports.sendMessage = async (req, res) => {
 // Get all messages for a specific student
 exports.getMessagesForStudent = async (req, res) => {
   try {
-    const studentEmail = res.locals.email;
+    const studentEmail = res.locals.email?.trim()?.toLowerCase(); // Normalize email
 
     if (!studentEmail) {
       return res.status(401).json({
@@ -72,18 +87,21 @@ exports.getMessagesForStudent = async (req, res) => {
     }
 
     const now = new Date();
+    console.log(`Fetching messages for ${studentEmail} at ${now}`); // Debug log
 
-    // Only get messages where displayAfter has passed (3 minutes after creation)
     const messages = await Message.find({
       recipientEmail: studentEmail,
-      displayAfter: { $lte: now } // Only messages that have passed their displayAfter time
+      displayAfter: { $lte: now }
     }).sort({ createdAt: -1 }).lean();
+
+    console.log(`Found ${messages.length} messages for ${studentEmail}`); // Debug log
 
     res.json({
       success: true,
       data: messages
     });
   } catch (error) {
+    console.error('Error fetching messages:', error); // Detailed error logging
     res.status(500).json({
       success: false,
       message: "Server error",
