@@ -118,7 +118,7 @@ const getWishlist = async (req, res) => {
 
         const wishlistItems = await Wishlist.find(query)
             .populate("student", 'name email')  // Only include student name/email
-            .populate("book", 'title author coverImage'); // Only include book details
+            .populate("book", 'name author '); // Only include book details
 
         if (!wishlistItems.length) {
             return res.status(404).json({
