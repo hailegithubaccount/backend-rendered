@@ -190,7 +190,7 @@ const getWishlistByStudent = asyncHandler(async (req, res) => {
         const wishlistItems = await Wishlist.find({ student: studentId }) 
             .populate({
                 path: "book",
-                select: "title author", // Only fetch required fields
+                select: "name author", // Only fetch required fields
             });
 
         res.status(200).json({
