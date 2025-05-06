@@ -1,33 +1,34 @@
-const mongoose = require("mongoose");
+// models/messageModel.js
+const mongoose = require('mongoose');
 
-const loanSchema = new mongoose.Schema({
-  studentId: {
-    type: String,
-    required: true
-  },
-  studentEmail: {
-    type: String,
-    required: true
-  },
-  bookTitle: {
-    type: String,
-    required: true
-  },
-  returnTime: {
-    type: Date,
-    required: true
-  },
-  createdBy: {
+const messageSchema = new mongoose.Schema({
+  recipient: {
     type: mongoose.Schema.Types.ObjectId,
-    ref: "User"
+    ref: 'users',
+    required: true
   },
-  sentToStudent: {
+  recipientEmail: {
+    type: String,
+    required: true
+  },
+  recipientStudentId: {
+    type: String,
+    required: true
+  },
+  text: {
+    type: String,
+    required: true
+  },
+  sender: {
+    type: String,
+    enum: ['admin', 'library-staff', 'other'],
+    default: 'library-staff'
+  },
+  returnTime: Date,
+  isRead: {
     type: Boolean,
     default: false
-  },
-  displayAfter: {
-    type: Date
   }
 }, { timestamps: true });
 
-module.exports = mongoose.model("Loan", loanSchema);
+module.exports = mongoose.model('Message', messageSchema);
