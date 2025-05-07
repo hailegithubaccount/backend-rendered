@@ -24,7 +24,7 @@ const messageSchema = new mongoose.Schema({
     enum: ['admin', 'library-staff', 'other'],
     default: 'library-staff'
   },
-  returnTime: Date,
+ 
   isRead: {
     type: Boolean,
     default: false

@@ -5,7 +5,7 @@ const mongoose = require("mongoose");
 // Send a message to a student
 exports.sendMessage = async (req, res) => {
   try {
-    const { email, studentId, text, sender = "library-staff", returnTime } = req.body;
+    const { email, studentId, text, sender = "library-staff", } = req.body;
 
     // Validate input
     if (!email || !studentId || !text) {
@@ -26,12 +26,8 @@ exports.sendMessage = async (req, res) => {
       // Removed displayAfter (message will be shown immediately)
     };
 
-    if (returnTime) {
-      messageData.returnTime = new Date(returnTime);
-      if (messageData.returnTime <= new Date()) {
-        return res.status(400).json({ message: "Return time must be in the future" });
-      }
-    }
+    
+    
 
     const message = await Message.create(messageData);
 
