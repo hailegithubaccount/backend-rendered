@@ -1,15 +1,15 @@
-const Message = require("../model/BookLoan"); // Or rename it to Message.js
+const Message = require("../models/messageModel");
 const User = require("../model/userModel");
 const mongoose = require("mongoose");
 
 // Send a message to a student
 exports.sendMessage = async (req, res) => {
   try {
-    const { email, studentId, text, sender = "library-staff", } = req.body;
+    const { email, studentId, title, description, sender = "library-staff" } = req.body;
 
     // Validate input
-    if (!email || !studentId || !text) {
-      return res.status(400).json({ message: "Email, studentId, and text are required" });
+    if (!email || !studentId || !title || !description) {
+      return res.status(400).json({ message: "Email, studentId, title, and description are required" });
     }
 
     const user = await User.findOne({ email, studentId });
@@ -21,13 +21,10 @@ exports.sendMessage = async (req, res) => {
       recipient: user._id,
       recipientEmail: email,
       recipientStudentId: studentId,
-      text,
+      title,
+      description,
       sender,
-      // Removed displayAfter (message will be shown immediately)
     };
-
-    
-    
 
     const message = await Message.create(messageData);
 

@@ -1,4 +1,3 @@
-// models/messageModel.js
 const mongoose = require('mongoose');
 
 const messageSchema = new mongoose.Schema({
@@ -15,7 +14,11 @@ const messageSchema = new mongoose.Schema({
     type: String,
     required: true
   },
-  text: {
+  title: {
+    type: String,
+    required: true
+  },
+  description: {
     type: String,
     required: true
   },
@@ -24,7 +27,6 @@ const messageSchema = new mongoose.Schema({
     enum: ['admin', 'library-staff', 'other'],
     default: 'library-staff'
   },
- 
   isRead: {
     type: Boolean,
     default: false
