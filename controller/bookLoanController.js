@@ -1,4 +1,4 @@
-const Message = require("../models/messageModel");
+const Message = require("../model/BookLoan");
 const User = require("../model/userModel");
 const mongoose = require("mongoose");
 

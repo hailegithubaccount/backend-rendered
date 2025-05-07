@@ -20,7 +20,11 @@ router.get(
 );
 
 // router.patch("/mark-read/:messageId",  protect,checkRole("student"), checkUserExists,
-// bookLoanController.markMessageAsRead);
+// bookLoanController.markMessageAsRead);''
+
+
+
+
 router.get('/staff',protect,checkRole("library-staff"), checkUserExists,
 bookLoanController.getStaffMessages);
 
@@ -30,10 +34,6 @@ bookLoanController.deleteByStaff);
 router.get('/unreadCount',protect,checkRole("student"), checkUserExists,bookLoanController.getUnreadCount);
 router.post('/markAsRead',protect,checkRole("student"), checkUserExists,bookLoanController.markAsRead );
 
-// router.patch(
-//   '/:loanId/return',
-//  protect,checkRole("library-staff"), checkUserExists,
-//   bookLoanController.returnBook
-// );
+
 
 module.exports = router;
