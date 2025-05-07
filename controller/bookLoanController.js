@@ -109,17 +109,13 @@ exports.getUnreadCount = async (req, res) => {
 };
 
 // Mark a message as read
+
+
+// Controller
 exports.markAsRead = async (req, res) => {
   try {
-    const { messageId } = req.params;
+    const { id: messageId } = req.params;
     const studentEmail = res.locals.email;
-
-    if (!studentEmail) {
-      return res.status(401).json({
-        success: false,
-        message: "Unauthorized: email not found."
-      });
-    }
 
     if (!mongoose.Types.ObjectId.isValid(messageId)) {
       return res.status(400).json({
@@ -131,7 +127,8 @@ exports.markAsRead = async (req, res) => {
     const updatedMessage = await Message.findOneAndUpdate(
       {
         _id: messageId,
-        recipientEmail: studentEmail
+        recipientEmail: studentEmail,
+        isRead: false // Only update if not already read
       },
       {
         $set: { isRead: true },
@@ -143,7 +140,7 @@ exports.markAsRead = async (req, res) => {
     if (!updatedMessage) {
       return res.status(404).json({
         success: false,
-        message: "Message not found or doesn't belong to you"
+        message: "Message not found, already read, or doesn't belong to you"
       });
     }
 
@@ -155,7 +152,10 @@ exports.markAsRead = async (req, res) => {
     res.status(200).json({
       success: true,
       message: "Message marked as read",
-      data: updatedMessage,
+      data: {
+        messageId: updatedMessage._id,
+        isRead: updatedMessage.isRead
+      },
       unreadCount
     });
 
