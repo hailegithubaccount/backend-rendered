@@ -299,7 +299,7 @@ exports.resetPassword = async (req, res) => {
 // @route   PUT /api/auth/update-password
 // @access  Private
 //dd
-const bcrypt = require('bcryptjs');
+
 
 exports.updatePassword = async (req, res) => {
   const { email, currentPassword, password, passwordConfirm } = req.body;
