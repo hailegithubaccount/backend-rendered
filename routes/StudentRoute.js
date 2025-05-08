@@ -19,10 +19,16 @@ router.get ('/count',studentController.countStudents);
 
 
 
-  router.delete(
+  router.put(
     "/admin/student/:id",
     protect, checkRole('admin'), checkUserExists,
     studentController.deleteStudent
+  );
+
+  router.put(
+    "/admin/student/:id",
+    protect, checkRole('admin'), checkUserExists,
+    studentController.enableStudent
   );
 
 

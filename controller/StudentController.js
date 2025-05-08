@@ -237,38 +237,84 @@ const getStudentPhoto = async (req, res) => {
 
 
 
-const deleteStudent = async (req, res, next) => {
-  try {
+  const deleteStudent = async (req, res, next) => {
+    try {
       if (res.locals.role !== "admin") {
-          return res.status(403).json({
-              status: "failed",
-              message: "Only admins can delete students",
-          });
+        return res.status(403).json({
+          status: "failed",
+          message: "Only admins can disable students",
+        });
       }
-
+  
       const studentID = req.params.id;
-      const deletedStudent = await User.findByIdAndDelete(studentID);
-
-      if (!deletedStudent) {
-          return res.status(404).json({
-              status: "failed",
-              message: "Student not found",
-          });
+      const updatedStudent = await User.findByIdAndUpdate(
+        studentID,
+        { isActive: false },
+        { new: true }
+      );
+  
+      if (!updatedStudent) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Student not found",
+        });
       }
-
+  
       res.status(200).json({
-          status: "success",
-          message: "Student deleted successfully",
-          deletedStudent,
+        status: "success",
+        message: "Student disabled successfully",
+        student: updatedStudent,
       });
-  } catch (error) {
+    } catch (error) {
       console.error(error);
       res.status(500).json({
-          status: "failed",
-          message: "Server error, unable to delete student",
+        status: "failed",
+        message: "Server error, unable to disable student",
       });
-  }
-};
+    }
+  };
+
+
+
+
+const enableStudent = async (req, res, next) => {
+    try {
+      if (res.locals.role !== "admin") {
+        return res.status(403).json({
+          status: "failed",
+          message: "Only admins can enable students",
+        });
+      }
+  
+      const studentID = req.params.id;
+      const updatedStudent = await User.findByIdAndUpdate(
+        studentID,
+        { isActive: true },
+        { new: true }
+      );
+  
+      if (!updatedStudent) {
+        return res.status(404).json({
+          status: "failed",
+          message: "Student not found",
+        });
+      }
+  
+      res.status(200).json({
+        status: "success",
+        message: "Student enabled successfully",
+        student: updatedStudent,
+      });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({
+        status: "failed",
+        message: "Server error, unable to enable student",
+      });
+    }
+  };
+  
+  
 
 
 const countStudents = async (req, res) => {
@@ -299,6 +345,7 @@ module.exports = {
     deleteStudent,
     getStudentPhoto,
     getStudentProfile,
+    enableStudent,
     countStudents
    
   };
