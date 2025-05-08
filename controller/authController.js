@@ -120,6 +120,7 @@ const Email = require('../utils/email');
 
 
 
+
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -176,7 +177,7 @@ exports.login = async (req, res, next) => {
     // 7. Generate JWT
     const token = jwt.sign(
       { id: user._id, role: user.role, email: user.email },
-      process.env.JWTSECRATE,
+      process.env.JWTSECRET, // fixed variable name typo (previously `JWTSECRATE`)
       { expiresIn: process.env.EXPIRESIN }
     );
 
@@ -185,7 +186,7 @@ exports.login = async (req, res, next) => {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000,
+      maxAge: 24 * 60 * 60 * 1000, // 1 day
       domain: "localhost",
       path: "/",
     });
@@ -217,6 +218,7 @@ exports.login = async (req, res, next) => {
     });
   }
 };
+
 
 
 
