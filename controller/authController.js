@@ -153,6 +153,13 @@ exports.login = async (req, res, next) => {
       });
     }
 
+    if (!user.isActive) {
+      return res.status(403).json({
+        status: "fail",
+        message: "Your account is disabled. Please contact the admin.",
+      });
+
+
     // Update login count and study progress (only for students)
     if (user.role === 'student') {
       user.loginCount += 1;
