@@ -6,7 +6,7 @@ const router = express.Router();
 
 // Public routes
 
-router.post('/regsterAdmin',authController.registerAdmin)
+//router.post('/regsterAdmin',authController.registerAdmin)
 
 router.post('/login', authController.login);
 router.post("/forgetPassword",authController.forgetPassword);
@@ -47,4 +47,4 @@ module.exports = router;
 // Get all users (only accessible by authenticated users)
 // router.get('/', protect, authController.getAllUser);
 
-module.exports = router;
+
