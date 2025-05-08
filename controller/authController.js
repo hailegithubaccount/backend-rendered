@@ -128,7 +128,7 @@ exports.login = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({
         status: "fail",
-        message: "Please provide boooth email and password.",
+        message: "Please provide both email and password.",
       });
     }
 
@@ -143,7 +143,15 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // 4. Compare the provided password with the hashed password in the database
+    // ✅ 4. Check if the user is active
+    if (!user.isActive) {
+      return res.status(403).json({
+        status: "fail",
+        message: "Your account is disabled. Please contact the administrator.",
+      });
+    }
+
+    // 5. Compare the provided password with the hashed password
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
@@ -153,38 +161,26 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    if (!user.isActive) {
-      return res.status(403).json({
-        status: "fail",
-        message: "Your account is disabled. Please contact the admin.",
-      });
-
-
-    // Update login count and study progress (only for students)
+    // 6. Update login activity if student
     if (user.role === 'student') {
       user.loginCount += 1;
       user.lastLogin = new Date();
-
-      // Add the login activity entry
       user.loginActivity.push({
         date: new Date(),
-        sessionDuration: 0, // Default session duration (can be updated later)
+        sessionDuration: 0,
       });
-
-      // Calculate study progress based on login count
       user.studyProgress = Math.min(100, user.loginCount);
-
       await user.save();
     }
 
-    // 5. Generate a JWT token
+    // 7. Generate JWT
     const token = jwt.sign(
-      { id: user._id, role: user.role,email: user.email, },
+      { id: user._id, role: user.role, email: user.email },
       process.env.JWTSECRATE,
       { expiresIn: process.env.EXPIRESIN }
     );
 
-    // 6. Set the token in an httpOnly cookie
+    // 8. Set token in cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
@@ -194,7 +190,7 @@ exports.login = async (req, res, next) => {
       path: "/",
     });
 
-    // 7. Send the response
+    // 9. Send response
     res.status(200).json({
       token,
       role: user.role,
@@ -208,9 +204,9 @@ exports.login = async (req, res, next) => {
         role: user.role,
         loginCount: user.loginCount,
         studyProgress: user.studyProgress,
-        loginActivity:user.loginActivity,
-        department:user.department,
-        studentId:user.studentId,
+        loginActivity: user.loginActivity,
+        department: user.department,
+        studentId: user.studentId,
       },
     });
   } catch (error) {
