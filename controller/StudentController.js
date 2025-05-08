@@ -158,7 +158,7 @@ const getAllStudents = async (req, res) => {
   try {
     // Fetch students with only necessary fields
     const students = await User.find({ role: "student" })
-      .select('firstName lastName email role photo');
+      .select('firstName lastName email role photo studentId department');
 
     // Add photoUrl to each student
     const studentsWithPhotoUrl = students.map(student => ({
