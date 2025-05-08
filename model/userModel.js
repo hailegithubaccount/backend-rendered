@@ -68,10 +68,7 @@ const userSchema = new mongoose.Schema(
         message: "Department is required for students",
       },
     },
-    isActive: {
-      type: Boolean,
-      default: true
-  },
+    
     studentId: {
       type: String,
       unique: true,
