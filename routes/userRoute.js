@@ -14,7 +14,7 @@ router.post("/confirmOtp", authController.otpVerification);
 router.put("/resetPassword", authController.resetPassword);
 
 // routes require login
-router.patch("/updatePassword", authController.updatePassword);
+router.patch("/updatePassword",protect, checkRole('student'), checkUserExists, authController.updatePassword);
 
 
 
