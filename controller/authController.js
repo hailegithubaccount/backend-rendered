@@ -299,16 +299,18 @@ exports.resetPassword = async (req, res) => {
 // @route   PUT /api/auth/update-password
 // @access  Private
 //dd
-exports.updatePassword = async (req, res) => {
-  const { email, password, passwordConfirm } = req.body;
+const bcrypt = require('bcryptjs');
 
-  // Validate all fields
-  if (!email || !password || !passwordConfirm) {
+exports.updatePassword = async (req, res) => {
+  const { email, currentPassword, password, passwordConfirm } = req.body;
+
+  // Validate required fields including currentPassword
+  if (!email || !currentPassword || !password || !passwordConfirm) {
     res.status(400);
-    throw new Error('All fields are required');
+    throw new Error('All fields are required: email, currentPassword, password, and passwordConfirm');
   }
 
-  // Get user data with password
+  // Get user with password
   const user = await userModel.findOne({ email }).select('+password');
 
   if (!user) {
@@ -316,13 +318,19 @@ exports.updatePassword = async (req, res) => {
     throw new Error('User not found');
   }
 
-  // Compare new password with current one
-  const isSame = await bcrypt.compare(password, user.password);
+  // Check if current password matches the stored hash
+  const isCorrectPassword = await bcrypt.compare(currentPassword, user.password);
 
-  // Check if password was previously used
+  if (!isCorrectPassword) {
+    res.status(401);
+    throw new Error('Current password is incorrect');
+  }
+
+  // Prevent reusing the old password
+  const isSame = await bcrypt.compare(password, user.password);
   if (isSame) {
     res.status(400);
-    throw new Error('Password previously used');
+    throw new Error('New password cannot be the same as the old password');
   }
 
   // Update the password
