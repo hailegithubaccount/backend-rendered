@@ -79,68 +79,19 @@ exports.getMessagesForStudent = async (req, res) => {
 };
 
 // Get unread message count for student
+
+
+// @desc    Get unread messages count
+// @route   GET /api/messages/unread-count
+// @access  Private
 exports.getUnreadCount = async (req, res) => {
   try {
     const studentEmail = res.locals.email;
 
     if (!studentEmail) {
       return res.status(401).json({
-        success: false,
-        message: "Unauthorized: email not found."
-      });
-    }
-
-    const unreadCount = await Message.countDocuments({
-      recipientEmail: studentEmail,
-      isRead: false
-    });
-
-    res.json({
-      success: true,
-      unreadCount
-    });
-  } catch (error) {
-    res.status(500).json({
-      success: false,
-      message: "Failed to get unread count",
-      error: error.message
-    });
-  }
-};
-
-// Mark a message as read
-
-
-// Controller
-exports.markAsRead = async (req, res) => {
-  try {
-    const { id: messageId } = req.params;
-    const studentEmail = res.locals.email;
-
-    if (!mongoose.Types.ObjectId.isValid(messageId)) {
-      return res.status(400).json({
-        success: false,
-        message: "Invalid message ID format"
-      });
-    }
-
-    const updatedMessage = await Message.findOneAndUpdate(
-      {
-        _id: messageId,
-        recipientEmail: studentEmail,
-        isRead: false // Only update if not already read
-      },
-      {
-        $set: { isRead: true },
-        $currentDate: { updatedAt: true }
-      },
-      { new: true }
-    );
-
-    if (!updatedMessage) {
-      return res.status(404).json({
-        success: false,
-        message: "Message not found, already read, or doesn't belong to you"
+        status: 'error',
+        message: 'Unauthorized: email not found'
       });
     }
 
@@ -150,31 +101,65 @@ exports.markAsRead = async (req, res) => {
     });
 
     res.status(200).json({
-      success: true,
-      message: "Message marked as read",
-      data: {
-        messageId: updatedMessage._id,
-        isRead: updatedMessage.isRead
-      },
+      status: 'success',
       unreadCount
     });
-
   } catch (error) {
+    console.error('Error fetching unread count:', error);
     res.status(500).json({
-      success: false,
-      message: "Failed to mark message as read",
-      error: error.message
+      status: 'error',
+      message: 'Internal server error'
     });
   }
 };
 
-// Get all messages sent by staff (with optional filtering)
+// @desc    Mark message as read
+// @route   POST /api/messages/:id/mark-as-read
+// @access  Private
+exports.markAllAsRead = async (req, res) => {
+  try {
+    const studentEmail = res.locals.email;
+
+    // Update all unread messages for the student
+    const result = await Message.updateMany(
+      {
+        recipientEmail: studentEmail,
+        isRead: false
+      },
+      {
+        $set: { isRead: true },
+        $currentDate: { updatedAt: true }
+      }
+    );
+
+    // After updating, get the new unread count
+    const unreadCount = await Message.countDocuments({
+      recipientEmail: studentEmail,
+      isRead: false
+    });
+
+    res.status(200).json({
+      status: 'success',
+      message: `${result.modifiedCount} message(s) marked as read.`,
+      unreadCount
+    });
+
+  } catch (error) {
+    console.error('Error marking all messages as read:', error);
+    res.status(500).json({
+      status: 'error',
+      message: 'Internal server error'
+    });
+  }
+};
+
+
+
 exports.getStaffMessages = async (req, res) => {
   try {
     const { recipientEmail, recipientStudentId, startDate, endDate } = req.query;
     const query = { sender: "library-staff" };
 
-    // Add optional filters
     if (recipientEmail) {
       query.recipientEmail = recipientEmail;
     }

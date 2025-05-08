@@ -32,7 +32,8 @@ router.delete('/staff/:messageId', protect,checkRole("library-staff"), checkUser
 bookLoanController.deleteByStaff);
 
 router.get('/unreadCount',protect,checkRole("student"), checkUserExists,bookLoanController.getUnreadCount);
-router.patch('/:id/mark-read', protect, checkRole("student"), checkUserExists, bookLoanController.markAsRead);
+router.patch('/mark-all-read', protect, checkRole("student"), checkUserExists, bookLoanController.markAllAsRead);
+
 
 
 
