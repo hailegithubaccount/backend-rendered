@@ -299,44 +299,112 @@ exports.resetPassword = async (req, res) => {
 // @route   PUT /api/auth/update-password
 // @access  Private
 //dd
-exports.updatePassword = async (req, res) => {
-  const { email, password, passwordConfirm } = req.body;
+const bcrypt = require('bcryptjs');
+const validator = require('validator');
+const userModel = require('../models/userModel');
 
-  // Validate all fields
-  if (!email || !password || !passwordConfirm) {
-    res.status(400);
-    throw new Error('All fields are required');
+exports.updatePassword = async (req, res, next) => {
+  try {
+    const { email, currentPassword, newPassword, passwordConfirm } = req.body;
+
+    // 1. Validate all fields
+    if (!email || !currentPassword || !newPassword || !passwordConfirm) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'All fields are required'
+      });
+    }
+
+    // 2. Validate email format
+    if (!validator.isEmail(email)) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Please provide a valid email address'
+      });
+    }
+
+    // 3. Check password strength
+    if (!validator.isStrongPassword(newPassword, { 
+      minLength: 8, 
+      minLowercase: 1, 
+      minUppercase: 1, 
+      minNumbers: 1, 
+      minSymbols: 1 
+    })) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Password must be at least 8 characters with 1 uppercase, 1 lowercase, 1 number, and 1 symbol'
+      });
+    }
+
+    // 4. Check if passwords match
+    if (newPassword !== passwordConfirm) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'Passwords do not match'
+      });
+    }
+
+    // 5. Get user with password
+    const user = await userModel.findOne({ email }).select('+password');
+    if (!user) {
+      return res.status(404).json({
+        status: 'fail',
+        message: 'User not found'
+      });
+    }
+
+    // 6. Verify current password
+    const isCorrect = await bcrypt.compare(currentPassword, user.password);
+    if (!isCorrect) {
+      return res.status(401).json({
+        status: 'fail',
+        message: 'Current password is incorrect'
+      });
+    }
+
+    // 7. Check if new password is same as current
+    const isSame = await bcrypt.compare(newPassword, user.password);
+    if (isSame) {
+      return res.status(400).json({
+        status: 'fail',
+        message: 'New password cannot be the same as current password'
+      });
+    }
+
+    // 8. Check password history (if implemented)
+    // This would require storing previous passwords in your user model
+    // if (user.passwordHistory.includes(await bcrypt.hash(newPassword, 12))) {
+    //   return res.status(400).json({
+    //     status: 'fail',
+    //     message: 'Password was used recently. Please choose a different one.'
+    //   });
+    // }
+
+    // 9. Update password
+    user.password = newPassword;
+    user.passwordConfirm = passwordConfirm;
+    user.passwordChangedAt = Date.now();
+    await user.save();
+
+    // 10. Remove sensitive data from response
+    user.password = undefined;
+    user.passwordConfirm = undefined;
+
+    // 11. Send success response
+    res.status(200).json({
+      status: "success",
+      message: "Password updated successfully"
+    });
+
+  } catch (err) {
+    // 12. Handle errors
+    console.error('Password update error:', err);
+    res.status(500).json({
+      status: 'error',
+      message: 'An error occurred while updating password'
+    });
   }
-
-  // Get user data with password
-  const user = await userModel.findOne({ email }).select('+password');
-
-  if (!user) {
-    res.status(404);
-    throw new Error('User not found');
-  }
-
-  // Compare new password with current one
-  const isSame = await bcrypt.compare(password, user.password);
-
-  // Check if password was previously used
-  if (isSame) {
-    res.status(400);
-    throw new Error('Password previously used');
-  }
-
-  // Update the password
-  user.password = password;
-  user.passwordConfirm = passwordConfirm;
-  await user.save();
-
-  // Remove password from response
-  user.password = undefined;
-
-  res.status(200).json({
-    status: "success",
-    message: "Password updated successfully",
-  });
 };
 
 

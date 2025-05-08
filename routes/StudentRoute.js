@@ -19,17 +19,18 @@ router.get ('/count',studentController.countStudents);
 
 
 
-  router.put(
-    "/admin/student/disable/:id",
+  
+  router.patch('/students/:id/disable',
     protect, checkRole('admin'), checkUserExists,
-    studentController.deleteStudent
+    studentController. disableStudent
+    
   );
 
-  router.put(
-    "/admin/student/enable/:id",
+
+  router.patch('/students/:id/enable',
     protect, checkRole('admin'), checkUserExists,
     studentController.enableStudent
-    
+
   );
 
 
