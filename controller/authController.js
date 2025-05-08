@@ -69,52 +69,52 @@ const Email = require('../utils/email');
 //         });
  // Ensure you import your utils
 
- exports.registerAdmin = async (req, res, next) => {
-  try {
-    // Check if an admin already exists
-    const existingAdmin = await userModel.findOne({ role: "admin" });
+//  exports.registerAdmin = async (req, res, next) => {
+//   try {
+//     // Check if an admin already exists
+//     const existingAdmin = await userModel.findOne({ role: "admin" });
     
-    if (existingAdmin) {
-      return res.status(400).json({
-        status: "fail",
-        message: "Super admin already exists. Cannot register another admin.",
-      });
-    }
+//     if (existingAdmin) {
+//       return res.status(400).json({
+//         status: "fail",
+//         message: "Super admin already exists. Cannot register another admin.",
+//       });
+//     }
 
-    // Extract admin details from request
-    const { firstName, lastName, email, password } = req.body;
+//     // Extract admin details from request
+//     const { firstName, lastName, email, password } = req.body;
 
-    // Create a new admin user
-    const newAdmin = await userModel.create({
-      firstName,
-      lastName,
-      email,
-      password,
-      role: "admin",  // Super admin role
-    });
+//     // Create a new admin user
+//     const newAdmin = await userModel.create({
+//       firstName,
+//       lastName,
+//       email,
+//       password,
+//       role: "admin",  // Super admin role
+//     });
 
-    // Generate JWT token for the admin
-    const token = jwt.sign(
-      { id: newAdmin._id, role: newAdmin.role, email: newAdmin.email },
-      process.env.JWTSECRATE,
-      { expiresIn: process.env.EXPIRESIN }
-    );
+//     // Generate JWT token for the admin
+//     const token = jwt.sign(
+//       { id: newAdmin._id, role: newAdmin.role, email: newAdmin.email },
+//       process.env.JWTSECRATE,
+//       { expiresIn: process.env.EXPIRESIN }
+//     );
 
-    // Send the response
-    res.status(201).json({
-      token,
-      status: "success",
-      message: "Super admin registered successfully.",
-      newAdmin,
-    });
-  } catch (error) {
-    console.log(error);
-    res.status(500).json({
-      status: "error",
-      message: "An error occurred during admin registration.",
-    });
-  }
-};
+//     // Send the response
+//     res.status(201).json({
+//       token,
+//       status: "success",
+//       message: "Super admin registered successfully.",
+//       newAdmin,
+//     });
+//   } catch (error) {
+//     console.log(error);
+//     res.status(500).json({
+//       status: "error",
+//       message: "An error occurred during admin registration.",
+//     });
+//   }
+// };
 
 
 
