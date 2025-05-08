@@ -11,7 +11,7 @@ const mongoose = require("mongoose");
 
 const registerStudent = async (req, res) => {
   try {
-    const { firstName, lastName, email, password,department,studentId } = req.body;
+    const { firstName, lastName, email, password, department, studentId } = req.body;
 
     // Validate required fields
     if (!firstName || !lastName || !email || !password) {
@@ -46,7 +46,7 @@ const registerStudent = async (req, res) => {
       });
     }
 
-    // Create new student
+    // Create new student with isActive: false by default
     const newUser = await User.create({
       firstName,
       lastName,
@@ -55,11 +55,11 @@ const registerStudent = async (req, res) => {
       role: "student",
       department,
       studentId,
+      isActive: false, // New accounts are inactive by default
       photo: {
         data: req.file.buffer,
         contentType: req.file.mimetype
       }
-
     });
 
     // Generate photo URL
@@ -67,15 +67,16 @@ const registerStudent = async (req, res) => {
 
     res.status(201).json({
       status: 'success',
-      message: 'Student registered successfully',
+      message: 'Student registered successfully. Account pending admin approval.',
       data: {
         id: newUser.id,
         firstName: newUser.firstName,
         lastName: newUser.lastName,
         email: newUser.email,
         role: newUser.role,
-        department:newUser.department,
-        studentId:newUser.studentId,
+        department: newUser.department,
+        studentId: newUser.studentId,
+        isActive: newUser.isActive,
         photoUrl
       }
     });
@@ -93,7 +94,6 @@ const registerStudent = async (req, res) => {
     });
   }
 };
-
 
 
 // controllers/userController.js
