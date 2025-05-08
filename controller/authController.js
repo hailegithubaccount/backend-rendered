@@ -120,7 +120,6 @@ const Email = require('../utils/email');
 
 
 
-
 exports.login = async (req, res, next) => {
   try {
     const { email, password } = req.body;
@@ -129,7 +128,7 @@ exports.login = async (req, res, next) => {
     if (!email || !password) {
       return res.status(400).json({
         status: "fail",
-        message: "Please provide both email and password.",
+        message: "Please provide boooth email and password.",
       });
     }
 
@@ -144,15 +143,7 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // ✅ 4. Check if the user is active
-    if (!user.isActive) {
-      return res.status(403).json({
-        status: "fail",
-        message: "Your account is disabled. Please contact the administrator.",
-      });
-    }
-
-    // 5. Compare the provided password with the hashed password
+    // 4. Compare the provided password with the hashed password in the database
     const isPasswordValid = await user.comparePassword(password);
 
     if (!isPasswordValid) {
@@ -162,36 +153,41 @@ exports.login = async (req, res, next) => {
       });
     }
 
-    // 6. Update login activity if student
+    // Update login count and study progress (only for students)
     if (user.role === 'student') {
       user.loginCount += 1;
       user.lastLogin = new Date();
+
+      // Add the login activity entry
       user.loginActivity.push({
         date: new Date(),
-        sessionDuration: 0,
+        sessionDuration: 0, // Default session duration (can be updated later)
       });
+
+      // Calculate study progress based on login count
       user.studyProgress = Math.min(100, user.loginCount);
+
       await user.save();
     }
 
-    // 7. Generate JWT
+    // 5. Generate a JWT token
     const token = jwt.sign(
-      { id: user._id, role: user.role, email: user.email },
-      process.env.JWTSECRET, // fixed variable name typo (previously `JWTSECRATE`)
+      { id: user._id, role: user.role,email: user.email, },
+      process.env.JWTSECRATE,
       { expiresIn: process.env.EXPIRESIN }
     );
 
-    // 8. Set token in cookie
+    // 6. Set the token in an httpOnly cookie
     res.cookie("token", token, {
       httpOnly: true,
       secure: process.env.NODE_ENV === "production",
       sameSite: "lax",
-      maxAge: 24 * 60 * 60 * 1000, // 1 day
+      maxAge: 24 * 60 * 60 * 1000,
       domain: "localhost",
       path: "/",
     });
 
-    // 9. Send response
+    // 7. Send the response
     res.status(200).json({
       token,
       role: user.role,
@@ -205,9 +201,9 @@ exports.login = async (req, res, next) => {
         role: user.role,
         loginCount: user.loginCount,
         studyProgress: user.studyProgress,
-        loginActivity: user.loginActivity,
-        department: user.department,
-        studentId: user.studentId,
+        loginActivity:user.loginActivity,
+        department:user.department,
+        studentId:user.studentId,
       },
     });
   } catch (error) {
@@ -218,7 +214,6 @@ exports.login = async (req, res, next) => {
     });
   }
 };
-
 
 
 
