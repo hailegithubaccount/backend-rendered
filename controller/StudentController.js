@@ -237,85 +237,38 @@ const getStudentPhoto = async (req, res) => {
 
 
 
- // In your controller file (e.g., studentController.js)
-const disableStudent = async (req, res, next) => {
+const deleteStudent = async (req, res, next) => {
   try {
-    if (res.locals.role !== "admin") {
-      return res.status(403).json({
-        status: "failed",
-        message: "Only admins can disable students",
+      if (res.locals.role !== "admin") {
+          return res.status(403).json({
+              status: "failed",
+              message: "Only admins can delete students",
+          });
+      }
+
+      const studentID = req.params.id;
+      const deletedStudent = await User.findByIdAndDelete(studentID);
+
+      if (!deletedStudent) {
+          return res.status(404).json({
+              status: "failed",
+              message: "Student not found",
+          });
+      }
+
+      res.status(200).json({
+          status: "success",
+          message: "Student deleted successfully",
+          deletedStudent,
       });
-    }
-
-    const studentID = req.params.id;
-    const updatedStudent = await User.findByIdAndUpdate(
-      studentID,
-      { isActive: false },
-      { new: true }
-    );
-
-    if (!updatedStudent) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Student not found",
-      });
-    }
-
-    res.status(200).json({
-      status: "success",
-      message: "Student disabled successfully",
-      student: updatedStudent,
-    });
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: "failed",
-      message: "Server error, unable to disable student",
-    });
+      console.error(error);
+      res.status(500).json({
+          status: "failed",
+          message: "Server error, unable to delete student",
+      });
   }
 };
-
-const enableStudent = async (req, res, next) => {
-  try {
-    if (res.locals.role !== "admin") {
-      return res.status(403).json({
-        status: "failed",
-        message: "Only admins can enable students",
-      });
-    }
-
-    const studentID = req.params.id;
-    const updatedStudent = await User.findByIdAndUpdate(
-      studentID,
-      { isActive: true },
-      { new: true }
-    );
-
-    if (!updatedStudent) {
-      return res.status(404).json({
-        status: "failed",
-        message: "Student not found",
-      });
-    }
-
-    res.status(200).json({
-      status: "success",
-      message: "Student enabled successfully",
-      student: updatedStudent,
-    });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      status: "failed",
-      message: "Server error, unable to enable student",
-    });
-  }
-};
-
-// Export both functions
-
-  
-  
 
 
 const countStudents = async (req, res) => {
@@ -343,11 +296,9 @@ const countStudents = async (req, res) => {
 module.exports = {
     registerStudent,
     getAllStudents,
-    
+    deleteStudent,
     getStudentPhoto,
     getStudentProfile,
-    disableStudent,
-    enableStudent,
-    countStudents,
+    countStudents
    
   };
