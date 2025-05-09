@@ -22,12 +22,12 @@ const registerStudent = async (req, res) => {
     }
 
     // Check if photo was uploaded
-    // if (!req.file) {
-    //   return res.status(400).json({
-    //     status: 'error',
-    //     message: 'Profile photo is required'
-    //   });
-    // }
+    if (!req.file) {
+      return res.status(400).json({
+        status: 'error',
+        message: 'Profile photo is required'
+      });
+    }
 
     // Validate file type
     const allowedTypes = ['image/jpeg', 'image/png', 'image/gif'];
